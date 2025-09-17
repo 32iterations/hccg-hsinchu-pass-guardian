@@ -1,8 +1,10 @@
 const axios = require('axios');
 const crypto = require('crypto');
+const EventEmitter = require('events');
 
-class MyDataAdapter {
+class MyDataAdapter extends EventEmitter {
   constructor(config) {
+    super();
     this.logger = config.logger;
     this.cache = config.cache;
     this.auditService = config.auditService;
@@ -10,6 +12,7 @@ class MyDataAdapter {
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
     this.callbackUrl = config.callbackUrl;
+    this.notificationService = config.notificationService;
 
     // Data minimization mapping
     this.purposeToScopeMapping = {
@@ -392,6 +395,299 @@ class MyDataAdapter {
     const excessiveScope = requestedScope.filter(scope => !allowedScope.includes(scope));
 
     return excessiveScope.length === 0;
+  }
+
+  /**
+   * Fetch receipt for data access transaction
+   */
+  async fetchReceipt({ transactionId, familyId, patientId }) {
+    const receiptId = crypto.randomUUID();
+    const timestamp = new Date();
+
+    try {
+      // Generate access receipt
+      const receipt = {
+        receiptId,
+        transactionId,
+        familyId,
+        patientId,
+        timestamp,
+        dataAccessed: true,
+        legalBasis: 'Consent',
+        retentionPeriod: '24 hours maximum',
+        rights: {
+          access: 'Available upon request',
+          rectification: 'Contact support',
+          erasure: 'Automatic or on-demand',
+          portability: 'JSON format available',
+          objection: 'Contact support'
+        },
+        signature: this._generateReceiptSignature({
+          receiptId,
+          transactionId,
+          timestamp,
+          familyId,
+          patientId
+        })
+      };
+
+      // Store receipt for future reference
+      await this.cache.set(`receipt:${receiptId}`, receipt, 86400); // 24 hour retention
+
+      // Log receipt generation
+      await this.auditService.logDataAccess({
+        action: 'receipt_generated',
+        receiptId,
+        transactionId,
+        familyId,
+        patientId,
+        timestamp
+      });
+
+      return receipt;
+    } catch (error) {
+      this.logger.error('Failed to generate receipt', { error: error.message, transactionId });
+      throw error;
+    }
+  }
+
+  /**
+   * Track progress of MyData operations
+   */
+  async trackProgress({ operationId, familyId, stage, details = {} }) {
+    const progressData = {
+      operationId,
+      familyId,
+      stage, // 'authorization', 'token_exchange', 'data_fetch', 'completed', 'error'
+      timestamp: new Date(),
+      details
+    };
+
+    // Store progress in cache
+    const progressKey = `progress:${operationId}`;
+    await this.cache.set(progressKey, progressData, 3600); // 1 hour TTL
+
+    // Emit progress event for real-time updates
+    this.emit('progress', progressData);
+
+    // Send notification if notification service is available
+    if (this.notificationService) {
+      await this._sendProgressNotification(progressData);
+    }
+
+    this.logger.info('Progress tracked', {
+      operationId,
+      familyId,
+      stage,
+      timestamp: progressData.timestamp
+    });
+
+    return progressData;
+  }
+
+  /**
+   * Get current progress for an operation
+   */
+  async getProgress(operationId) {
+    const progressKey = `progress:${operationId}`;
+    return await this.cache.get(progressKey);
+  }
+
+  /**
+   * Send progress notifications to family members
+   */
+  async _sendProgressNotification(progressData) {
+    const { operationId, familyId, stage, details } = progressData;
+
+    const notificationMessages = {
+      'authorization': '正在請求資料授權...',
+      'token_exchange': '正在處理授權回應...',
+      'data_fetch': '正在取得個人資料...',
+      'completed': '資料取得完成',
+      'error': '操作發生錯誤，請重試'
+    };
+
+    const message = notificationMessages[stage] || '正在處理您的請求...';
+
+    try {
+      await this.notificationService.sendNotification({
+        familyId,
+        title: 'MyData 資料處理狀態',
+        message,
+        type: stage === 'error' ? 'error' : 'info',
+        metadata: {
+          operationId,
+          stage,
+          details
+        }
+      });
+    } catch (error) {
+      this.logger.warn('Failed to send progress notification', {
+        error: error.message,
+        operationId,
+        familyId,
+        stage
+      });
+    }
+  }
+
+  /**
+   * Generate digital signature for receipt
+   */
+  _generateReceiptSignature(data) {
+    const content = JSON.stringify(data);
+    return crypto.createHmac('sha256', 'receipt-secret').update(content).digest('hex');
+  }
+
+  /**
+   * Enhanced authorization flow with progress tracking
+   */
+  async generateAuthorizationUrlWithTracking({ familyId, scope = [], purpose }) {
+    const operationId = crypto.randomUUID();
+
+    // Track authorization start
+    await this.trackProgress({
+      operationId,
+      familyId,
+      stage: 'authorization',
+      details: { scope, purpose }
+    });
+
+    const authUrl = this.generateAuthorizationUrl({ familyId, scope, purpose });
+
+    // Store operation mapping
+    await this.cache.set(`operation:${operationId}`, {
+      familyId,
+      scope,
+      purpose,
+      authUrl,
+      timestamp: new Date()
+    }, 600); // 10 minute TTL
+
+    return {
+      authUrl,
+      operationId
+    };
+  }
+
+  /**
+   * Enhanced callback handling with progress tracking
+   */
+  async handleAuthorizationCallbackWithTracking({ code, state, operationId }) {
+    try {
+      // Track token exchange start
+      if (operationId) {
+        const operationData = await this.cache.get(`operation:${operationId}`);
+        if (operationData) {
+          await this.trackProgress({
+            operationId,
+            familyId: operationData.familyId,
+            stage: 'token_exchange',
+            details: { code: code.substring(0, 8) + '...' }
+          });
+        }
+      }
+
+      // Process callback
+      const result = await this.handleAuthorizationCallback({ code, state });
+
+      // Track completion
+      if (operationId) {
+        const operationData = await this.cache.get(`operation:${operationId}`);
+        if (operationData) {
+          await this.trackProgress({
+            operationId,
+            familyId: operationData.familyId,
+            stage: 'completed',
+            details: { tokenReceived: true, scope: result.scope }
+          });
+        }
+      }
+
+      return {
+        ...result,
+        operationId
+      };
+    } catch (error) {
+      // Track error
+      if (operationId) {
+        const operationData = await this.cache.get(`operation:${operationId}`);
+        if (operationData) {
+          await this.trackProgress({
+            operationId,
+            familyId: operationData.familyId,
+            stage: 'error',
+            details: { error: error.message }
+          });
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced data fetch with progress tracking and receipt generation
+   */
+  async fetchPersonalDataWithTracking({ accessToken, refreshToken, patientId, scope = [], operationId, familyId }) {
+    const transactionId = crypto.randomUUID();
+
+    try {
+      // Track data fetch start
+      if (operationId && familyId) {
+        await this.trackProgress({
+          operationId,
+          familyId,
+          stage: 'data_fetch',
+          details: { patientId, scope, transactionId }
+        });
+      }
+
+      // Fetch data
+      const data = await this.fetchPersonalData({
+        accessToken,
+        refreshToken,
+        patientId,
+        scope
+      });
+
+      // Generate receipt
+      const receipt = await this.fetchReceipt({
+        transactionId,
+        familyId,
+        patientId
+      });
+
+      // Track completion with receipt
+      if (operationId && familyId) {
+        await this.trackProgress({
+          operationId,
+          familyId,
+          stage: 'completed',
+          details: {
+            dataFetched: true,
+            receiptGenerated: true,
+            receiptId: receipt.receiptId
+          }
+        });
+      }
+
+      return {
+        data,
+        receipt,
+        transactionId
+      };
+    } catch (error) {
+      // Track error
+      if (operationId && familyId) {
+        await this.trackProgress({
+          operationId,
+          familyId,
+          stage: 'error',
+          details: { error: error.message, transactionId }
+        });
+      }
+      throw error;
+    }
   }
 }
 

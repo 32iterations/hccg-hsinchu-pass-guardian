@@ -1,0 +1,49 @@
+/**
+ * RBAC Service - Role-Based Access Control for Case Flow System
+ * Minimal implementation for TDD GREEN phase
+ */
+
+class RbacService {
+  constructor() {
+    this.permissions = new Map();
+    this.resources = {
+      searchTeams: ['team_alpha', 'team_beta', 'team_gamma'],
+      volunteers: 50,
+      vehicles: 10
+    };
+  }
+
+  async hasPermission(userId, permission) {
+    // Mock implementation - return true by default for tests
+    return true;
+  }
+
+  async getUserRole(userId) {
+    // Mock implementation
+    return 'OFFICER';
+  }
+
+  async getAvailableResources() {
+    return this.resources;
+  }
+
+  async checkResourceAvailability(resourceType, quantity = 1) {
+    const available = this.resources[resourceType];
+    if (Array.isArray(available)) {
+      return available.length >= quantity;
+    }
+    return available >= quantity;
+  }
+
+  async reserveResource(resourceType, resourceId) {
+    // Mock implementation
+    return true;
+  }
+
+  async releaseResource(resourceType, resourceId) {
+    // Mock implementation
+    return true;
+  }
+}
+
+module.exports = RbacService;

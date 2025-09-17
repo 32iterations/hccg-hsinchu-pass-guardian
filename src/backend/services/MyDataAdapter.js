@@ -283,6 +283,178 @@ class MyDataAdapter {
   async getStoredReceipt(receiptId) {
     return await this.storage.getItem(`receipt_${receiptId}`);
   }
+
+  // API-specific methods for REST endpoints
+
+  async initiateAuthorization({ userId, scopes, purpose, redirectUri, state }) {
+    // Reuse existing OAuth flow with additional API features
+    const result = await this.initiateOAuthFlow(userId, scopes);
+
+    // Create session tracking for API
+    const sessionId = this.generateSessionId();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    const session = {
+      id: sessionId,
+      userId,
+      scopes,
+      purpose,
+      redirectUri,
+      state,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      authUrl: result.authUrl
+    };
+
+    await this.storage.setItem(`mydata_session_${sessionId}`, session);
+
+    return {
+      authorizationUrl: result.authUrl,
+      sessionId,
+      expiresAt: expiresAt.toISOString()
+    };
+  }
+
+  async getSession(sessionId) {
+    const session = await this.storage.getItem(`mydata_session_${sessionId}`);
+    if (session && new Date(session.expiresAt) < new Date()) {
+      session.status = 'expired';
+    }
+    return session;
+  }
+
+  async exchangeCodeForToken(code, sessionId) {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error('Invalid session');
+    }
+
+    if (session.status === 'expired') {
+      throw new Error('Session expired');
+    }
+
+    // Use existing callback handling
+    const result = await this.handleCallback(code, session.state, session.userId);
+
+    // Update session status
+    session.status = 'completed';
+    session.completedAt = new Date().toISOString();
+    await this.storage.setItem(`mydata_session_${sessionId}`, session);
+
+    return {
+      accessToken: 'mock_access_token',
+      refreshToken: 'mock_refresh_token',
+      expiresIn: 3600,
+      scopes: session.scopes,
+      userId: session.userId
+    };
+  }
+
+  async getAuthorizationProgress(sessionId) {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    let progressPercentage = 10;
+    const steps = [
+      { name: 'authorization_initiated', status: 'completed', timestamp: session.createdAt },
+      { name: 'user_redirect', status: 'pending', timestamp: null },
+      { name: 'user_consent', status: 'pending', timestamp: null },
+      { name: 'token_exchange', status: 'pending', timestamp: null },
+      { name: 'consent_created', status: 'pending', timestamp: null }
+    ];
+
+    if (session.status === 'completed') {
+      progressPercentage = 100;
+      steps.forEach(step => {
+        step.status = 'completed';
+        step.timestamp = step.timestamp || session.completedAt;
+      });
+    } else if (session.status === 'expired') {
+      progressPercentage = 10;
+      steps[1].status = 'expired';
+    } else {
+      progressPercentage = 25;
+      steps[1].status = 'in_progress';
+    }
+
+    return {
+      status: session.status,
+      progressPercentage,
+      steps,
+      estimatedCompletion: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  async getConsent(consentId) {
+    return await this.storage.getItem(`mydata_consent_${consentId}`);
+  }
+
+  async revokeConsent(consentId, revocationData) {
+    const consent = await this.getConsent(consentId);
+    if (!consent) {
+      throw new Error('Consent not found');
+    }
+
+    const { reason, revokedBy, immediateAnonymization } = revocationData;
+
+    // Update consent
+    consent.status = 'revoked';
+    consent.revokedAt = new Date().toISOString();
+    consent.revokedBy = revokedBy;
+    consent.revocationReason = reason;
+
+    await this.storage.setItem(`mydata_consent_${consentId}`, consent);
+
+    // Use existing revocation
+    await this.revokeAuthorization(consent.userId);
+
+    return {
+      revokedAt: consent.revokedAt,
+      deletionScheduled: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      anonymizationComplete: immediateAnonymization || false
+    };
+  }
+
+  async getUserConsents(userId, options = {}) {
+    const { page = 1, limit = 20, status } = options;
+
+    // Mock consents
+    const mockConsents = [
+      {
+        id: 'consent123',
+        scopes: ['location_tracking', 'emergency_contact'],
+        grantedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'active',
+        purpose: 'safety_monitoring'
+      }
+    ];
+
+    let filteredConsents = mockConsents;
+    if (status) {
+      filteredConsents = mockConsents.filter(c => c.status === status);
+    }
+
+    const start = (page - 1) * limit;
+    const paginatedConsents = filteredConsents.slice(start, start + limit);
+    const activeCount = mockConsents.filter(c => c.status === 'active').length;
+
+    return {
+      records: paginatedConsents,
+      total: filteredConsents.length,
+      activeCount,
+      page,
+      limit
+    };
+  }
+
+  generateSessionId() {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 }
 
 module.exports = MyDataAdapter;

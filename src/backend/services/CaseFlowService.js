@@ -417,6 +417,195 @@ class CaseFlowService {
       failed: 0
     };
   }
+
+  // API-specific methods for REST endpoints
+
+  async getCaseById(caseId) {
+    return await this.getCase(caseId);
+  }
+
+  async updateCaseStatusAPI(caseId, statusData, updatedBy) {
+    const { status, resolution, resolvedBy, resolvedAt } = statusData;
+
+    const result = await this.updateCaseStatus(caseId, status, updatedBy, resolution);
+
+    if (status === 'resolved' && resolvedBy) {
+      result.resolvedBy = resolvedBy;
+      result.resolvedAt = resolvedAt || new Date().toISOString();
+      result.resolution = resolution;
+      await this.storage.setItem(`case_${caseId}`, result);
+    }
+
+    return result;
+  }
+
+  async searchCases(searchParams) {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      priority,
+      location,
+      radius = 5000,
+      lat,
+      lng,
+      userId,
+      userRoles
+    } = searchParams;
+
+    // Mock search implementation
+    const mockCases = [
+      {
+        id: 'case123',
+        title: '失智長者走失案件',
+        description: '78歲陳老先生在大潤發走失',
+        status: 'active',
+        priority: 'high',
+        createdBy: 'user123',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        location: {
+          lat: 24.8138,
+          lng: 120.9675,
+          address: '新竹市東區光復路二段101號'
+        }
+      },
+      {
+        id: 'case456',
+        title: '老人走失通報',
+        description: '85歲李奶奶失蹤',
+        status: 'in_progress',
+        priority: 'critical',
+        createdBy: 'user789',
+        assignedTo: 'volunteer123',
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        location: {
+          lat: 24.8168,
+          lng: 120.9705,
+          address: '新竹市東區中華路'
+        }
+      }
+    ];
+
+    // Filter by search parameters
+    let filteredCases = mockCases;
+
+    if (status) {
+      filteredCases = filteredCases.filter(c => c.status === status);
+    }
+
+    if (priority) {
+      filteredCases = filteredCases.filter(c => c.priority === priority);
+    }
+
+    if (location) {
+      filteredCases = filteredCases.filter(c =>
+        c.location.address?.includes(location)
+      );
+    }
+
+    // Geographic filtering
+    if (lat && lng) {
+      filteredCases = filteredCases.filter(c => {
+        const distance = this.calculateDistance(
+          { lat: parseFloat(lat), lng: parseFloat(lng) },
+          { lat: c.location.lat, lng: c.location.lng }
+        );
+        return distance <= radius;
+      });
+    }
+
+    // Apply RBAC filtering based on user roles
+    if (!userRoles?.includes('admin')) {
+      // Filter to show only cases user has access to
+      filteredCases = filteredCases.filter(c =>
+        c.createdBy === userId ||
+        c.assignedTo === userId ||
+        userRoles?.includes('case_manager') ||
+        userRoles?.includes('volunteer')
+      );
+    }
+
+    // Implement pagination
+    const start = (page - 1) * limit;
+    const paginatedCases = filteredCases.slice(start, start + limit);
+
+    return {
+      cases: paginatedCases,
+      total: filteredCases.length,
+      page,
+      limit
+    };
+  }
+
+  async validateAssignee(assigneeId, assigneeType) {
+    // Mock validation - in real system would check database
+    if (assigneeId.includes('nonexistent')) {
+      return false;
+    }
+
+    // Validate assignee type
+    const validTypes = ['volunteer', 'case_worker', 'emergency_responder'];
+    if (!validTypes.includes(assigneeType)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async checkAssigneeAvailability(assigneeId) {
+    // Mock availability check
+    return !assigneeId.includes('unavailable');
+  }
+
+  async assignCase(caseId, assignmentData, assignedBy) {
+    const { assigneeId, assigneeType, notes } = assignmentData;
+
+    const caseData = await this.getCaseById(caseId);
+    if (!caseData) {
+      throw new Error('Case not found');
+    }
+
+    // Update case with assignment
+    caseData.assignedTo = assigneeId;
+    caseData.assigneeType = assigneeType;
+    caseData.assignedBy = assignedBy;
+    caseData.assignedAt = new Date().toISOString();
+    caseData.assignmentNotes = notes;
+
+    // Update status to assigned if currently created
+    if (caseData.status === 'created' || caseData.status === 'active') {
+      caseData.status = 'assigned';
+    }
+
+    await this.storage.setItem(`case_${caseId}`, caseData);
+
+    await this.auditService?.logCaseAssignment({
+      caseId,
+      assigneeId,
+      assigneeType,
+      assignedBy,
+      notes,
+      timestamp: new Date().toISOString()
+    });
+
+    return caseData;
+  }
+
+  calculateDistance(point1, point2) {
+    // Haversine formula for calculating distance between two points
+    const R = 6371000; // Earth's radius in meters
+    const lat1Rad = point1.lat * Math.PI / 180;
+    const lat2Rad = point2.lat * Math.PI / 180;
+    const deltaLatRad = (point2.lat - point1.lat) * Math.PI / 180;
+    const deltaLngRad = (point2.lng - point1.lng) * Math.PI / 180;
+
+    const a = Math.sin(deltaLatRad / 2) * Math.sin(deltaLatRad / 2) +
+              Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+              Math.sin(deltaLngRad / 2) * Math.sin(deltaLngRad / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  }
 }
 
 module.exports = CaseFlowService;

@@ -480,6 +480,294 @@ class KPIService {
   calculateResponseLatency(metrics) { return 0; }
   calculateThroughput(metrics) { return 0; }
   calculateErrorRate(metrics) { return 0; }
+
+  // API-specific methods for REST endpoints
+
+  async getDashboardMetrics(options = {}) {
+    const { startDate, endDate, useCache } = options;
+
+    // Mock dashboard data
+    const dashboardData = {
+      summary: {
+        totalCases: 156,
+        activeCases: 12,
+        resolvedCases: 144,
+        averageResolutionTime: 4.2, // hours
+        successRate: 92.3
+      },
+      performance: {
+        responseTime: {
+          average: 8.5, // minutes
+          p95: 15.2,
+          p99: 28.7
+        },
+        volunteerUtilization: 78.5,
+        systemUptime: 99.7
+      },
+      trends: {
+        caseVolume: [
+          { date: '2023-10-01', count: 15 },
+          { date: '2023-10-02', count: 12 },
+          { date: '2023-10-03', count: 18 }
+        ],
+        resolutionTrends: [
+          { date: '2023-10-01', avgTime: 4.1 },
+          { date: '2023-10-02', avgTime: 3.8 },
+          { date: '2023-10-03', avgTime: 4.5 }
+        ],
+        geographicDistribution: [
+          { area: '東區', cases: 45 },
+          { area: '北區', cases: 38 },
+          { area: '香山區', cases: 23 }
+        ]
+      },
+      alerts: [
+        {
+          id: 'alert_1',
+          type: 'performance',
+          severity: 'medium',
+          message: 'Response time above threshold in 東區',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          acknowledged: false,
+          metadata: { area: '東區', threshold: 10 }
+        }
+      ],
+      lastUpdated: new Date().toISOString(),
+      cached: useCache === true
+    };
+
+    return dashboardData;
+  }
+
+  async getMetricsByType(metricType, options = {}) {
+    const { startDate, endDate, granularity, aggregation, region } = options;
+
+    const mockMetrics = {
+      cases: {
+        totalCases: 156,
+        newCases: 12,
+        closedCases: 8,
+        averageResolutionTime: 4.2,
+        casesByPriority: { high: 15, medium: 35, low: 106 },
+        casesByStatus: { active: 12, in_progress: 8, resolved: 136 },
+        casesByRegion: { '東區': 45, '北區': 38, '香山區': 23 }
+      },
+      volunteers: {
+        totalVolunteers: 245,
+        activeVolunteers: 128,
+        averageResponseTime: 8.5,
+        completionRate: 92.3,
+        volunteerRatings: { excellent: 45, good: 67, average: 16 },
+        geographicCoverage: [
+          { area: '東區', volunteers: 85 },
+          { area: '北區', volunteers: 72 },
+          { area: '香山區', volunteers: 88 }
+        ]
+      },
+      system: {
+        uptime: 99.7,
+        apiResponseTimes: { avg: 120, p95: 450, p99: 890 },
+        errorRates: { total: 0.3, critical: 0.05 },
+        throughput: 1250,
+        concurrentUsers: 78,
+        resourceUtilization: { cpu: 45, memory: 62, disk: 23 }
+      },
+      compliance: {
+        dataRetentionCompliance: 98.5,
+        consentCompliance: 97.2,
+        auditTrailIntegrity: 99.8,
+        privacyPolicyCompliance: 96.7,
+        securityIncidents: 0
+      }
+    };
+
+    const timeframe = {
+      start: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      end: endDate || new Date().toISOString(),
+      granularity: granularity || 'daily'
+    };
+
+    return {
+      timeframe,
+      metrics: mockMetrics[metricType] || {},
+      trends: this.generateTrendData(metricType, timeframe)
+    };
+  }
+
+  generateTrendData(metricType, timeframe) {
+    // Generate mock trend data based on metric type
+    const days = Math.ceil((new Date(timeframe.end) - new Date(timeframe.start)) / (24 * 60 * 60 * 1000));
+    const trends = [];
+
+    for (let i = 0; i < Math.min(days, 30); i++) {
+      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      trends.push({
+        date: date.toISOString().split('T')[0],
+        value: Math.floor(Math.random() * 20) + 5
+      });
+    }
+
+    return trends.reverse();
+  }
+
+  async generateComplianceReport(options = {}) {
+    const { format, period, year, month, includeRegulatory } = options;
+
+    const reportId = `report_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+    const reportData = {
+      reportId,
+      generatedAt: new Date().toISOString(),
+      period: {
+        type: period || 'monthly',
+        year: year || new Date().getFullYear(),
+        month: month || new Date().getMonth() + 1
+      },
+      compliance: {
+        overall: 97.8,
+        dataProtection: {
+          score: 98.5,
+          details: [
+            { requirement: 'Data encryption', status: 'compliant', score: 100 },
+            { requirement: 'Access controls', status: 'compliant', score: 98 },
+            { requirement: 'Data minimization', status: 'minor_issues', score: 95 }
+          ]
+        },
+        consentManagement: {
+          score: 97.2,
+          activeConsents: 1247,
+          revokedConsents: 23,
+          expiredConsents: 8
+        },
+        auditTrail: {
+          score: 99.8,
+          completeness: 99.9,
+          integrity: 99.7
+        },
+        retention: {
+          score: 96.8,
+          scheduledDeletions: 15,
+          completedDeletions: 14
+        }
+      },
+      recommendations: [
+        'Review data minimization practices for location data',
+        'Update consent renewal reminders',
+        'Complete pending data deletions'
+      ],
+      actionItems: [
+        {
+          id: 'action_1',
+          priority: 'medium',
+          description: 'Update privacy policy translations',
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          responsible: 'compliance_team'
+        }
+      ]
+    };
+
+    if (includeRegulatory) {
+      reportData.compliance.gdpr = {
+        score: 96.5,
+        dataSubjectRights: 98,
+        lawfulBasis: 97,
+        dataTransfers: 95
+      };
+      reportData.compliance.personalDataProtection = {
+        score: 97.8,
+        consentMechanisms: 98,
+        dataProcessingRecords: 97,
+        breachNotification: 99
+      };
+    }
+
+    return reportData;
+  }
+
+  async getActiveAlerts(options = {}) {
+    const { severity, type } = options;
+
+    const mockAlerts = [
+      {
+        id: 'alert_1',
+        type: 'performance',
+        severity: 'medium',
+        message: 'API response time above threshold',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        acknowledged: false,
+        metadata: { component: 'api_gateway', threshold: 500 }
+      },
+      {
+        id: 'alert_2',
+        type: 'compliance',
+        severity: 'low',
+        message: 'Consent renewal notifications pending',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        acknowledged: true,
+        metadata: { count: 23, type: 'consent_renewal' }
+      },
+      {
+        id: 'alert_3',
+        type: 'system',
+        severity: 'high',
+        message: 'Memory utilization above 90%',
+        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        acknowledged: false,
+        metadata: { component: 'application_server', utilization: 92 }
+      }
+    ];
+
+    let filteredAlerts = mockAlerts;
+
+    if (severity) {
+      filteredAlerts = filteredAlerts.filter(alert => alert.severity === severity);
+    }
+
+    if (type) {
+      filteredAlerts = filteredAlerts.filter(alert => alert.type === type);
+    }
+
+    const summary = {
+      total: filteredAlerts.length,
+      critical: filteredAlerts.filter(a => a.severity === 'critical').length,
+      high: filteredAlerts.filter(a => a.severity === 'high').length,
+      medium: filteredAlerts.filter(a => a.severity === 'medium').length,
+      low: filteredAlerts.filter(a => a.severity === 'low').length
+    };
+
+    return {
+      alerts: filteredAlerts,
+      summary
+    };
+  }
+
+  async generateCustomReport(reportRequest) {
+    const { type, period, sections, format, recipients } = reportRequest;
+
+    // Generate unique job ID
+    const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+
+    // Mock job processing
+    const estimatedCompletion = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // In a real system, this would queue the report generation
+    setTimeout(async () => {
+      // Mock report completion
+      await this.auditService?.logReportGeneration({
+        jobId,
+        type,
+        format,
+        sections,
+        recipients,
+        status: 'completed',
+        timestamp: new Date().toISOString()
+      });
+    }, 300000); // 5 minutes
+
+    return {
+      jobId,
+      estimatedCompletion: estimatedCompletion.toISOString()
+    };
+  }
 }
 
 module.exports = KPIService;
