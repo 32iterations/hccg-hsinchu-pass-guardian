@@ -1,14 +1,6 @@
 // Jest setup for React Native testing
-import 'react-native-gesture-handler/jestSetup';
 
-// Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  // The mock for `call` immediately calls the callback which is incorrect
-  // So we override it with a no-op
-  Reanimated.default.call = () => {};
-  return Reanimated;
-});
+// Simple React Native mocks
 
 // Mock BLE Manager
 jest.mock('react-native-ble-manager', () => ({
