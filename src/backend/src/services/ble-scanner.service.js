@@ -172,7 +172,11 @@ class BLEScannerService {
     const date = new Date(timestamp);
     const minutes = Math.floor(date.getMinutes() / 5) * 5;
     date.setMinutes(minutes, 0, 0); // Set to nearest 5-minute interval
-    return date.toISOString();
+    date.setMilliseconds(0); // Ensure milliseconds are 0
+
+    // Format with milliseconds as .000
+    const isoString = date.toISOString();
+    return isoString.replace(/\.\d{3}Z$/, '.000Z');
   }
 
   /**

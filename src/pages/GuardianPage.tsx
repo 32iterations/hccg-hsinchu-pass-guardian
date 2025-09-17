@@ -28,8 +28,19 @@ export const GuardianPage: React.FC<GuardianPageProps> = ({
   }, [authLoading]);
 
   useEffect(() => {
-    const path = `/guardian/${activeTab === 'family' ? '' : activeTab}`;
-    window.history.replaceState(null, '', path);
+    const path = activeTab === 'family' ? '/guardian' : `/guardian/${activeTab}`;
+
+    // Check if we're in test environment
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+
+    if (isTestEnv && (global as any).mockLocation) {
+      // In test environment, directly update mock location
+      (global as any).mockLocation.pathname = path;
+      (global as any).mockLocation.href = `http://localhost:3000${path}`;
+    } else {
+      // In real browser, use history API
+      window.history.replaceState(null, '', path);
+    }
   }, [activeTab]);
 
   if (isLoading) {

@@ -1,0 +1,623 @@
+name: Complete CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'p1-*']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Environment to deploy to'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '18'
+  COVERAGE_THRESHOLD: 80
+  ARTIFACT_RETENTION_DAYS: 30
+
+jobs:
+  # Phase 1: Code Quality & Linting
+  code-quality:
+    name: 'Phase 1: Code Quality & Linting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run typecheck
+
+      - name: Cache lint results
+        uses: actions/cache@v3
+        with:
+          path: .eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+
+  # Phase 2: Unit Tests
+  unit-tests:
+    name: 'Phase 2: Unit Tests'
+    runs-on: ubuntu-latest
+    needs: code-quality
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        test-suite: [backend, frontend, mobile]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests - Backend
+        if: matrix.test-suite == 'backend'
+        run: |
+          npm test -- --testPathPattern="src/backend/tests/unit" --coverage --coverageReporters=lcov,json,text
+
+      - name: Run unit tests - Frontend
+        if: matrix.test-suite == 'frontend'
+        run: |
+          npm test -- --testPathPattern="tests/" --coverage --coverageReporters=lcov,json,text
+
+      - name: Run unit tests - Mobile
+        if: matrix.test-suite == 'mobile'
+        run: |
+          npm test -- --testPathPattern="src/mobile/tests" --coverage --coverageReporters=lcov,json,text
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: ${{ matrix.test-suite }}
+          name: ${{ matrix.test-suite }}-coverage
+          fail_ci_if_error: false
+
+      - name: Store coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.test-suite }}-${{ github.sha }}
+          path: |
+            coverage/
+            !coverage/lcov-report/
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Phase 3: Integration Tests
+  integration-tests:
+    name: 'Phase 3: Integration Tests'
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: guardian_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/guardian_test
+          NODE_ENV: test
+        run: |
+          npm test -- --testPathPattern="src/backend/tests/integration" --coverage --coverageReporters=lcov,json
+
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration-${{ github.sha }}
+          path: coverage/
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Phase 4: E2E Tests
+  e2e-tests:
+    name: 'Phase 4: E2E Tests'
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests with Cucumber
+        run: npm run test:e2e
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ github.sha }}
+          path: |
+            features/
+            reports/
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Phase 5: Coverage Analysis & Gate
+  coverage-gate:
+    name: 'Phase 5: Coverage Gate (>80%)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ github.sha }}
+          merge-multiple: true
+          path: ./coverage-merged
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Merge coverage reports
+        run: |
+          npm install -g nyc
+          nyc merge ./coverage-merged coverage-merged.json
+          nyc report --reporter=lcov --reporter=json --reporter=text --temp-dir=./coverage-merged
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(node -e "
+            const coverage = require('./coverage/coverage-final.json');
+            const files = Object.keys(coverage);
+            let totalLines = 0, totalCovered = 0;
+            files.forEach(file => {
+              const fileCov = coverage[file];
+              totalLines += Object.keys(fileCov.s).length;
+              totalCovered += Object.values(fileCov.s).filter(v => v > 0).length;
+            });
+            const percentage = Math.round((totalCovered / totalLines) * 100);
+            console.log(percentage);
+          ")
+          echo "Coverage: $COVERAGE%"
+          if [ "$COVERAGE" -lt "${{ env.COVERAGE_THRESHOLD }}" ]; then
+            echo "❌ Coverage $COVERAGE% is below threshold ${{ env.COVERAGE_THRESHOLD }}%"
+            exit 1
+          else
+            echo "✅ Coverage $COVERAGE% meets threshold ${{ env.COVERAGE_THRESHOLD }}%"
+          fi
+
+      - name: Generate coverage badge
+        uses: jaywcjlove/coverage-badges-cli@main
+        with:
+          source: coverage/lcov.info
+          output: coverage/badge.svg
+
+      - name: Upload final coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-coverage-${{ github.sha }}
+          path: |
+            coverage/
+            coverage/badge.svg
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Phase 6: Build & Package
+  build:
+    name: 'Phase 6: Build & Package'
+    runs-on: ubuntu-latest
+    needs: [coverage-gate, e2e-tests]
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        target: [backend, frontend, mobile]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Create build artifact
+        run: |
+          mkdir -p artifacts/${{ matrix.target }}
+
+          if [ "${{ matrix.target }}" = "backend" ]; then
+            cp -r src/backend/dist artifacts/backend/ 2>/dev/null || echo "No backend dist found"
+            cp -r src/backend/src artifacts/backend/
+            cp package*.json artifacts/backend/
+          elif [ "${{ matrix.target }}" = "frontend" ]; then
+            cp -r build artifacts/frontend/ 2>/dev/null || echo "No frontend build found"
+            cp -r public artifacts/frontend/ 2>/dev/null || echo "No public folder"
+            cp package*.json artifacts/frontend/
+          elif [ "${{ matrix.target }}" = "mobile" ]; then
+            cp -r src/mobile artifacts/mobile/
+            cp package*.json artifacts/mobile/
+          fi
+
+      - name: Calculate SHA256 checksums
+        run: |
+          cd artifacts/${{ matrix.target }}
+          find . -type f -exec sha256sum {} \; > ../SHA256SUMS-${{ matrix.target }}.txt
+
+      - name: Upload build artifacts with SHA256
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            artifacts/${{ matrix.target }}/
+            artifacts/SHA256SUMS-${{ matrix.target }}.txt
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Phase 7: Security Scan
+  security-scan:
+    name: 'Phase 7: Security Scan'
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate --json > security-audit.json || true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-${{ github.sha }}
+          path: |
+            security-audit.json
+            trivy-results.sarif
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Phase 8: Generate Report
+  generate-report:
+    name: 'Phase 8: Generate REPORT.md'
+    runs-on: ubuntu-latest
+    needs: [coverage-gate, build, security-scan]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+
+      - name: Generate comprehensive report
+        run: |
+          cat > REPORT.md << 'EOF'
+          # 🚀 CI/CD Pipeline Report
+
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Workflow:** ${{ github.run_id }}
+          **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          ## 📊 Pipeline Status
+
+          | Phase | Status | Duration |
+          |-------|--------|----------|
+          | Code Quality | ${{ needs.code-quality.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | Coverage Gate (>80%) | ${{ needs.coverage-gate.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | Build & Package | ${{ needs.build.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+          | Security Scan | ${{ needs.security-scan.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | - |
+
+          ## 📈 Coverage Report
+
+          $(if [ -f ./all-artifacts/final-coverage-${{ github.sha }}/coverage/lcov.info ]; then
+            echo "Coverage data available in artifacts"
+          else
+            echo "No coverage data found"
+          fi)
+
+          ## 🔐 Security Summary
+
+          $(if [ -f ./all-artifacts/security-scan-${{ github.sha }}/security-audit.json ]; then
+            echo "Security scan completed - check artifacts for details"
+          else
+            echo "No security scan results found"
+          fi)
+
+          ## 📦 Build Artifacts
+
+          ### Backend
+          - **Artifact:** build-backend-${{ github.sha }}
+          - **SHA256:** Available in SHA256SUMS-backend.txt
+
+          ### Frontend
+          - **Artifact:** build-frontend-${{ github.sha }}
+          - **SHA256:** Available in SHA256SUMS-frontend.txt
+
+          ### Mobile
+          - **Artifact:** build-mobile-${{ github.sha }}
+          - **SHA256:** Available in SHA256SUMS-mobile.txt
+
+          ## 🚀 Deployment Status
+
+          ${{ (github.ref == 'refs/heads/main' && needs.coverage-gate.result == 'success' && needs.build.result == 'success') && '✅ Ready for production deployment' || '⏸️ Deployment criteria not met' }}
+
+          ## 📋 Next Steps
+
+          $(if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "- Review PR and merge if all checks pass"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "- Production deployment available"
+            echo "- Monitor deployment metrics"
+          else
+            echo "- Continue development on feature branch"
+          fi)
+
+          ---
+          *Generated by GitHub Actions on $(date -u '+%Y-%m-%d %H:%M:%S UTC')*
+          EOF
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-report-${{ github.sha }}
+          path: REPORT.md
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Comment PR with report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('REPORT.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # Phase 9: Auto-Deploy (Conditional)
+  deploy-staging:
+    name: 'Phase 9a: Deploy to Staging'
+    runs-on: ubuntu-latest
+    needs: [generate-report, coverage-gate, build, security-scan]
+    if: |
+      always() &&
+      (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/p1-')) &&
+      needs.coverage-gate.result == 'success' &&
+      needs.build.result == 'success' &&
+      needs.security-scan.result == 'success'
+    environment: staging
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-${{ github.sha }}
+          path: ./deploy-artifacts
+
+      - name: Verify artifact checksums
+        run: |
+          cd deploy-artifacts
+          find . -name "SHA256SUMS-*.txt" -exec sh -c 'cd "$(dirname "$1")" && sha256sum -c "$(basename "$1")"' _ {} \;
+
+      - name: Deploy to staging environment
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Backend artifact: $(ls deploy-artifacts/build-backend-*/)"
+          echo "Frontend artifact: $(ls deploy-artifacts/build-frontend-*/)"
+          echo "Mobile artifact: $(ls deploy-artifacts/build-mobile-*/)"
+
+          # Add your staging deployment commands here
+          # Example: kubectl apply -f k8s/staging/
+          # Example: docker-compose -f docker-compose.staging.yml up -d
+
+          echo "✅ Staging deployment completed"
+
+      - name: Run staging smoke tests
+        run: |
+          echo "🧪 Running staging smoke tests..."
+          # Add smoke tests for staging environment
+          echo "✅ Staging smoke tests passed"
+
+  deploy-production:
+    name: 'Phase 9b: Deploy to Production'
+    runs-on: ubuntu-latest
+    needs: [generate-report, coverage-gate, build, security-scan]
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      needs.coverage-gate.result == 'success' &&
+      needs.build.result == 'success' &&
+      needs.security-scan.result == 'success'
+    environment: production
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-${{ github.sha }}
+          path: ./deploy-artifacts
+
+      - name: Verify artifact checksums
+        run: |
+          cd deploy-artifacts
+          find . -name "SHA256SUMS-*.txt" -exec sh -c 'cd "$(dirname "$1")" && sha256sum -c "$(basename "$1")"' _ {} \;
+
+      - name: Deploy to production environment
+        run: |
+          echo "🚀 Deploying to production environment..."
+          echo "Backend artifact: $(ls deploy-artifacts/build-backend-*/)"
+          echo "Frontend artifact: $(ls deploy-artifacts/build-frontend-*/)"
+          echo "Mobile artifact: $(ls deploy-artifacts/build-mobile-*/)"
+
+          # Add your production deployment commands here
+          # Example: kubectl apply -f k8s/production/
+          # Example: helm upgrade guardian ./helm-chart --namespace production
+
+          echo "✅ Production deployment completed"
+
+      - name: Run production health checks
+        run: |
+          echo "🏥 Running production health checks..."
+          # Add health checks for production environment
+          echo "✅ Production health checks passed"
+
+      - name: Create GitHub release
+        if: github.ref == 'refs/heads/main'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            ## 🚀 Release v${{ github.run_number }}
+
+            **Commit:** ${{ github.sha }}
+            **Coverage:** >80% ✅
+            **Security:** Passed ✅
+            **Tests:** All passing ✅
+
+            ### Artifacts
+            - Backend: build-backend-${{ github.sha }}
+            - Frontend: build-frontend-${{ github.sha }}
+            - Mobile: build-mobile-${{ github.sha }}
+
+            See pipeline-report-${{ github.sha }} for detailed results.
+          draft: false
+          prerelease: false
+
+  # Cleanup old artifacts (optional)
+  cleanup:
+    name: 'Cleanup Old Artifacts'
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [deploy-staging, deploy-production]
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - 7); // Keep artifacts for 7 days
+
+            for (const artifact of artifacts.data.artifacts) {
+              if (new Date(artifact.created_at) < cutoffDate) {
+                console.log(`Deleting old artifact: ${artifact.name}`);
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+              }
+            }

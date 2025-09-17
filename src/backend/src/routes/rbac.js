@@ -1,9 +1,9 @@
 const express = require('express');
-const { AuthMiddleware, ValidationMiddleware, schemas } = require('../middleware');
+const { ValidationMiddleware, schemas } = require('../middleware');
+const { authMiddleware } = require('../middleware/shared');
 const RBACService = require('../../services/RBACService');
 
 const router = express.Router();
-const authMiddleware = new AuthMiddleware();
 const validationMiddleware = new ValidationMiddleware();
 const rbacService = new RBACService({
   storage: {

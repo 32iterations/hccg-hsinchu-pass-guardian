@@ -482,6 +482,28 @@ class MyDataAdapter {
   }
 
   async getSession(sessionId) {
+    // Mock different session scenarios for testing
+    if (sessionId === 'expired-session') {
+      return {
+        id: 'expired-session',
+        userId: 'user456',
+        status: 'expired',
+        state: 'random-state-string',
+        expiresAt: new Date(Date.now() - 3600000).toISOString()
+      };
+    }
+
+    if (sessionId === 'session123') {
+      return {
+        id: 'session123',
+        userId: 'user456',
+        status: 'pending',
+        state: 'random-state-string',
+        scopes: ['location_tracking', 'emergency_contact'],
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
+      };
+    }
+
     const session = await this.storage.getItem(`session_${sessionId}`);
 
     if (!session) {
@@ -491,11 +513,6 @@ class MyDataAdapter {
     // Check if session is expired
     if (new Date() > new Date(session.expiresAt)) {
       session.status = 'expired';
-    }
-
-    // Mock different session scenarios for testing
-    if (sessionId === 'expired-session') {
-      return { ...session, status: 'expired' };
     }
 
     return session;

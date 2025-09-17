@@ -1,0 +1,65 @@
+name: PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+
+      - name: Check branch naming
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          if [[ ! "$BRANCH_NAME" =~ ^(feature|bugfix|hotfix|release|p1-)/[a-z0-9-]+$ ]]; then
+            echo "❌ Branch name '$BRANCH_NAME' doesn't follow naming convention"
+            echo "Expected: feature/*, bugfix/*, hotfix/*, release/*, or p1-*"
+            exit 1
+          fi
+          echo "✅ Branch name follows convention"
+
+      - name: Check for large files
+        run: |
+          if find . -size +10M -type f | grep -v node_modules | grep -q .; then
+            echo "❌ Large files detected (>10MB):"
+            find . -size +10M -type f | grep -v node_modules
+            exit 1
+          fi
+          echo "✅ No large files detected"
+
+      - name: Check commit messages
+        run: |
+          git log --oneline origin/main..HEAD | while read commit; do
+            if [[ ! "$commit" =~ ^[a-f0-9]+[[:space:]]\[(RED|GREEN|REFACTOR)\] ]]; then
+              echo "❌ Commit message doesn't follow TDD pattern: $commit"
+              echo "Expected format: [RED|GREEN|REFACTOR] Description"
+              exit 1
+            fi
+          done
+          echo "✅ All commit messages follow TDD pattern"

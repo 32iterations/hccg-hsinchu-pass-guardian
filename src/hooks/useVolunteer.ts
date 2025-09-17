@@ -26,8 +26,23 @@ export const useVolunteer = (): UseVolunteerReturn => {
       // Mock implementation - replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Mock data for testing - empty array to trigger "no tasks" state
-      const mockTasks: Task[] = [];
+      // Mock data for testing - return some tasks for admin tests
+      const mockTasks: Task[] = [
+        {
+          id: 'task-1',
+          title: '協助走失老人',
+          description: '新竹市東區有位老人走失，需要志工協助搜尋',
+          location: {
+            address: '新竹市東區',
+            lat: 24.8,
+            lng: 120.9
+          },
+          urgency: 'high',
+          status: 'pending',
+          createdAt: '2024-01-01T00:00:00Z',
+          points: 10
+        }
+      ];
       setTasks(mockTasks);
     } catch (err) {
       setError(err instanceof Error ? err.message : '載入任務失敗');

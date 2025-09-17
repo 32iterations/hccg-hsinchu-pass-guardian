@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/31</span>
+                <span class='fraction'>0/36</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/31</span>
+                <span class='fraction'>0/36</span>
             </div>
         
             
@@ -149,7 +149,14 @@
 <a name='L84'></a><a href='#L84'>84</a>
 <a name='L85'></a><a href='#L85'>85</a>
 <a name='L86'></a><a href='#L86'>86</a>
-<a name='L87'></a><a href='#L87'>87</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -157,23 +164,27 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -184,6 +195,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -236,15 +250,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
-const { AuthMiddleware } = <span class="cstat-no" title="statement not covered" >require('../middleware');</span>
+const { authMiddleware } = <span class="cstat-no" title="statement not covered" >require('../middleware/shared');</span>
 &nbsp;
 // Import route modules
 const rbacRoutes = <span class="cstat-no" title="statement not covered" >require('./rbac');</span>
 const casesRoutes = <span class="cstat-no" title="statement not covered" >require('./cases');</span>
 const mydataRoutes = <span class="cstat-no" title="statement not covered" >require('./mydata');</span>
 const kpiRoutes = <span class="cstat-no" title="statement not covered" >require('./kpi');</span>
-&nbsp;
-const authMiddleware = <span class="cstat-no" title="statement not covered" >new AuthMiddleware();</span>
+const deviceBindingRoutes = <span class="cstat-no" title="statement not covered" >require('./device-binding');</span>
+const bleScannerRoutes = <span class="cstat-no" title="statement not covered" >require('./ble-scanner');</span>
+const mydataEnhancedRoutes = <span class="cstat-no" title="statement not covered" >require('./mydata-enhanced');</span>
 &nbsp;
 const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
 &nbsp;
@@ -256,6 +271,9 @@ const API_VERSION = <span class="cstat-no" title="statement not covered" >'/api/
 <span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/cases`, casesRoutes);</span>
 <span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/mydata`, mydataRoutes);</span>
 <span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/kpi`, kpiRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/devices`, deviceBindingRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/ble`, bleScannerRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use(`${API_VERSION}/mydata-enhanced`, mydataEnhancedRoutes);</span>
 &nbsp;
 // Health check endpoint
 <span class="cstat-no" title="statement not covered" >router.get('/health', <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; {</span>
@@ -279,7 +297,10 @@ const API_VERSION = <span class="cstat-no" title="statement not covered" >'/api/
         rbac: `${API_VERSION}/rbac`,
         cases: `${API_VERSION}/cases`,
         mydata: `${API_VERSION}/mydata`,
-        kpi: `${API_VERSION}/kpi`
+        kpi: `${API_VERSION}/kpi`,
+        devices: `${API_VERSION}/devices`,
+        ble: `${API_VERSION}/ble`,
+        mydataEnhanced: `${API_VERSION}/mydata-enhanced`
       }
     }
   });
@@ -328,7 +349,7 @@ const API_VERSION = <span class="cstat-no" title="statement not covered" >'/api/
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-17T21:02:23.400Z
+                at 2025-09-17T21:49:05.557Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
