@@ -1,0 +1,225 @@
+# 新竹市政府APP - 導航架構 (Information Architecture)
+# 版本: 2.0.0 - 新增安心守護功能
+# 相容性: iOS 15.6+, Android 9+
+
+app:
+  name: "新竹市政府"
+  version: "2.0.0"
+  compatibility:
+    ios: "15.6+"
+    android: "9+"
+
+navigation:
+  # 主導航 (Bottom Tab Bar)
+  main_tabs:
+    - id: home
+      name: "首頁"
+      icon: "home"
+      path: "/"
+      visibility: ["guest", "member", "verified", "admin"]
+
+    - id: services
+      name: "服務"
+      icon: "services"
+      path: "/services"
+      visibility: ["guest", "member", "verified", "admin"]
+
+    - id: news
+      name: "消息"
+      icon: "news"
+      path: "/news"
+      visibility: ["guest", "member", "verified", "admin"]
+      badge: dynamic # 顯示未讀數
+
+    - id: account
+      name: "我的"
+      icon: "account"
+      path: "/account"
+      visibility: ["guest", "member", "verified", "admin"]
+
+  # 首頁功能區塊
+  home_sections:
+    - id: quick_services
+      name: "快捷服務"
+      items:
+        - id: guardian
+          name: "安心守護"
+          icon: "shield-heart"
+          path: "/guardian"
+          visibility: ["member", "verified", "admin"]
+          badge: "new" # 新功能標記
+          subtitle: "守護家人，安心同行"
+          requires_verification: false # 入口可見，但功能需驗證
+
+        - id: parking
+          name: "停車繳費"
+          icon: "parking"
+          path: "/parking"
+          visibility: ["guest", "member", "verified", "admin"]
+
+        - id: registration
+          name: "線上掛號"
+          icon: "medical"
+          path: "/registration"
+          visibility: ["member", "verified", "admin"]
+
+        - id: report
+          name: "市民通報"
+          icon: "report"
+          path: "/report"
+          visibility: ["guest", "member", "verified", "admin"]
+
+  # 安心守護子導航
+  guardian:
+    path: "/guardian"
+    name: "安心守護"
+    description: "為失智症患者及家屬提供定位守護服務"
+    tabs:
+      - id: family
+        name: "家屬"
+        icon: "family"
+        path: "/guardian/family"
+        default: true
+        features:
+          - id: location_tracking
+            name: "定位追蹤"
+            requires: "verified"
+            icon: "location"
+
+          - id: geofencing
+            name: "電子圍籬"
+            requires: "verified"
+            icon: "fence"
+
+          - id: emergency_alert
+            name: "緊急通報"
+            requires: "verified"
+            icon: "alert"
+
+          - id: history
+            name: "歷史軌跡"
+            requires: "verified"
+            icon: "history"
+
+      - id: volunteer
+        name: "志工"
+        icon: "volunteer"
+        path: "/guardian/volunteer"
+        features:
+          - id: task_list
+            name: "任務列表"
+            requires: "verified"
+            icon: "list"
+
+          - id: accept_task
+            name: "接受任務"
+            requires: "verified"
+            icon: "check"
+
+          - id: task_history
+            name: "任務紀錄"
+            requires: "verified"
+            icon: "history"
+
+          - id: schedule
+            name: "志工排班"
+            requires: "verified"
+            icon: "calendar"
+
+      - id: apply
+        name: "申辦"
+        icon: "apply"
+        path: "/guardian/apply"
+        features:
+          - id: view_info
+            name: "查看資訊"
+            requires: "guest"
+            icon: "info"
+
+          - id: submit_application
+            name: "提交申請"
+            requires: "verified"
+            icon: "submit"
+
+          - id: track_status
+            name: "追蹤進度"
+            requires: "verified"
+            icon: "track"
+
+          - id: documents
+            name: "文件下載"
+            requires: "guest"
+            icon: "download"
+
+  # 角色權限映射
+  role_mappings:
+    guest:
+      name: "未登入用戶"
+      can_view: ["home", "services", "news", "account"]
+      can_access: []
+      restrictions: ["需登入才能使用安心守護功能"]
+
+    member:
+      name: "一般會員"
+      can_view: ["home", "services", "news", "account", "guardian"]
+      can_access: ["guardian.apply.view_info", "guardian.apply.documents"]
+      restrictions: ["定位、圍籬、通報功能需實名驗證"]
+
+    verified:
+      name: "實名會員"
+      can_view: ["home", "services", "news", "account", "guardian"]
+      can_access: ["guardian.*"]
+      restrictions: []
+
+    admin:
+      name: "承辦人員"
+      can_view: ["*"]
+      can_access: ["*"]
+      additional_features:
+        - "案件審核"
+        - "數據儀表板"
+        - "緊急派遣"
+        - "全域監控"
+
+  # 頁面狀態定義
+  page_states:
+    locked:
+      icon: "lock"
+      message: "此功能需要實名驗證"
+      action: "前往驗證"
+      action_path: "/account/verification"
+
+    loading:
+      icon: "spinner"
+      message: "載入中..."
+
+    error:
+      icon: "error"
+      message: "載入失敗"
+      action: "重試"
+
+    empty:
+      icon: "empty"
+      message: "暫無資料"
+
+  # 通知設定
+  notifications:
+    guardian_family:
+      - type: "location_alert"
+        priority: "high"
+        sound: true
+        vibrate: true
+
+      - type: "geofence_breach"
+        priority: "urgent"
+        sound: true
+        vibrate: true
+
+    guardian_volunteer:
+      - type: "new_task"
+        priority: "medium"
+        badge: true
+
+      - type: "task_reminder"
+        priority: "low"
+        badge: true
