@@ -204,7 +204,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: coverage-*-${{ github.sha }}
           merge-multiple: true
@@ -371,7 +371,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: ./all-artifacts
 
@@ -488,7 +488,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: build-*-${{ github.sha }}
           path: ./deploy-artifacts
@@ -535,7 +535,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: build-*-${{ github.sha }}
           path: ./deploy-artifacts
