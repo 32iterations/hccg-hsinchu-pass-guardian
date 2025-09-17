@@ -207,9 +207,9 @@ jobs:
 
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: nightly-reports
+          name: nightly-reports-${{ github.run_id }}
           path: |
             NIGHTLY_REPORT.md
             coverage/
@@ -217,6 +217,10 @@ jobs:
 
   nightly-security-scan:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -234,7 +238,7 @@ jobs:
           head: HEAD
 
       - name: SAST scan
-        uses: github/super-linter@v5
+        uses: github/super-linter@v6
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -276,7 +280,7 @@ jobs:
           node perf-test.js > performance-report.txt
 
       - name: Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: performance-metrics
+          name: performance-metrics-${{ github.run_id }}
           path: performance-report.txt
