@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">74.61% </span>
+                <span class="strong">77.69% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>97/130</span>
+                <span class='fraction'>101/130</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">54% </span>
+                <span class="strong">56% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>27/50</span>
+                <span class='fraction'>28/50</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.8% </span>
+                <span class="strong">76.98% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>93/126</span>
+                <span class='fraction'>97/126</span>
             </div>
         
             
@@ -516,14 +516,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -531,17 +531,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">64x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">96x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -864,12 +864,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">209x</span>
+<span class="cline-any cline-yes">211x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">109x</span>
+<span class="cline-any cline-yes">110x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -930,15 +930,15 @@ export class MyDataIntegrationService {
   }
 &nbsp;
   // OAuth Authorization Flow
-<span class="fstat-no" title="function not covered" >  as</span>ync initiateOAuthFlow() {
-    const state = <span class="cstat-no" title="statement not covered" >await this.generateSecureState();</span>
-<span class="cstat-no" title="statement not covered" >    this.authState = {</span>
+  async initiateOAuthFlow() {
+    const state = await this.generateSecureState();
+    this.authState = {
       status: 'authorization_pending',
       state,
       initiatedAt: new Date().toISOString()
     };
 &nbsp;
-    const authUrl = <span class="cstat-no" title="statement not covered" >`${this.config.myDataProviderUrl}/oauth/authorize?` +</span>
+    const authUrl = `${this.config.myDataProviderUrl}/oauth/authorize?` +
       `client_id=${encodeURIComponent(this.config.clientId)}&amp;` +
       `redirect_uri=${encodeURIComponent(this.config.redirectUri)}&amp;` +
       `scope=${encodeURIComponent(this.config.scopes.join(' '))}&amp;` +
@@ -946,7 +946,7 @@ export class MyDataIntegrationService {
       `state=${state}`;
 &nbsp;
     // Mock opening URL
-<span class="cstat-no" title="statement not covered" >    return { authUrl, state };</span>
+    return { authUrl, state };
   }
 &nbsp;
   async generateSecureState() {
@@ -1315,7 +1315,7 @@ export class MyDataIntegrationService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-17T20:27:26.201Z
+                at 2025-09-17T23:03:51.069Z
             </div>
         <script src="prettify.js"></script>
         <script>

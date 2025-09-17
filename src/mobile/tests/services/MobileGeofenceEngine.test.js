@@ -10,23 +10,28 @@
  * - Integration with backend geofence engine
  */
 
-import { MobileGeofenceEngine } from '../../src/services/MobileGeofenceEngine';
-import { Platform } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
-import {
+// Mock imports
+let MobileGeofenceEngine;
+try {
+  MobileGeofenceEngine = require('../../src/services/MobileGeofenceEngine').MobileGeofenceEngine;
+} catch (error) {
+  // Expected to fail in RED phase
+  MobileGeofenceEngine = class {
+    constructor() {
+      throw new Error('MobileGeofenceEngine implementation not found');
+    }
+  };
+}
+
+const Platform = require('react-native').Platform;
+const Geolocation = require('@react-native-community/geolocation');
+const {
   PERMISSIONS,
   RESULTS,
   check,
   request
-} from 'react-native-permissions';
-import PushNotification from 'react-native-push-notification';
-
-// Mock platform detection
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  Version: '16.0',
-  select: jest.fn((platforms) => platforms.ios || platforms.default)
-}));
+} = require('react-native-permissions');
+const PushNotification = require('react-native-push-notification');
 
 describe('MobileGeofenceEngine - RED Phase Tests', () => {
   let geofenceEngine;
@@ -60,8 +65,8 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
 
   describe('iOS Core Location Integration', () => {
     beforeEach(() => {
-      Platform.OS = 'ios';
-      Platform.Version = '16.0';
+      // Platform is already mocked in jest.setup.js
+      jest.clearAllMocks();
     });
 
     describe('Location Permission Management', () => {
@@ -184,8 +189,12 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
 
   describe('Android GeofencingClient Integration', () => {
     beforeEach(() => {
-      Platform.OS = 'android';
-      Platform.Version = 33;
+      // Mock Android platform specifically for these tests
+      jest.doMock('react-native/Libraries/Utilities/Platform', () => ({
+        OS: 'android',
+        Version: 33,
+        select: jest.fn((platforms) => platforms.android || platforms.default)
+      }));
     });
 
     describe('Android Geofencing Setup', () => {
@@ -443,7 +452,7 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
           accuracy: 5
         };
 
-        PushNotification.localNotification.mockImplementation(() => {});
+        // PushNotification is already mocked in jest.setup.js
 
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
@@ -620,6 +629,7 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
     describe('Location Service Failures', () => {
       it('should handle GPS unavailable gracefully', async () => {
         // Arrange
+        // Geolocation is already mocked in jest.setup.js
         Geolocation.getCurrentPosition.mockImplementation((success, error) => {
           error({ code: 2, message: 'Position unavailable' });
         });
@@ -656,8 +666,7 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
 
     describe('Platform-Specific Edge Cases', () => {
       it('should handle iOS app backgrounding and foregrounding', async () => {
-        // Arrange
-        Platform.OS = 'ios';
+        // Arrange - Platform is already mocked as iOS
 
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
@@ -674,8 +683,7 @@ describe('MobileGeofenceEngine - RED Phase Tests', () => {
       });
 
       it('should handle Android doze mode and battery optimization', async () => {
-        // Arrange
-        Platform.OS = 'android';
+        // Arrange - will use mocked Android platform from beforeEach
 
         // Act & Assert - Will fail in RED phase
         await expect(async () => {

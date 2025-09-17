@@ -1,0 +1,1067 @@
+
+> hccg-hsinchu-pass-guardian@2.0.0 test
+> jest --coverage --verbose --coverage --detectOpenHandles
+
+FAIL src/backend/tests/unit/ble-scanner.service.test.js
+  BLEScannerService
+    Android 12+ Permission Handling
+      neverForLocation Scanning
+        ✓ should request only BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions (10 ms)
+        ✓ should discover BLE devices without location inference (3 ms)
+        ✓ should generate device hashes with salt immediately (2 ms)
+      Location-Based Scanning for Positioning
+        ✓ should request location permissions when inference enabled (2 ms)
+        ✓ should include RSSI and location data in volunteer hits (3 ms)
+        ✓ should fuzz location to 100m grid squares (2 ms)
+        ✕ should round timestamps to 5-minute intervals (3 ms)
+    iOS Background BLE Handling
+      State Preservation
+        ✓ should configure CBCentralManager with restore identifier (4 ms)
+        ✓ should save scanning state for preservation (3 ms)
+      State Restoration
+        ✕ should restore scanning state on app launch (21 ms)
+        ✓ should resume background scanning automatically (9 ms)
+    Device Discovery and Filtering
+      RSSI Threshold Filtering
+        ✓ should process devices with RSSI stronger than -90 dBm (3 ms)
+        ✓ should ignore devices with RSSI weaker than -90 dBm (9 ms)
+        ✓ should handle edge case at exactly -90 dBm threshold (2 ms)
+      MAC Address Rotation Handling
+        ✕ should handle MAC rotation by treating each MAC as separate device (4 ms)
+        ✓ should not correlate rotated MAC addresses (8 ms)
+        ✕ should maintain k-anonymity across MAC rotations (4 ms)
+    Battery-Efficient Scanning
+      Power Management
+        ✓ should use conservative scanning when not charging (2 ms)
+        ✓ should use aggressive scanning when charging (2 ms)
+        ✓ should adapt intervals based on detection rate (4 ms)
+    VolunteerHit Creation
+      Complete Anonymization
+        ✓ should create VolunteerHit with all required anonymized fields (4 ms)
+        ✕ should never store original MAC addresses (3 ms)
+        ✕ should never store device names or personal identifiers (4 ms)
+    Error Handling
+      BLE Adapter Failures
+        ✓ should handle BLE adapter disabled gracefully (3 ms)
+        ✓ should resume scanning when Bluetooth is re-enabled (2 ms)
+      Permission Revocation
+        ✓ should stop scanning immediately when permissions revoked (4 ms)
+        ✕ should preserve queued data when permissions revoked (2 ms)
+        ✕ should resume from preserved state when permissions re-granted (8 ms)
+
+  ● BLEScannerService › Android 12+ Permission Handling › Location-Based Scanning for Positioning › should round timestamps to 5-minute intervals
+
+    expect(received).toMatch(expected)
+
+    Expected pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:[0-5][05]:00\.000Z$/
+    Received string:  "2025-09-17T16:47:32Z"
+
+      280 |
+      281 |         // Assert
+    > 282 |         expect(roundedTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:[0-5][05]:00\.000Z$/); // Rounded to 5-min intervals
+          |                                  ^
+      283 |       });
+      284 |     });
+      285 |   });
+
+      at Object.toMatch (src/backend/tests/unit/ble-scanner.service.test.js:282:34)
+
+  ● BLEScannerService › iOS Background BLE Handling › State Restoration › should restore scanning state on app launch
+
+    expect(received).toHaveBeenCalledWith(...expected)
+
+    Matcher error: received value must be a mock or spy function
+
+    Received has value: undefined
+
+      337 |         // Assert
+      338 |         expect(result.success).toBe(true);
+    > 339 |         expect(mockBLEAdapter.restoreState).toHaveBeenCalledWith(restoredState);
+          |                                             ^
+      340 |         expect(mockBLEAdapter.startScan).toHaveBeenCalledWith(restoredState.scanParameters);
+      341 |       });
+      342 |
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:339:45)
+
+  ● BLEScannerService › Device Discovery and Filtering › MAC Address Rotation Handling › should handle MAC rotation by treating each MAC as separate device
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 2
+    Received number of calls: 0
+
+      412 |
+      413 |         // Assert
+    > 414 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledTimes(2);
+          |                                                          ^
+      415 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenNthCalledWith(1,
+      416 |           expect.objectContaining({ address: 'AA:BB:CC:DD:EE:F0' })
+      417 |         );
+
+      at Object.toHaveBeenCalledTimes (src/backend/tests/unit/ble-scanner.service.test.js:414:58)
+
+  ● BLEScannerService › Device Discovery and Filtering › MAC Address Rotation Handling › should maintain k-anonymity across MAC rotations
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 3
+    Received number of calls: 0
+
+      445 |
+      446 |         // Assert - devices are processed separately (no correlation)
+    > 447 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledTimes(3);
+          |                                                          ^
+      448 |         // Each device is treated independently for privacy
+      449 |       });
+      450 |     });
+
+      at Object.toHaveBeenCalledTimes (src/backend/tests/unit/ble-scanner.service.test.js:447:58)
+
+  ● BLEScannerService › VolunteerHit Creation › Complete Anonymization › should never store original MAC addresses
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectNotContaining {"macAddress": Any<String>, "originalAddress": Any<String>}
+
+    Number of calls: 0
+
+      589 |
+      590 |         // Assert - ensure original MAC is never persisted
+    > 591 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledWith(
+          |                                                          ^
+      592 |           expect.not.objectContaining({
+      593 |             originalAddress: expect.any(String),
+      594 |             macAddress: expect.any(String)
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:591:58)
+
+  ● BLEScannerService › VolunteerHit Creation › Complete Anonymization › should never store device names or personal identifiers
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectNotContaining {"deviceName": Any<String>, "name": Any<String>, "ownerName": Any<String>, "services": Any<Array>}
+
+    Number of calls: 0
+
+      619 |
+      620 |         // Assert - ensure NO personal data is stored
+    > 621 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledWith(
+          |                                                          ^
+      622 |           expect.not.objectContaining({
+      623 |             name: expect.any(String),
+      624 |             deviceName: expect.any(String),
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:621:58)
+
+  ● BLEScannerService › Error Handling › Permission Revocation › should preserve queued data when permissions revoked
+
+    expect(received).toHaveBeenCalled()
+
+    Matcher error: received value must be a mock or spy function
+
+    Received has value: undefined
+
+      721 |
+      722 |         // Assert
+    > 723 |         expect(mockAnonymizationService.preserveQueuedData).toHaveBeenCalled();
+          |                                                             ^
+      724 |         expect(scannerService.getStatus().error).toBe('permissions_revoked');
+      725 |
+      726 |         // Expected behavior:
+
+      at Object.toHaveBeenCalled (src/backend/tests/unit/ble-scanner.service.test.js:723:61)
+
+  ● BLEScannerService › Error Handling › Permission Revocation › should resume from preserved state when permissions re-granted
+
+    expect(received).toHaveBeenCalledWith(...expected)
+
+    Matcher error: received value must be a mock or spy function
+
+    Received has value: undefined
+
+      742 |         expect(result.success).toBe(true);
+      743 |         expect(mockBLEAdapter.startScan).toHaveBeenCalledWith(preservedState.scanParameters);
+    > 744 |         expect(mockAnonymizationService.processQueuedHits).toHaveBeenCalledWith(preservedState.queuedHits);
+          |                                                            ^
+      745 |
+      746 |         // Expected behavior:
+      747 |         // expect(mockBLEAdapter.startScan).toHaveBeenCalledWith(preservedState.scanParameters);
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:744:60)
+
+PASS tests/guardian.test.ts
+  安心守護頁面權限測試
+    未登入用戶
+      ✓ 顯示請先登入提示 (112 ms)
+      ✓ 點擊登入按鈕導向登入頁面 (22 ms)
+    一般會員
+      ✓ 可以看到三個分頁 (24 ms)
+      ✓ 家屬分頁顯示需要實名驗證 (11 ms)
+      ✓ 志工分頁顯示需要實名驗證 (14 ms)
+      ✓ 申辦分頁可查看但不能申辦 (14 ms)
+    實名會員
+      ✓ 家屬分頁顯示完整功能 (19 ms)
+      ✓ 無綁定時顯示綁定提示 (9 ms)
+      ✓ 志工分頁可接受任務 (13 ms)
+      ✓ 申辦分頁可提交申請 (25 ms)
+    承辦人員
+      ✓ 顯示管理功能按鈕 (10 ms)
+      ✓ 家屬分頁顯示額外管理功能 (8 ms)
+      ✓ 志工分頁顯示管理選項 (16 ms)
+      ✓ 申辦分頁顯示審核功能 (31 ms)
+  導航功能測試
+    ✓ 預設顯示家屬分頁 (8 ms)
+    ✓ 點擊分頁切換內容 (28 ms)
+    ✓ URL更新為對應分頁路徑 (25 ms)
+    ✓ 返回按鈕導向首頁 (12 ms)
+  通知徽章測試
+    ✓ 志工分頁顯示通知數字 (6 ms)
+
+PASS src/backend/tests/unit/case-flow.service.test.js
+  案件流程服務 (CaseFlowService)
+    1. 案件建立 (Case Creation)
+      createCase()
+        ✓ 應該成功建立失蹤人員案件 (12 ms)
+        ✓ 應該為緊急案件自動設定最高優先級 (5 ms)
+        ✓ 應該記錄案件建立的稽核日誌 (18 ms)
+        ✓ 應該拒絕無效的案件資料 (63 ms)
+        ✓ 應該為不同類型案件設定適當的預設值 (8 ms)
+      案件編號生成
+        ✓ 應該生成唯一的案件編號 (6 ms)
+        ✓ 應該包含日期和序號的案件編號 (9 ms)
+    2. 狀態轉換 (State Transitions)
+      assignCase()
+        ✓ 應該將案件從建立狀態轉為派發狀態 (23 ms)
+        ✓ 應該記錄狀態轉換歷史 (7 ms)
+        ✓ 應該通知相關人員案件派發 (13 ms)
+        ✓ 應該拒絕派發已結案的案件 (5 ms)
+      updateCaseStatus()
+        ✓ 應該允許有效的狀態轉換 (5 ms)
+        ✓ 應該拒絕無效的狀態轉換 (12 ms)
+        ✓ 應該記錄每次狀態更新 (17 ms)
+      closeCase()
+        ✓ 應該成功結案並設定結案原因 (5 ms)
+        ✓ 應該觸發資料清理流程 (5 ms)
+    3. 多機關協調 (Multi-Agency Coordination)
+      assignMultipleAgencies()
+        ✓ 應該同時派發給警察、消防、醫療單位 (18 ms)
+        ✓ 應該建立機關間通訊頻道 (4 ms)
+        ✓ 應該設定機關協調會議時間 (20 ms)
+      updateAgencyStatus()
+        ✓ 應該更新個別機關的處理狀態 (19 ms)
+        ✓ 應該自動計算整體案件進度 (11 ms)
+    4. 即時狀態更新與通知 (Real-time Updates)
+      broadcastCaseUpdate()
+        ✓ 應該向所有相關人員廣播案件更新 (36 ms)
+        ✓ 應該支援緊急廣播模式 (13 ms)
+      subscribeToUpdates()
+        ✓ 應該允許用戶訂閱案件更新 (6 ms)
+        ✓ 應該支援即時 WebSocket 推送 (4 ms)
+    5. 案件升級機制 (Case Escalation)
+      escalateCase()
+        ✓ 應該根據時間自動升級案件 (4 ms)
+        ✓ 應該根據嚴重程度升級案件 (8 ms)
+        ✓ 應該自動分配額外資源 (5 ms)
+      escalationTriggers
+        ✓ 應該在失蹤兒童案件自動升級 (17 ms)
+        ✓ 應該在多人失蹤案件自動升級 (6 ms)
+    6. 搜尋區域管理 (Search Area Management)
+      defineSearchArea()
+        ✓ 應該建立搜尋區域並分配搜尋隊 (5 ms)
+        ✓ 應該根據地形自動分配適當的搜尋隊 (4 ms)
+        ✓ 應該計算搜尋時間預估 (4 ms)
+      assignZoneToTeam()
+        ✓ 應該分配搜尋區域給特定隊伍 (4 ms)
+        ✓ 應該追蹤搜尋進度 (5 ms)
+    7. 志工派遣協調 (Volunteer Dispatch)
+      requestVolunteers()
+        ✓ 應該根據需求請求志工支援 (4 ms)
+        ✓ 應該通知合格的志工 (7 ms)
+        ✓ 應該管理志工報到和分組 (8 ms)
+      manageVolunteerSafety()
+        ✓ 應該追蹤志工安全狀態 (4 ms)
+        ✓ 應該在志工失聯時發出警告 (4 ms)
+    8. 案件解決與結案流程 (Case Resolution)
+      resolveCase()
+        ✓ 應該記錄案件解決詳情 (4 ms)
+        ✓ 應該生成案件摘要報告 (6 ms)
+        ✓ 應該觸發後續處理流程 (18 ms)
+      案件關閉後處理
+        ✓ 應該安排資料保留和清理 (5 ms)
+        ✓ 應該更新相關統計和KPI (5 ms)
+    9. 效能指標追蹤 (Performance Metrics)
+      trackResponseTime()
+        ✓ 應該記錄各階段響應時間 (5 ms)
+        ✓ 應該計算平均響應時間 (8 ms)
+      trackResourceUtilization()
+        ✓ 應該追蹤資源使用效率 (5 ms)
+      generatePerformanceReport()
+        ✓ 應該生成效能分析報告 (10 ms)
+    10. 班別交接 (Shift Handoff)
+      prepareShiftHandoff()
+        ✓ 應該準備班別交接資料 (38 ms)
+        ✓ 應該標識需要特別關注的案件 (15 ms)
+        ✓ 應該生成交接檢查清單 (4 ms)
+      executeShiftHandoff()
+        ✓ 應該執行班別交接並記錄確認 (12 ms)
+        ✓ 應該更新案件負責人 (4 ms)
+    11. 緊急升級觸發器 (Emergency Escalation Triggers)
+      automaticEscalationTriggers
+        ✓ 應該在兒童失蹤時立即觸發最高級別警報 (4 ms)
+        ✓ 應該在大量傷亡事件時啟動災害應變機制 (4 ms)
+        ✓ 應該在恐怖攻擊疑慮時啟動反恐機制 (12 ms)
+      escalationChain
+        ✓ 應該依序通知升級鏈中的相關人員 (4 ms)
+        ✓ 應該在連續升級後啟動指揮官級別響應 (3 ms)
+      publicSafetyTriggers
+        ✓ 應該在公共安全威脅時發布緊急警報 (4 ms)
+        ✓ 應該協調多機關緊急應變 (4 ms)
+    錯誤處理和邊緣案例 (Error Handling & Edge Cases)
+      ✓ 應該拒絕無效的案件類型 (4 ms)
+      ✓ 應該處理並發案件建立 (4 ms)
+      ✓ 應該處理系統資源不足的情況 (18 ms)
+      ✓ 應該在權限不足時拒絕操作 (4 ms)
+
+PASS src/backend/tests/unit/rbac.service.test.js
+  RBACService - 角色權限控制服務
+    1. Role-Based Access Control (基本角色控制)
+      Role Definitions
+        ✓ should define Viewer role with read-only permissions (3 ms)
+        ✓ should define Operator role with case management permissions (2 ms)
+        ✓ should define Admin role with full system permissions (2 ms)
+        ✓ should reject invalid role types (104 ms)
+      User Role Assignment
+        ✓ should assign single role to user (12 ms)
+        ✓ should assign multiple roles to user (3 ms)
+        ✓ should prevent role escalation without proper authorization (2 ms)
+    2. Permission Validation (權限驗證)
+      Sensitive Operations
+        ✓ should validate permission for case deletion (2 ms)
+        ✓ should deny permission for unauthorized export operations (26 ms)
+        ✓ should validate emergency override permissions (3 ms)
+      Resource-Specific Permissions
+        ✓ should validate department-specific case access (20 ms)
+        ✓ should deny cross-department case access (16 ms)
+    3. Field-Level Visibility Control (欄位級可見性控制)
+      PII Protection
+        ✓ should hide PII fields from Viewer role (7 ms)
+        ✓ should show limited PII to Operator role (2 ms)
+        ✓ should show full PII to Admin role (2 ms)
+        ✓ should apply custom masking rules for healthcare data (15 ms)
+    4. Multi-Tenant Support (多租戶支援)
+      Tenant Isolation
+        ✓ should isolate data between different county governments (2 ms)
+        ✓ should prevent cross-tenant data access (4 ms)
+        ✓ should support super-admin cross-tenant access (7 ms)
+    5. Session Management with Role Context (角色上下文會話管理)
+      Session Creation
+        ✓ should create session with role context (2 ms)
+        ✓ should set appropriate session timeout based on role (2 ms)
+      Session Validation
+        ✓ should validate active session with current permissions (1 ms)
+        ✓ should invalidate expired sessions (28 ms)
+      Role Context Updates
+        ✓ should update session when user roles change (2 ms)
+    6. Audit Trail for Permission Changes (權限變更稽核軌跡)
+      Permission Change Logging
+        ✓ should log role assignment with full context (2 ms)
+        ✓ should log role removal with approval chain (2 ms)
+        ✓ should create immutable audit records (15 ms)
+      Audit Query and Review
+        ✓ should query audit trail with proper filtering (2 ms)
+        ✓ should detect audit trail tampering (2 ms)
+    7. Bulk Role Assignments (批量角色指派)
+      Department-wide Assignments
+        ✓ should assign roles to entire department (5 ms)
+        ✓ should handle partial failures in bulk assignment (7 ms)
+        ✓ should validate bulk assignment permissions (1 ms)
+      CSV Import Role Assignment
+        ✓ should process CSV role assignment file (2 ms)
+        ✓ should validate CSV format and reject invalid entries (2 ms)
+    8. Time-Based Access Controls (時間基礎存取控制)
+      Scheduled Access
+        ✓ should grant access during business hours (3 ms)
+        ✓ should deny access outside business hours (1 ms)
+        ✓ should handle emergency override for time restrictions (1 ms)
+      Temporary Access Grants
+        ✓ should grant temporary elevated access (2 ms)
+        ✓ should automatically revoke expired temporary access (3 ms)
+    9. Resource-Specific Permissions (資源特定權限)
+      Healthcare Data Access
+        ✓ should validate medical record access permissions (2 ms)
+        ✓ should deny medical access without proper license (18 ms)
+      Location-Based Access
+        ✓ should validate geographic boundary access (2 ms)
+        ✓ should deny access to out-of-jurisdiction resources (15 ms)
+    10. Security Event Logging (安全事件記錄)
+      Suspicious Activity Detection
+        ✓ should detect and log multiple failed access attempts (2 ms)
+        ✓ should log privilege escalation attempts (6 ms)
+      Compliance Reporting
+        ✓ should generate GDPR compliance report (2 ms)
+        ✓ should generate Taiwan Personal Data Protection Act report (2 ms)
+      Real-time Security Monitoring
+        ✓ should trigger real-time alerts for critical events (2 ms)
+        ✓ should implement circuit breaker for repeated violations (2 ms)
+    Integration with Taiwan Healthcare Regulations
+      ✓ should implement NHI data access controls (9 ms)
+      ✓ should comply with MOHW data retention policies (7 ms)
+
+PASS src/backend/tests/unit/volunteer-consent.service.test.js
+  VolunteerConsentService
+    Consent Management
+      grantConsent
+        ✓ should enable volunteer mode and start background BLE scanning (16 ms)
+        ✓ should record consent timestamp for GDPR compliance (5 ms)
+        ✓ should handle consent version updates (10 ms)
+      withdrawConsent
+        ✓ should immediately disable volunteer mode and stop scanning (2 ms)
+        ✓ should cancel all queued data uploads (7 ms)
+        ✓ should purge local volunteer data immediately (2 ms)
+      checkConsentStatus
+        ✓ should return consent status with version information (7 ms)
+        ✓ should detect when consent version requires update (2 ms)
+    Permission Management
+      Android 12+ Permissions
+        ✓ should request BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions (9 ms)
+        ✓ should conditionally request location permission based on inference setting (2 ms)
+        ✓ should set neverForLocation flag when location inference disabled (2 ms)
+      iOS Background Permissions
+        ✓ should configure bluetooth-central background mode (2 ms)
+    Persistence and Recovery
+      App Restart Scenarios
+        ✓ should preserve consent state across app restarts (11 ms)
+        ✓ should resume background scanning automatically after restart (6 ms)
+    Error Handling
+      Permission Denied Scenarios
+        ✓ should handle graceful degradation when BLE permission denied (69 ms)
+        ✓ should mark consent as pending when permissions incomplete (4 ms)
+    Privacy and GDPR Compliance
+      ✓ should anonymize user identifiers in consent records (6 ms)
+      ✓ should not store IP addresses or detailed device fingerprints (2 ms)
+
+PASS src/backend/tests/unit/geofence-engine.service.test.js
+  GeofenceEngine - RED Phase Tests
+    Boundary Detection with 10m Accuracy
+      detectEntry
+        ✓ should detect entry within 10m accuracy threshold (10 ms)
+        ✓ should not detect entry when GPS accuracy exceeds 10m (74 ms)
+        ✓ should handle edge case at exact boundary with GPS uncertainty (9 ms)
+      detectExit
+        ✓ should detect exit with 30s delay confirmation (12 ms)
+        ✓ should cancel exit confirmation if user returns within 30s (3 ms)
+        ✓ should handle multiple geofences with independent exit delays (3 ms)
+    Cooldown Management (5-minute between notifications)
+      notificationCooldown
+        ✓ should enforce 5-minute cooldown between notifications (19 ms)
+        ✓ should allow notifications after 5-minute cooldown expires (5 ms)
+        ✓ should handle different cooldown periods for different event types (4 ms)
+        ✓ should allow immediate notifications for different geofences (11 ms)
+    Dwell Time Tracking (5+ minutes)
+      trackDwellTime
+        ✓ should track dwell time when user stays in geofence for 5+ minutes (3 ms)
+        ✓ should trigger dwell alerts at specific intervals (8 ms)
+        ✓ should reset dwell time when user exits and re-enters (21 ms)
+        ✓ should handle movement within geofence without resetting dwell time (25 ms)
+    Geofence Configuration and Management
+      createGeofence
+        ✓ should validate geofence parameters before creation (14 ms)
+        ✓ should enforce maximum number of geofences per user (3 ms)
+        ✓ should validate geofence names are unique per user (27 ms)
+      updateGeofence
+        ✓ should handle geofence boundary updates and notify affected users (3 ms)
+    Performance and Optimization
+      batchLocationProcessing
+        ✓ should efficiently process multiple users locations simultaneously (3 ms)
+        ✓ should handle high-frequency location updates without performance degradation (15 ms)
+    Error Handling and Recovery
+      errorRecovery
+        ✓ should handle location service failures gracefully (20 ms)
+        ✓ should continue processing other geofences when one fails (11 ms)
+    Integration with External Services
+      emergencyResponse
+        ✓ should trigger emergency alerts for critical geofence violations (13 ms)
+
+PASS src/backend/tests/unit/kpi.service.test.js
+  KPI 服務 (KPI Service)
+    即時 KPI 計算與聚合 (Real-time KPI Calculation)
+      ✓ 應計算案件處理即時統計 (25 ms)
+      ✓ 應聚合多個地理區域的 KPI (8 ms)
+      ✓ 應計算分時段的 KPI 趨勢 (15 ms)
+      ✓ 應支援即時 KPI 更新推送 (3 ms)
+      ✓ 應處理大量並發的 KPI 計算請求 (34 ms)
+    案件解決指標 (Case Resolution Metrics)
+      ✓ 應計算平均案件回應時間 (12 ms)
+      ✓ 應計算案件成功解決率 (2 ms)
+      ✓ 應追蹤案件升級和降級模式 (3 ms)
+      ✓ 應計算不同優先級案件的 SLA 達成率 (28 ms)
+      ✓ 應分析案件重新開啟率 (33 ms)
+    志工績效指標 (Volunteer Performance Metrics)
+      ✓ 應計算志工活躍度指標 (12 ms)
+      ✓ 應追蹤志工回應時間 (3 ms)
+      ✓ 應計算志工滿意度評分 (2 ms)
+      ✓ 應分析志工培訓完成率 (2 ms)
+      ✓ 應追蹤志工留任率 (2 ms)
+      ✓ 應計算志工工作負荷分佈 (8 ms)
+    系統效能指標 (System Performance Indicators)
+      ✓ 應監控 API 回應時間 (7 ms)
+      ✓ 應追蹤資料庫查詢效能 (2 ms)
+      ✓ 應監控系統記憶體使用率 (3 ms)
+      ✓ 應追蹤同時連線使用者數量 (2 ms)
+      ✓ 應監控儲存空間使用情況 (2 ms)
+    趨勢分析與預測 (Trend Analysis and Forecasting)
+      ✓ 應分析案件數量趨勢 (3 ms)
+      ✓ 應預測志工需求 (8 ms)
+      ✓ 應檢測 KPI 異常模式 (2 ms)
+      ✓ 應產生季節性趨勢報告 (11 ms)
+      ✓ 應計算 KPI 變化率和成長率 (2 ms)
+    警報閾值與通知 (Alert Thresholds and Notifications)
+      ✓ 應設定和管理 KPI 警報閾值 (3 ms)
+      ✓ 應檢查 KPI 值是否超過閾值 (3 ms)
+      ✓ 應發送閾值突破警報 (2 ms)
+      ✓ 應管理警報升級機制 (2 ms)
+      ✓ 應支援智慧型警報頻率控制 (7 ms)
+      ✓ 應產生警報統計報告 (2 ms)
+    儀表板資料準備 (Dashboard Data Preparation)
+      ✓ 應準備即時儀表板資料 (3 ms)
+      ✓ 應產生歷史趨勢圖表資料 (2 ms)
+      ✓ 應產生地理分佈熱點圖資料 (2 ms)
+      ✓ 應產生 KPI 比較表格資料 (8 ms)
+      ✓ 應支援儀表板資料的快取機制 (2 ms)
+    自訂 KPI 定義 (Custom KPI Definitions)
+      ✓ 應允許建立自訂 KPI 指標 (2 ms)
+      ✓ 應驗證自訂 KPI 公式的正確性 (3 ms)
+      ✓ 應計算自訂 KPI 的數值 (16 ms)
+      ✓ 應支援條件式 KPI 計算 (3 ms)
+      ✓ 應管理 KPI 計算排程 (4 ms)
+      ✓ 應提供 KPI 計算歷史記錄 (2 ms)
+      ✓ 應支援 KPI 的版本管理 (4 ms)
+      ✓ 應驗證 KPI 數據品質 (3 ms)
+    錯誤處理 (Error Handling)
+      ✓ 應在 KPI 計算失敗時拋出計算錯誤 (119 ms)
+      ✓ 應在閾值設定無效時拋出閾值錯誤 (3 ms)
+      ✓ 應在查詢參數無效時拋出驗證錯誤 (3 ms)
+      ✓ 應優雅處理資料來源連線失敗 (2 ms)
+
+  console.warn
+    Hash collision detected for same_hash_collision
+
+      78 |     return;
+      79 |   }
+    > 80 |   originalWarn.apply(console, args);
+         |                ^
+      81 | };
+      82 |
+      83 | // Setup global test utilities
+
+      at console.apply [as warn] (jest.setup.js:80:16)
+      at AnonymizationService.warn [as handleHashCollision] (src/backend/src/services/anonymization.service.js:370:13)
+      at Object.handleHashCollision (src/backend/tests/unit/anonymization.service.test.js:176:51)
+
+  console.log
+    Uploading cluster of 3 anonymized hits
+
+      at AnonymizationService.log [as uploadCluster] (src/backend/src/services/anonymization.service.js:221:13)
+
+PASS src/backend/tests/unit/anonymization.service.test.js
+  AnonymizationService
+    Device Hash Generation
+      One-Way Hash with Salt
+        ✓ should generate SHA-256 hash with salt for device MAC address (4 ms)
+        ✓ should use consistent salt for same session (3 ms)
+        ✓ should generate new salt for new session (2 ms)
+        ✓ should make hash irreversible - no reverse lookup possible (26 ms)
+      Hash Consistency and Collision Handling
+        ✓ should generate same hash for same MAC address in same session (2 ms)
+        ✓ should generate different hashes for different MAC addresses (2 ms)
+        ✓ should handle hash collisions gracefully (24 ms)
+    VolunteerHit Creation
+      Complete Data Anonymization
+        ✓ should create VolunteerHit with all PII removed (21 ms)
+        ✓ should never store original device names (7 ms)
+        ✓ should never store device IDs, phone numbers, or personal identifiers (2 ms)
+      Location Fuzzing
+        ✓ should fuzz location to 100m grid squares (1 ms)
+        ✓ should never store precise location coordinates (1 ms)
+        ✓ should handle edge cases near grid boundaries (10 ms)
+      Timestamp Rounding
+        ✓ should round timestamps to 5-minute intervals (12 ms)
+        ✓ should never store precise timestamps (2 ms)
+        ✓ should handle edge cases at interval boundaries (9 ms)
+    K-Anonymity Enforcement
+      Minimum Cluster Size Validation
+        ✓ should require minimum 3 devices per cluster (23 ms)
+        ✓ should allow upload when k=3 minimum is met (2 ms)
+        ✓ should queue VolunteerHits until k-anonymity is achieved (4 ms)
+        ✓ should upload all queued hits when k-anonymity threshold reached (11 ms)
+      Individual Device Identification Prevention
+        ✓ should ensure individual devices cannot be identified from clusters (2 ms)
+        ✓ should validate that server data cannot reverse lookup individual devices (2 ms)
+    Privacy Protection Validation
+      Data Minimization
+        ✓ should only store essential anonymized data (3 ms)
+        ✓ should purge unnecessary metadata and device fingerprints (27 ms)
+      Anonymization Verification
+        ✓ should verify no reverse lookup is possible from anonymized data (2 ms)
+        ✓ should detect and reject data containing PII (2 ms)
+    Error Handling and Edge Cases
+      Malformed Data Handling
+        ✓ should handle malformed MAC addresses gracefully (97 ms)
+        ✓ should handle invalid location coordinates gracefully (4 ms)
+        ✓ should handle timestamp parsing errors gracefully (3 ms)
+
+PASS src/backend/tests/unit/audit.service.test.js
+  稽核服務 (Audit Service)
+    綜合稽核記錄 (Comprehensive Audit Logging)
+      ✓ 應記錄使用者登入事件 (14 ms)
+      ✓ 應記錄資料存取事件 (2 ms)
+      ✓ 應記錄系統管理操作 (2 ms)
+      ✓ 應記錄資料匯出事件 (33 ms)
+      ✓ 應記錄失敗的操作嘗試 (12 ms)
+    稽核軌跡完整性 (Audit Trail Integrity)
+      ✓ 應為每筆稽核記錄建立雜湊值 (3 ms)
+      ✓ 應建立稽核記錄鏈式雜湊 (2 ms)
+      ✓ 應檢測稽核記錄的篡改 (2 ms)
+      ✓ 應在檢測到篡改時發送安全警報 (2 ms)
+      ✓ 應支援稽核記錄的數位簽章 (11 ms)
+    合規報告 (Compliance Reporting)
+      ✓ 應產生 GDPR 合規報告 (2 ms)
+      ✓ 應產生台灣個資法合規報告 (25 ms)
+      ✓ 應產生醫療法規合規報告 (16 ms)
+      ✓ 應驗證合規報告的完整性 (6 ms)
+      ✓ 應自動檢查合規性違規 (2 ms)
+    資料存取追蹤 (Data Access Tracking)
+      ✓ 應追蹤個人資料的存取模式 (2 ms)
+      ✓ 應檢測異常的資料存取行為 (2 ms)
+      ✓ 應記錄資料下載和列印事件 (2 ms)
+      ✓ 應提供資料血緣追蹤 (27 ms)
+    安全事件記錄 (Security Event Logging)
+      ✓ 應記錄登入失敗事件 (2 ms)
+      ✓ 應記錄權限提升事件 (2 ms)
+      ✓ 應記錄可疑的檔案存取 (3 ms)
+      ✓ 應記錄資料庫直接存取事件 (2 ms)
+    稽核日誌保留與歸檔 (Audit Log Retention)
+      ✓ 應根據保留政策歸檔舊記錄 (2 ms)
+      ✓ 應壓縮歸檔的稽核記錄 (2 ms)
+      ✓ 應驗證歸檔資料的完整性 (44 ms)
+      ✓ 應支援歸檔資料的搜尋 (3 ms)
+    查詢與搜尋功能 (Query and Search)
+      ✓ 應支援複雜的稽核記錄查詢 (3 ms)
+      ✓ 應支援全文搜尋稽核記錄 (13 ms)
+      ✓ 應提供稽核統計摘要 (25 ms)
+    監管機關匯出功能 (Regulatory Export)
+      ✓ 應產生監管機關格式的稽核報告 (3 ms)
+      ✓ 應為監管匯出加上浮水印 (21 ms)
+      ✓ 應記錄監管機關的資料請求 (2 ms)
+      ✓ 應驗證監管匯出的授權 (48 ms)
+    錯誤處理 (Error Handling)
+      ✓ 應在稽核記錄失敗時拋出錯誤 (61 ms)
+      ✓ 應在無效查詢參數時拋出驗證錯誤 (29 ms)
+      ✓ 應在未授權存取時拋出安全錯誤 (25 ms)
+      ✓ 應在合規檢查失敗時拋出合規錯誤 (24 ms)
+
+PASS src/backend/tests/unit/device-binding.service.test.js
+  DeviceBindingService - RED Phase Tests
+    NCC Certification Validation
+      validateNCCNumber
+        ✓ should accept valid NCC format CCAMYYXX#### (12 characters) (11 ms)
+        ✓ should reject invalid NCC format - wrong prefix (77 ms)
+        ✓ should reject invalid NCC format - wrong length (36 ms)
+        ✓ should reject invalid NCC format - wrong year format (26 ms)
+        ✓ should reject invalid NCC format - invalid character patterns (3 ms)
+        ✓ should validate NCC number exists in official registry (2 ms)
+      getChineseRegulatoryWarning
+        ✓ should return Chinese regulatory warning text (2 ms)
+        ✓ should include NCC logo and certification mark requirements (34 ms)
+    Device Serial Number Management
+      registerDevice
+        ✓ should prevent duplicate serial number registration (3 ms)
+        ✓ should allow registration of new serial number (53 ms)
+        ✓ should validate serial number format for Hsinchu devices (19 ms)
+      transferDevice
+        ✓ should prevent transfer of non-existent device (2 ms)
+        ✓ should prevent unauthorized device transfer (2 ms)
+    BLE Connection Management
+      connectToDevice
+        ✓ should handle BLE connection failures with retry logic (20 ms)
+        ✓ should implement exponential backoff between retries (3 ms)
+        ✓ should handle different BLE error types appropriately (31 ms)
+      monitorConnectionHealth
+        ✓ should detect connection drops and attempt reconnection (2 ms)
+        ✓ should track signal strength and battery level (17 ms)
+    Regulatory Compliance
+      displayRegulatoryInfo
+        ✓ should show complete regulatory information before device binding (3 ms)
+        ✓ should require user consent before proceeding with binding (26 ms)
+        ✓ should reject consent without proper boolean consentGiven (26 ms)
+        ✓ should prevent device binding without proper consent (2 ms)
+    Device Status Management
+      updateDeviceStatus
+        ✓ should track device lifecycle states (3 ms)
+    Notification Integration
+      deviceStatusNotifications
+        ✓ should notify users of successful device binding (2 ms)
+        ✓ should notify users of connection issues (2 ms)
+
+PASS src/backend/tests/unit/retention.service.test.js
+  RetentionService
+    TTL-based Data Retention
+      ✓ should set appropriate TTL based on data purpose (13 ms)
+      ✓ should apply minimum retention for regulatory compliance (7 ms)
+      ✓ should reduce TTL for sensitive data without explicit consent (2 ms)
+    Automated Cleanup Jobs
+      ✓ should schedule daily cleanup cron job (15 ms)
+      ✓ should cleanup expired personal data (3 ms)
+      ✓ should handle cleanup failures gracefully (2 ms)
+      ✓ should cleanup orphaned consent records (11 ms)
+    Immediate Revocation
+      ✓ should immediately delete all data on revocation request (3 ms)
+      ✓ should generate deletion certificate (21 ms)
+      ✓ should notify related services of revocation (15 ms)
+      ✓ should validate revocation request authorization (92 ms)
+    Retention Policies
+      ✓ should apply data minimization principle (37 ms)
+      ✓ should pseudonymize data after initial retention period (2 ms)
+      ✓ should enforce different retention periods by data category (44 ms)
+    Compliance Reporting
+      ✓ should generate GDPR compliance report (8 ms)
+      ✓ should track data subject requests (9 ms)
+
+PASS src/backend/tests/unit/mydata-adapter.test.js
+  MyDataAdapter Service
+    OAuth Authorization Flow
+      ✓ should generate authorization URL with required parameters (21 ms)
+      ✓ should handle authorization callback and exchange code for token (11 ms)
+      ✓ should reject callback with invalid state (97 ms)
+      ✓ should handle token exchange failures (2 ms)
+    Data Retrieval with Consent
+      ✓ should fetch personal data with valid access token (39 ms)
+      ✓ should handle expired token and attempt refresh (2 ms)
+      ✓ should enforce single-use token policy (4 ms)
+    Data Retention and Cleanup
+      ✓ should store data with TTL based on purpose (2 ms)
+      ✓ should enforce maximum retention period (2 ms)
+      ✓ should automatically clean expired data (3 ms)
+    Consent Revocation
+      ✓ should immediately delete data on consent revocation (32 ms)
+      ✓ should notify MyData platform of revocation (2 ms)
+      ✓ should handle cascade deletion of related data (2 ms)
+      ✓ should generate revocation receipt (2 ms)
+    Audit and Compliance
+      ✓ should log all data access attempts (34 ms)
+      ✓ should generate compliance report (1 ms)
+      ✓ should validate data minimization principle (2 ms)
+
+PASS src/backend/tests/unit/geo-alert.service.test.js
+  GeoAlertService
+    Alert Radius Configuration and Targeting
+      500m, 1km, 2km Radius Support
+        ✓ should receive alert when within 500m radius (3 ms)
+        ✓ should NOT receive alert when outside 1km radius (2 ms)
+        ✓ should support 2km radius for wide area alerts (2 ms)
+        ✓ should handle edge case at exact radius boundary (15 ms)
+    Alert Cooldown and Spam Prevention
+      5-Minute Minimum Cooldown
+        ✓ should prevent duplicate alerts within 5-minute cooldown (2 ms)
+        ✓ should allow alert after 5-minute cooldown expires (1 ms)
+        ✓ should show cooldown timer to user (2 ms)
+        ✓ should reset cooldown when timer expires (2 ms)
+    Privacy Protection - No PII in Alerts
+      Alert Content Restrictions
+        ✓ should never include names in alert messages (2 ms)
+        ✓ should never include age or gender information (2 ms)
+        ✓ should never include photos or physical descriptions (2 ms)
+        ✓ should use only general area descriptions (2 ms)
+    Alert Priority Levels
+      Info Level Alerts
+        ✓ should send info level with standard notification settings (1 ms)
+        ✓ should not override Do Not Disturb for info alerts (1 ms)
+      Warning Level Alerts
+        ✓ should send warning level with prominent notification (2 ms)
+        ✓ should use Time-Sensitive delivery on iOS for warnings (2 ms)
+        ✓ should use high importance channel on Android for warnings (2 ms)
+      Critical Level Alerts
+        ✓ should send critical level with maximum urgency settings (5 ms)
+        ✓ should use Critical Alert on iOS if authorized (2 ms)
+        ✓ should use Full-Screen Intent on Android with user consent (1 ms)
+        ✓ should allow user to dismiss or snooze critical alerts (23 ms)
+    Mandatory Safety Instructions
+      Required Message Content
+        ✓ should always include "請撥打110" in all alert levels (2 ms)
+        ✓ should always include "切勿自行接近" in all alert levels (2 ms)
+        ✓ should provide emergency contact button in all alerts (2 ms)
+        ✓ should provide "回報可疑" button for volunteer coordination (1 ms)
+        ✓ should provide safety guidelines link (2 ms)
+    A/B Testing for Safety Message Effectiveness
+      Message Variant Testing
+        ✓ should assign users to A/B test groups for message variations (3 ms)
+        ✓ should use variant B wording for test group B (1 ms)
+        ✓ should track engagement metrics for A/B test analysis (1 ms)
+        ✓ should record user response for effectiveness analysis (2 ms)
+        ✓ should ensure core safety instructions remain unchanged across variants (1 ms)
+    Error Handling and Edge Cases
+      Location Permission Errors
+        ✓ should handle location permission denied gracefully (1 ms)
+        ✓ should fallback to general notifications when location unavailable (2 ms)
+      Push Notification Errors
+        ✓ should handle push notification permission disabled (25 ms)
+        ✓ should show in-app alert banner when push notifications fail (2 ms)
+        ✓ should still attempt delivery for critical alerts when notifications disabled (2 ms)
+
+PASS src/backend/tests/unit/revocation.service.test.js
+  RevocationService
+    Immediate Revocation Processing
+      ✓ should process complete revocation within 100ms (5 ms)
+      ✓ should delete data from all storage layers (3 ms)
+      ✓ should handle partial failures with rollback (77 ms)
+    Audit Trail Generation
+      ✓ should create comprehensive audit trail for revocation (3 ms)
+      ✓ should include all affected data types in audit (3 ms)
+      ✓ should generate immutable revocation receipt (3 ms)
+    Cascade Deletion
+      ✓ should delete all related data in correct order (2 ms)
+      ✓ should handle foreign key constraints (3 ms)
+      ✓ should notify dependent services before deletion (4 ms)
+    Recovery and Rollback
+      ✓ should support revocation cancellation within grace period (4 ms)
+      ✓ should create backup before permanent deletion (2 ms)
+      ✓ should validate revocation request integrity (2 ms)
+    Compliance and Verification
+      ✓ should verify complete data deletion (13 ms)
+      ✓ should detect incomplete deletion (22 ms)
+      ✓ should generate GDPR Article 17 compliance report (3 ms)
+
+FAIL src/backend/tests/integration/middleware.test.js
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'authenticate')
+
+      26 |  * @access Private
+      27 |  */
+    > 28 | router.post('/validate-ncc', authMiddleware.authenticate(), async (req, res) => {
+         |                                             ^
+      29 |   try {
+      30 |     const { nccNumber } = req.body;
+      31 |     
+
+      at Object.authenticate (src/backend/src/routes/device-binding.js:28:45)
+      at Object.require (src/backend/src/routes/index.js:9:29)
+      at Object.require (src/backend/src/app.js:15:16)
+      at Object.require (src/backend/tests/integration/middleware.test.js:2:13)
+
+FAIL src/backend/tests/integration/api.rbac.test.js
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'authenticate')
+
+      26 |  * @access Private
+      27 |  */
+    > 28 | router.post('/validate-ncc', authMiddleware.authenticate(), async (req, res) => {
+         |                                             ^
+      29 |   try {
+      30 |     const { nccNumber } = req.body;
+      31 |     
+
+      at Object.authenticate (src/backend/src/routes/device-binding.js:28:45)
+      at Object.require (src/backend/src/routes/index.js:9:29)
+      at Object.require (src/backend/src/app.js:15:16)
+      at Object.require (src/backend/tests/integration/api.rbac.test.js:2:13)
+
+FAIL src/backend/tests/integration/api.mydata.test.js
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'authenticate')
+
+      26 |  * @access Private
+      27 |  */
+    > 28 | router.post('/validate-ncc', authMiddleware.authenticate(), async (req, res) => {
+         |                                             ^
+      29 |   try {
+      30 |     const { nccNumber } = req.body;
+      31 |     
+
+      at Object.authenticate (src/backend/src/routes/device-binding.js:28:45)
+      at Object.require (src/backend/src/routes/index.js:9:29)
+      at Object.require (src/backend/src/app.js:15:16)
+      at Object.require (src/backend/tests/integration/api.mydata.test.js:2:13)
+
+FAIL src/backend/tests/integration/api.kpi.test.js
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'authenticate')
+
+      26 |  * @access Private
+      27 |  */
+    > 28 | router.post('/validate-ncc', authMiddleware.authenticate(), async (req, res) => {
+         |                                             ^
+      29 |   try {
+      30 |     const { nccNumber } = req.body;
+      31 |     
+
+      at Object.authenticate (src/backend/src/routes/device-binding.js:28:45)
+      at Object.require (src/backend/src/routes/index.js:9:29)
+      at Object.require (src/backend/src/app.js:15:16)
+      at Object.require (src/backend/tests/integration/api.kpi.test.js:2:13)
+
+FAIL src/backend/tests/integration/api.cases.test.js
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'authenticate')
+
+      26 |  * @access Private
+      27 |  */
+    > 28 | router.post('/validate-ncc', authMiddleware.authenticate(), async (req, res) => {
+         |                                             ^
+      29 |   try {
+      30 |     const { nccNumber } = req.body;
+      31 |     
+
+      at Object.authenticate (src/backend/src/routes/device-binding.js:28:45)
+      at Object.require (src/backend/src/routes/index.js:9:29)
+      at Object.require (src/backend/src/app.js:15:16)
+      at Object.require (src/backend/tests/integration/api.cases.test.js:2:13)
+
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                                                                                                                                                     
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+All files                          |   22.47 |     21.4 |   20.64 |   26.59 |                                                                                                                                                                                                                                                                       
+ backend/coverage                  |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  block-navigation.js              |       0 |        0 |       0 |       0 | 2-87                                                                                                                                                                                                                                                                  
+  prettify.js                      |       0 |        0 |       0 |       0 | 2                                                                                                                                                                                                                                                                     
+  sorter.js                        |       0 |        0 |       0 |       0 | 2-210                                                                                                                                                                                                                                                                 
+ backend/coverage/lcov-report      |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  block-navigation.js              |       0 |        0 |       0 |       0 | 2-87                                                                                                                                                                                                                                                                  
+  prettify.js                      |       0 |        0 |       0 |       0 | 2                                                                                                                                                                                                                                                                     
+  sorter.js                        |       0 |        0 |       0 |       0 | 2-210                                                                                                                                                                                                                                                                 
+ backend/examples                  |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  service-usage-example.js         |       0 |        0 |       0 |       0 | 6-233                                                                                                                                                                                                                                                                 
+ backend/services                  |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  AnonymizationService.js          |       0 |        0 |       0 |       0 | 14-297                                                                                                                                                                                                                                                                
+  AuditService.js                  |       0 |        0 |       0 |       0 | 12-528                                                                                                                                                                                                                                                                
+  BLEScannerService.js             |       0 |        0 |       0 |       0 | 12-262                                                                                                                                                                                                                                                                
+  CaseFlowService.js               |       0 |        0 |       0 |       0 | 12-758                                                                                                                                                                                                                                                                
+  GeoAlertService.js               |       0 |        0 |       0 |       0 | 13-407                                                                                                                                                                                                                                                                
+  KPIService.js                    |       0 |        0 |       0 |       0 | 12-1022                                                                                                                                                                                                                                                               
+  MyDataAdapter.js                 |       0 |        0 |       0 |       0 | 12-661                                                                                                                                                                                                                                                                
+  MyDataAdapterAPI.js              |       0 |        0 |       0 |       0 | 10-348                                                                                                                                                                                                                                                                
+  RBACService.js                   |       0 |        0 |       0 |       0 | 12-711                                                                                                                                                                                                                                                                
+  RetentionService.js              |       0 |        0 |       0 |       0 | 12-351                                                                                                                                                                                                                                                                
+  RevocationService.js             |       0 |        0 |       0 |       0 | 12-377                                                                                                                                                                                                                                                                
+  VolunteerConsentService.js       |       0 |        0 |       0 |       0 | 12-203                                                                                                                                                                                                                                                                
+ backend/services/safety           |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  index.js                         |       0 |        0 |       0 |       0 | 6-334                                                                                                                                                                                                                                                                 
+ backend/services/safety/case      |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  CaseManagementService.js         |       0 |        0 |       0 |       0 | 6-1027                                                                                                                                                                                                                                                                
+ backend/services/safety/events    |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  EventStreamService.js            |       0 |        0 |       0 |       0 | 6-511                                                                                                                                                                                                                                                                 
+ backend/services/safety/geofence  |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  GeofenceService.js               |       0 |        0 |       0 |       0 | 6-550                                                                                                                                                                                                                                                                 
+ backend/services/safety/matching  |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  MatchingService.js               |       0 |        0 |       0 |       0 | 6-799                                                                                                                                                                                                                                                                 
+ backend/services/safety/mydata    |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  MyDataService.js                 |       0 |        0 |       0 |       0 | 6-828                                                                                                                                                                                                                                                                 
+ backend/src                       |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  app.js                           |       0 |        0 |       0 |       0 | 1-112                                                                                                                                                                                                                                                                 
+  index.js                         |       0 |        0 |     100 |       0 | 8-15                                                                                                                                                                                                                                                                  
+ backend/src/constants             |     100 |      100 |     100 |     100 |                                                                                                                                                                                                                                                                       
+  safety-service.constants.js      |     100 |      100 |     100 |     100 |                                                                                                                                                                                                                                                                       
+ backend/src/hardware              |     100 |      100 |       0 |     100 |                                                                                                                                                                                                                                                                       
+  ble-manager.js                   |     100 |      100 |       0 |     100 |                                                                                                                                                                                                                                                                       
+ backend/src/middleware            |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  auth.js                          |       0 |        0 |       0 |       0 | 1-349                                                                                                                                                                                                                                                                 
+  error.js                         |       0 |        0 |       0 |       0 | 1-141                                                                                                                                                                                                                                                                 
+  index.js                         |       0 |      100 |     100 |       0 | 1-6                                                                                                                                                                                                                                                                   
+  security.js                      |       0 |        0 |       0 |       0 | 1-192                                                                                                                                                                                                                                                                 
+  shared.js                        |       0 |      100 |     100 |       0 | 2-13                                                                                                                                                                                                                                                                  
+  validation.js                    |       0 |        0 |       0 |       0 | 1-197                                                                                                                                                                                                                                                                 
+ backend/src/repositories          |    12.5 |        0 |       0 |    12.5 |                                                                                                                                                                                                                                                                       
+  device.repository.js             |     100 |      100 |       0 |     100 |                                                                                                                                                                                                                                                                       
+  geofence.repository.js           |    6.66 |        0 |       0 |    6.66 | 12-107                                                                                                                                                                                                                                                                
+ backend/src/routes                |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  ble-scanner.js                   |       0 |        0 |       0 |       0 | 6-420                                                                                                                                                                                                                                                                 
+  cases.js                         |       0 |        0 |       0 |       0 | 1-245                                                                                                                                                                                                                                                                 
+  device-binding.js                |       0 |        0 |       0 |       0 | 6-301                                                                                                                                                                                                                                                                 
+  index.js                         |       0 |        0 |       0 |       0 | 1-94                                                                                                                                                                                                                                                                  
+  kpi.js                           |       0 |        0 |       0 |       0 | 1-218                                                                                                                                                                                                                                                                 
+  mydata.js                        |       0 |        0 |       0 |       0 | 1-284                                                                                                                                                                                                                                                                 
+  rbac.js                          |       0 |        0 |       0 |       0 | 1-162                                                                                                                                                                                                                                                                 
+ backend/src/services              |   73.37 |    59.95 |   74.29 |    73.3 |                                                                                                                                                                                                                                                                       
+  anonymization.service.js         |   78.62 |    73.52 |      84 |   78.87 | 32,37,106,155,160,181,208-212,229-260,284,290,310,361,389-399,408                                                                                                                                                                                                     
+  audit-log.service.js             |      20 |        0 |       0 |      20 | 8-18                                                                                                                                                                                                                                                                  
+  audit.service.js                 |   89.67 |    60.82 |   87.23 |    89.4 | 31-39,45-48,188,461,463,718-722                                                                                                                                                                                                                                       
+  ble-scanner.service.js           |   74.83 |    69.01 |    92.3 |   74.67 | 49,54,97-103,114,119,147,197,214,219,229,242,257,291,308,329,344-369,382-392,407,419,431,435,443                                                                                                                                                                      
+  case-flow.service.js             |   92.27 |    76.56 |   94.04 |    92.7 | 110,114,118,122,126,260,269,328,376,400-401,416,427,465,485,539,579,597,613,660,684,689,715,747,777,797,830,869,903,923,1038,1071,1103,1112                                                                                                                           
+  event-emitter.service.js         |   11.11 |        0 |       0 |   11.11 | 7-34                                                                                                                                                                                                                                                                  
+  geo-alert.service.js             |    14.1 |     3.38 |   14.81 |   14.19 | 28,41,47-359,368-490                                                                                                                                                                                                                                                  
+  kpi.service.js                   |   83.89 |    55.55 |   98.88 |   83.05 | 65,85,102,120,153,174,205,230,251,279,303,317,326,345,364,384,410,429,450,469,489,514,538,552,572,598,644,650,666,686,706-712,733-739,761,774,793,808,829,850,859,886,900,905,926,942,961,984,1002,1024,1040,1069,1092,1102,1110,1117,1136,1146,1174,1178,1182        
+  location.service.js              |    5.26 |        0 |       0 |    5.88 | 16-71                                                                                                                                                                                                                                                                 
+  mydata-adapter.service.js        |      63 |    42.25 |   63.63 |   62.79 | 150-170,404-689                                                                                                                                                                                                                                                       
+  notification.service.js          |   15.38 |      100 |       0 |   15.38 | 8-39                                                                                                                                                                                                                                                                  
+  rbac.service.js                  |   59.86 |    51.83 |   50.51 |   60.28 | 183-184,211,235,283-285,294-304,433,477,506-514,558-585,622-640,673-676,728-731,748-758,769,782,823-859,864,887,909-941,965,974-975,1011-1031,1041-1062,1072-1074,1142,1156-1172,1187,1213-1214,1217,1233-1249,1272,1280-1343,1363,1383-1562,1583-1607,1677-1705,1730 
+  retention.service.js             |   92.38 |    68.33 |      95 |   92.15 | 59-62,115,206-207,258-259                                                                                                                                                                                                                                             
+  revocation.service.js            |   91.17 |     67.5 |   94.44 |   91.83 | 78,184,232,236,292-304                                                                                                                                                                                                                                                
+  volunteer-consent.service.js     |   87.23 |    73.52 |   86.66 |   87.23 | 91,125,137,158,189,207,237-255,286,296                                                                                                                                                                                                                                
+ backend/src/services/safety       |   86.07 |    76.66 |   91.66 |   86.33 |                                                                                                                                                                                                                                                                       
+  device-binding.service.js        |   78.89 |    72.41 |   86.66 |   79.43 | 36,62,93,130,184,198,216,262,284,299-308,331,337,346-349,428,434,460-463                                                                                                                                                                                              
+  errors.js                        |   84.21 |    83.33 |   83.33 |   84.21 | 32-34                                                                                                                                                                                                                                                                 
+  geofence-engine.service.js       |   91.44 |    79.48 |     100 |   91.44 | 46,89,141,306,434,524,532,566,587,606-616,655,671                                                                                                                                                                                                                     
+ backend/src/utils                 |    9.93 |     3.75 |   13.88 |      10 |                                                                                                                                                                                                                                                                       
+  battery-optimization.js          |       0 |        0 |       0 |       0 | 11-52                                                                                                                                                                                                                                                                 
+  errors.js                        |   72.72 |    71.42 |   71.42 |   72.72 | 32-42                                                                                                                                                                                                                                                                 
+  permissions.js                   |       0 |        0 |       0 |       0 | 6-58                                                                                                                                                                                                                                                                  
+  validation.utils.js              |       0 |        0 |       0 |       0 | 17-513                                                                                                                                                                                                                                                                
+ backend/tests                     |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  setup.js                         |       0 |        0 |       0 |       0 | 2-135                                                                                                                                                                                                                                                                 
+ backend/tests/helpers             |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  jwt-helper.js                    |       0 |        0 |       0 |       0 | 1-83                                                                                                                                                                                                                                                                  
+ components                        |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  EmptyState.tsx                   |       0 |        0 |       0 |       0 | 1-191                                                                                                                                                                                                                                                                 
+  FeatureCard.tsx                  |       0 |        0 |       0 |       0 | 1-49                                                                                                                                                                                                                                                                  
+  InfoCard.tsx                     |       0 |        0 |       0 |       0 | 1-26                                                                                                                                                                                                                                                                  
+  LoadingState.tsx                 |       0 |        0 |       0 |       0 | 1-65                                                                                                                                                                                                                                                                  
+  TabBar.tsx                       |       0 |        0 |       0 |       0 | 1-26                                                                                                                                                                                                                                                                  
+  TaskCard.tsx                     |       0 |        0 |       0 |       0 | 1-51                                                                                                                                                                                                                                                                  
+ components/tabs                   |   69.38 |    82.35 |   26.31 |   69.56 |                                                                                                                                                                                                                                                                       
+  ApplyTab.tsx                     |   74.07 |    72.72 |      25 |   73.07 | 51,81,92-118,203-221                                                                                                                                                                                                                                                  
+  FamilyTab.tsx                    |   70.96 |       96 |   28.57 |      70 | 32,55,68-89,101,132-139                                                                                                                                                                                                                                               
+  VolunteerTab.tsx                 |      65 |    76.19 |      25 |   66.66 | 37,56,71,84-85,108-120,144-167                                                                                                                                                                                                                                        
+ contexts                          |   14.51 |        0 |       0 |   12.28 |                                                                                                                                                                                                                                                                       
+  AuthContext.tsx                  |   19.23 |        0 |       0 |   17.39 | 20-66                                                                                                                                                                                                                                                                 
+  NavigationContext.tsx            |   11.11 |        0 |       0 |    8.82 | 12-82                                                                                                                                                                                                                                                                 
+ hooks                             |    8.69 |        0 |       0 |    7.17 |                                                                                                                                                                                                                                                                       
+  useApplication.ts                |    4.54 |        0 |       0 |    3.57 | 17-126                                                                                                                                                                                                                                                                
+  useAuth.ts                       |      50 |        0 |       0 |   44.44 | 6-14                                                                                                                                                                                                                                                                  
+  useGuardian.ts                   |    3.26 |        0 |       0 |    2.59 | 30-196                                                                                                                                                                                                                                                                
+  useNavigation.ts                 |   46.15 |        0 |       0 |   36.36 | 5-9,14-17                                                                                                                                                                                                                                                             
+  useVolunteer.ts                  |    6.12 |        0 |       0 |    4.76 | 16-110                                                                                                                                                                                                                                                                
+ mobile                            |       0 |      100 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  babel.config.js                  |       0 |      100 |     100 |       0 | 1                                                                                                                                                                                                                                                                     
+  jest.setup.js                    |       0 |      100 |       0 |       0 | 6-93                                                                                                                                                                                                                                                                  
+  metro.config.js                  |       0 |      100 |     100 |       0 | 1-11                                                                                                                                                                                                                                                                  
+ mobile/coverage/lcov-report       |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  block-navigation.js              |       0 |        0 |       0 |       0 | 2-87                                                                                                                                                                                                                                                                  
+  prettify.js                      |       0 |        0 |       0 |       0 | 2                                                                                                                                                                                                                                                                     
+  sorter.js                        |       0 |        0 |       0 |       0 | 2-210                                                                                                                                                                                                                                                                 
+ mobile/src/services               |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  BLEBackgroundService.js          |       0 |        0 |       0 |       0 | 15-297                                                                                                                                                                                                                                                                
+  MobileGeofenceEngine.js          |       0 |        0 |       0 |       0 | 15-392                                                                                                                                                                                                                                                                
+  MyDataIntegrationService.js      |       0 |        0 |       0 |       0 | 15-414                                                                                                                                                                                                                                                                
+ mobile/tests/services             |       0 |        0 |       0 |       0 |                                                                                                                                                                                                                                                                       
+  BLEBackgroundService.test.js     |       0 |        0 |       0 |       0 | 26-735                                                                                                                                                                                                                                                                
+  MobileGeofenceEngine.test.js     |       0 |        0 |       0 |       0 | 25-682                                                                                                                                                                                                                                                                
+  MyDataIntegrationService.test.js |       0 |      100 |       0 |       0 | 19-783                                                                                                                                                                                                                                                                
+ pages                             |   92.68 |       85 |   85.71 |    92.5 |                                                                                                                                                                                                                                                                       
+  GuardianPage.tsx                 |   92.68 |       85 |   85.71 |    92.5 | 42,94,112                                                                                                                                                                                                                                                             
+ types                             |     100 |      100 |     100 |     100 |                                                                                                                                                                                                                                                                       
+  index.ts                         |     100 |      100 |     100 |     100 |                                                                                                                                                                                                                                                                       
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Jest: "global" coverage threshold for statements (50%) not met: 22.47%
+Jest: "global" coverage threshold for branches (50%) not met: 21.4%
+Jest: "global" coverage threshold for lines (50%) not met: 26.59%
+Jest: "global" coverage threshold for functions (50%) not met: 20.64%
+Test Suites: 6 failed, 13 passed, 19 total
+Tests:       8 failed, 421 passed, 429 total
+Snapshots:   0 total
+Time:        34.578 s
+Ran all test suites.

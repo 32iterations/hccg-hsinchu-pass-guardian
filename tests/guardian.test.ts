@@ -1,100 +1,218 @@
-import { test, expect, describe, beforeEach } from '@jest/globals';
+import { test, expect, describe, beforeEach, jest } from '@jest/globals';
 import { render, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import * as React from 'react';
+import { GuardianPage } from '../src/pages/GuardianPage';
+import { UserRole } from '../src/types';
 
-// Define UserRole enum if not exists
-const UserRole = {
-  GUEST: 'GUEST',
-  MEMBER: 'MEMBER',
-  VERIFIED: 'VERIFIED',
-  ADMIN: 'ADMIN'
-};
+// Mock modules
+jest.mock('../src/hooks/useAuth');
+jest.mock('../src/hooks/useNavigation');
+jest.mock('../src/hooks/useGuardian');
+jest.mock('../src/hooks/useVolunteer');
+jest.mock('../src/hooks/useApplication');
 
-// Mock the contexts and components since they may not exist
-const AuthProvider = ({ children, value }: any) => {
-  return React.createElement('div', { 'data-testid': 'auth-provider' }, children);
-};
-
-const NavigationProvider = ({ children }: any) => {
-  return React.createElement('div', { 'data-testid': 'nav-provider' }, children);
-};
-
-// Mock GuardianPage component
-const MockGuardianPage = ({ user }: any) => {
-  const isGuest = !user || user.role === UserRole.GUEST;
-
-  if (isGuest) {
-    return React.createElement('div', { 'data-testid': 'guardian-page' },
-      React.createElement('div', null, '請先登入'),
-      React.createElement('div', null, '登入後即可使用安心守護功能，守護您的家人'),
-      React.createElement('button', {
-        'aria-label': '立即登入',
-        onClick: () => {
-          if ((global as any).mockLocation) {
-            (global as any).mockLocation.pathname = '/login';
-            (global as any).mockLocation.search = '?redirect=/guardian';
-          }
-        }
-      }, '立即登入')
+// Mock complex components to avoid import issues while preserving text content
+jest.mock('../src/components/EmptyState', () => ({
+  EmptyState: ({ title, description, primaryAction, secondaryAction, steps, benefits, infoCards, processSteps, helperText, onboardingSteps, settingsHint, notificationStatus, downloadSection, statusTimeline, notification, estimatedTime, saveDraft }: any) => {
+    return React.createElement('div', { 'data-testid': 'empty-state' },
+      React.createElement('h2', null, title),
+      React.createElement('p', null, description),
+      helperText && React.createElement('p', { 'data-testid': 'helper-text' }, helperText),
+      steps && steps.map((step: string, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'step' }, step)
+      ),
+      benefits && benefits.map((benefit: string, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'benefit' }, benefit)
+      ),
+      infoCards && infoCards.map((card: any, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'info-card' },
+          React.createElement('h3', null, card.title),
+          card.items.map((item: string, itemIndex: number) =>
+            React.createElement('p', { key: itemIndex }, item)
+          )
+        )
+      ),
+      processSteps && processSteps.map((step: any, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'process-step' },
+          React.createElement('span', null, `${step.number}. ${step.title}`),
+          React.createElement('span', null, step.time)
+        )
+      ),
+      onboardingSteps && onboardingSteps.map((step: any, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'onboarding-step' },
+          React.createElement('span', null, step.title),
+          React.createElement('span', null, step.description)
+        )
+      ),
+      primaryAction && React.createElement('button', {
+        onClick: primaryAction.onClick,
+        'data-testid': 'primary-action'
+      }, primaryAction.text),
+      secondaryAction && React.createElement('button', {
+        onClick: secondaryAction.onClick,
+        'data-testid': 'secondary-action'
+      }, secondaryAction.text),
+      estimatedTime && React.createElement('p', { 'data-testid': 'estimated-time' }, estimatedTime),
+      downloadSection && React.createElement('div', { 'data-testid': 'download-section' },
+        React.createElement('h3', null, downloadSection.title),
+        downloadSection.files.map((file: any, index: number) =>
+          React.createElement('div', { key: index, 'data-testid': 'download-file' }, `${file.name} (${file.format}, ${file.size})`)
+        )
+      ),
+      statusTimeline && statusTimeline.map((status: any, index: number) =>
+        React.createElement('div', { key: index, 'data-testid': 'status-timeline' },
+          React.createElement('span', null, status.date),
+          React.createElement('span', null, status.status)
+        )
+      ),
+      notification && React.createElement('div', { 'data-testid': 'notification' }, notification.text),
+      settingsHint && React.createElement('p', { 'data-testid': 'settings-hint' }, settingsHint),
+      notificationStatus && React.createElement('div', { 'data-testid': 'notification-status' }, notificationStatus.text)
     );
   }
+}));
 
-  return React.createElement('div', { 'data-testid': 'guardian-page' },
-    React.createElement('div', { role: 'tablist' },
-      React.createElement('div', { role: 'tab', 'aria-selected': 'true' }, '家屬'),
-      React.createElement('div', { role: 'tab', 'aria-selected': 'false', onClick: () => {
-        if ((global as any).mockLocation) {
-          (global as any).mockLocation.pathname = '/guardian/volunteer';
-        }
-      } }, '志工'),
-      React.createElement('div', { role: 'tab', 'aria-selected': 'false', onClick: () => {
-        if ((global as any).mockLocation) {
-          (global as any).mockLocation.pathname = '/guardian/apply';
-        }
-      } }, '申辦')
-    ),
-    React.createElement('button', {
-      'aria-label': '返回首頁',
-      onClick: () => {
-        if ((global as any).mockLocation) {
-          (global as any).mockLocation.pathname = '/';
+jest.mock('../src/components/FeatureCard', () => ({
+  FeatureCard: ({ name, onClick, disabled }: any) => {
+    return React.createElement('button', {
+      onClick: disabled ? undefined : onClick,
+      disabled,
+      'data-testid': 'feature-card'
+    }, name);
+  }
+}));
+
+jest.mock('../src/components/TaskCard', () => ({
+  TaskCard: ({ task }: any) => {
+    return React.createElement('div', { 'data-testid': 'task-card' }, task.title || '目前沒有新任務');
+  }
+}));
+
+jest.mock('../src/components/InfoCard', () => ({
+  InfoCard: ({ title, items }: any) => {
+    return React.createElement('div', { 'data-testid': 'info-card' },
+      React.createElement('h3', null, title),
+      items.map((item: string, index: number) =>
+        React.createElement('p', { key: index }, item)
+      )
+    );
+  }
+}));
+
+jest.mock('../src/components/TabBar', () => ({
+  TabBar: ({ tabs, activeTab, onTabChange }: any) => {
+    return React.createElement('div', { role: 'tablist' },
+      tabs.map((tab: any) =>
+        React.createElement('div', {
+          key: tab.id,
+          role: 'tab',
+          'aria-selected': activeTab === tab.id ? 'true' : 'false',
+          onClick: () => onTabChange(tab.id),
+          'data-testid': `tab-${tab.id}`
+        },
+        tab.name,
+        tab.badge && React.createElement('span', { 'data-badge': tab.badge }, tab.badge.toString())
+        )
+      )
+    );
+  }
+}));
+
+jest.mock('../src/components/LoadingState', () => ({
+  LoadingState: ({ message }: any) => {
+    return React.createElement('div', { 'data-testid': 'loading-state' }, message);
+  }
+}));
+
+const renderWithMockedHooks = (mockUser: any = null) => {
+  const { useAuth } = require('../src/hooks/useAuth');
+  const { useNavigation } = require('../src/hooks/useNavigation');
+  const { useGuardian } = require('../src/hooks/useGuardian');
+  const { useVolunteer } = require('../src/hooks/useVolunteer');
+  const { useApplication } = require('../src/hooks/useApplication');
+
+  // Setup global mock location if not exists
+  if (!(global as any).mockLocation) {
+    (global as any).mockLocation = {
+      pathname: '/',
+      search: '',
+      href: 'http://localhost:3000'
+    };
+  }
+
+  // Mock hook implementations
+  useAuth.mockReturnValue({
+    user: mockUser,
+    role: mockUser?.role || UserRole.GUEST,
+    isLoading: false
+  });
+
+  useNavigation.mockReturnValue({
+    navigate: jest.fn((path: string) => {
+      if ((global as any).mockLocation) {
+        (global as any).mockLocation.pathname = path;
+        const queryStart = path.indexOf('?');
+        if (queryStart > -1) {
+          (global as any).mockLocation.pathname = path.substring(0, queryStart);
+          (global as any).mockLocation.search = path.substring(queryStart);
+        } else {
+          (global as any).mockLocation.search = '';
         }
       }
-    }, '返回'),
-    user?.role === UserRole.ADMIN && React.createElement('button', { 'aria-label': '管理功能' }, '管理'),
-    user?.notifications?.volunteer && React.createElement('div', { 'data-badge': user.notifications.volunteer }, user.notifications.volunteer.toString())
-  );
-};
+    })
+  });
 
-const renderWithProviders = (component: React.ReactElement, mockUser: any = null) => {
-  return render(
-    React.createElement(AuthProvider, { value: { user: mockUser, isLoading: false } },
-      React.createElement(NavigationProvider, {},
-        React.createElement(MockGuardianPage, { user: mockUser })
-      )
-    )
-  );
+  useGuardian.mockReturnValue({
+    bindings: mockUser?.bindings || [],
+    isLoading: false,
+    fetchBindings: jest.fn()
+  });
+
+  useVolunteer.mockReturnValue({
+    tasks: mockUser?.volunteerTasks || [],
+    isRegistered: mockUser?.isVolunteerRegistered || false,
+    isLoading: false,
+    fetchTasks: jest.fn(),
+    registerVolunteer: jest.fn()
+  });
+
+  useApplication.mockReturnValue({
+    application: mockUser?.application || null,
+    isLoading: false,
+    fetchApplication: jest.fn()
+  });
+
+  return render(React.createElement(GuardianPage));
 };
 
 describe('安心守護頁面權限測試', () => {
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Setup global mock location
+    (global as any).mockLocation = {
+      pathname: '/',
+      search: '',
+      href: 'http://localhost:3000'
+    };
+  });
+
   describe('未登入用戶', () => {
     test('顯示請先登入提示', () => {
-      const { getByText, getByRole } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText, getByRole } = renderWithMockedHooks(
         { role: UserRole.GUEST }
       );
 
-      expect(getByText('請先登入')).toBeInTheDocument();
-      expect(getByText('登入後即可使用安心守護功能，守護您的家人')).toBeInTheDocument();
+      expect(getByText('請先登入')).toBeTruthy();
+      expect(getByText('登入後即可使用安心守護功能，守護您的家人')).toBeTruthy();
 
       const loginButton = getByRole('button', { name: '立即登入' });
-      expect(loginButton).toBeInTheDocument();
+      expect(loginButton).toBeTruthy();
     });
 
     test('點擊登入按鈕導向登入頁面', () => {
-      const { getByRole } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByRole } = renderWithMockedHooks(
         { role: UserRole.GUEST }
       );
 
@@ -116,54 +234,50 @@ describe('安心守護頁面權限測試', () => {
     };
 
     test('可以看到三個分頁', () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockMember
       );
 
-      expect(getByText('家屬')).toBeInTheDocument();
-      expect(getByText('志工')).toBeInTheDocument();
-      expect(getByText('申辦')).toBeInTheDocument();
+      expect(getByText('家屬')).toBeTruthy();
+      expect(getByText('志工')).toBeTruthy();
+      expect(getByText('申辦')).toBeTruthy();
     });
 
     test('家屬分頁顯示需要實名驗證', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockMember
       );
 
       await waitFor(() => {
-        expect(getByText('需要實名驗證')).toBeInTheDocument();
-        expect(getByText(/使用定位追蹤、電子圍籬/)).toBeInTheDocument();
+        expect(getByText('需要實名驗證')).toBeTruthy();
+        expect(getByText(/使用定位追蹤、電子圍籬/)).toBeTruthy();
       });
     });
 
     test('志工分頁顯示需要實名驗證', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockMember
       );
 
       fireEvent.click(getByText('志工'));
 
       await waitFor(() => {
-        expect(getByText('加入志工行列')).toBeInTheDocument();
-        expect(getByText(/成為安心守護志工/)).toBeInTheDocument();
+        expect(getByText('加入志工行列')).toBeTruthy();
+        expect(getByText(/成為安心守護志工/)).toBeTruthy();
       });
     });
 
     test('申辦分頁可查看但不能申辦', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockMember
       );
 
       fireEvent.click(getByText('申辦'));
 
       await waitFor(() => {
-        expect(getByText('線上申辦服務')).toBeInTheDocument();
-        expect(getByText(/申辦安心守護服務需要完成實名驗證/)).toBeInTheDocument();
-        expect(getByText('前往實名驗證')).toBeInTheDocument();
+        expect(getByText('線上申辦服務')).toBeTruthy();
+        expect(getByText(/申辦安心守護服務需要完成實名驗證/)).toBeTruthy();
+        expect(getByText('前往實名驗證')).toBeTruthy();
       });
     });
   });
@@ -181,57 +295,64 @@ describe('安心守護頁面權限測試', () => {
     };
 
     test('家屬分頁顯示完整功能', async () => {
-      const { getByText, queryByText } = renderWithProviders(
-        React.createElement(GuardianPage),
-        mockVerified
+      const mockVerifiedWithBindings = {
+        ...mockVerified,
+        bindings: [{ id: '1', name: '李奶奶', relationship: '祖母' }]
+      };
+
+      const { getByText, queryByText } = renderWithMockedHooks(
+        mockVerifiedWithBindings
       );
 
       await waitFor(() => {
-        expect(queryByText('需要實名驗證')).not.toBeInTheDocument();
-        expect(getByText('定位追蹤')).toBeInTheDocument();
-        expect(getByText('電子圍籬')).toBeInTheDocument();
-        expect(getByText('緊急通報')).toBeInTheDocument();
-        expect(getByText('歷史軌跡')).toBeInTheDocument();
+        expect(queryByText('需要實名驗證')).toBeNull();
+        expect(getByText('定位追蹤')).toBeTruthy();
+        expect(getByText('電子圍籬')).toBeTruthy();
+        expect(getByText('緊急通報')).toBeTruthy();
+        expect(getByText('歷史軌跡')).toBeTruthy();
       });
     });
 
     test('無綁定時顯示綁定提示', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockVerified
       );
 
       await waitFor(() => {
-        expect(getByText('尚未綁定受照護者')).toBeInTheDocument();
-        expect(getByText('綁定受照護者')).toBeInTheDocument();
-        expect(getByText('最多可綁定3位受照護者')).toBeInTheDocument();
+        expect(getByText('尚未綁定受照護者')).toBeTruthy();
+        expect(getByText('綁定受照護者')).toBeTruthy();
+        expect(getByText('最多可綁定3位受照護者')).toBeTruthy();
       });
     });
 
     test('志工分頁可接受任務', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
-        mockVerified
+      const mockVerifiedVolunteer = {
+        ...mockVerified,
+        isVolunteerRegistered: true,
+        volunteerTasks: []
+      };
+
+      const { getByText } = renderWithMockedHooks(
+        mockVerifiedVolunteer
       );
 
       fireEvent.click(getByText('志工'));
 
       await waitFor(() => {
-        expect(getByText(/任務列表|目前沒有新任務/)).toBeInTheDocument();
+        expect(getByText('目前沒有新任務')).toBeTruthy();
       });
     });
 
     test('申辦分頁可提交申請', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockVerified
       );
 
       fireEvent.click(getByText('申辦'));
 
       await waitFor(() => {
-        expect(getByText('開始申辦')).toBeInTheDocument();
-        expect(getByText('立即申辦')).toBeInTheDocument();
+        expect(getByText('開始申辦')).toBeTruthy();
+        expect(getByText('立即申辦')).toBeTruthy();
       });
     });
   });
@@ -244,52 +365,56 @@ describe('安心守護頁面權限測試', () => {
     };
 
     test('顯示管理功能按鈕', () => {
-      const { getByLabelText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByLabelText } = renderWithMockedHooks(
         mockAdmin
       );
 
-      expect(getByLabelText('管理功能')).toBeInTheDocument();
+      expect(getByLabelText('管理功能')).toBeTruthy();
     });
 
     test('家屬分頁顯示額外管理功能', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockAdmin
       );
 
       await waitFor(() => {
-        expect(getByText('全域監控')).toBeInTheDocument();
-        expect(getByText('緊急派遣')).toBeInTheDocument();
+        expect(getByText('全域監控')).toBeTruthy();
+        expect(getByText('緊急派遣')).toBeTruthy();
       });
     });
 
     test('志工分頁顯示管理選項', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
-        mockAdmin
+      const mockAdminVolunteer = {
+        ...mockAdmin,
+        isVolunteerRegistered: true,
+        volunteerTasks: [
+          { id: '1', title: '協助走失長者', status: 'pending', assignedTo: null }
+        ]
+      };
+
+      const { getByText } = renderWithMockedHooks(
+        mockAdminVolunteer
       );
 
       fireEvent.click(getByText('志工'));
 
       await waitFor(() => {
-        expect(getByText('志工管理')).toBeInTheDocument();
-        expect(getByText('發布任務')).toBeInTheDocument();
-        expect(getByText('排班管理')).toBeInTheDocument();
+        expect(getByText('志工管理')).toBeTruthy();
+        expect(getByText('發布任務')).toBeTruthy();
+        expect(getByText('排班管理')).toBeTruthy();
       });
     });
 
     test('申辦分頁顯示審核功能', async () => {
-      const { getByText } = renderWithProviders(
-        React.createElement(GuardianPage),
+      const { getByText } = renderWithMockedHooks(
         mockAdmin
       );
 
       fireEvent.click(getByText('申辦'));
 
       await waitFor(() => {
-        expect(getByText('審核案件')).toBeInTheDocument();
-        expect(getByText('申辦統計')).toBeInTheDocument();
+        expect(getByText('審核案件')).toBeTruthy();
+        expect(getByText('申辦統計')).toBeTruthy();
       });
     });
   });
@@ -303,17 +428,17 @@ describe('導航功能測試', () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     // Reset mock location before each test
-    if ((global as any).mockLocation) {
-      (global as any).mockLocation.pathname = '/';
-      (global as any).mockLocation.search = '';
-      (global as any).mockLocation.href = 'http://localhost:3000';
-    }
+    (global as any).mockLocation = {
+      pathname: '/',
+      search: '',
+      href: 'http://localhost:3000'
+    };
   });
 
   test('預設顯示家屬分頁', () => {
-    const { container } = renderWithProviders(
-      React.createElement(GuardianPage),
+    const { container } = renderWithMockedHooks(
       mockUser
     );
 
@@ -322,8 +447,7 @@ describe('導航功能測試', () => {
   });
 
   test('點擊分頁切換內容', async () => {
-    const { getByText, container } = renderWithProviders(
-      React.createElement(GuardianPage),
+    const { getByText, container } = renderWithMockedHooks(
       mockUser
     );
 
@@ -343,8 +467,7 @@ describe('導航功能測試', () => {
   });
 
   test('URL更新為對應分頁路徑', () => {
-    const { getByText } = renderWithProviders(
-      React.createElement(GuardianPage),
+    const { getByText } = renderWithMockedHooks(
       mockUser
     );
 
@@ -361,8 +484,7 @@ describe('導航功能測試', () => {
   });
 
   test('返回按鈕導向首頁', () => {
-    const { getByLabelText } = renderWithProviders(
-      React.createElement(GuardianPage),
+    const { getByLabelText } = renderWithMockedHooks(
       mockUser
     );
 
@@ -385,13 +507,12 @@ describe('通知徽章測試', () => {
       }
     };
 
-    const { getByText } = renderWithProviders(
-      React.createElement(GuardianPage),
+    const { getByText } = renderWithMockedHooks(
       mockUser
     );
 
     const badge = getByText('3');
-    expect(badge).toBeInTheDocument();
-    expect(badge.closest('[data-badge]')).toHaveAttribute('data-badge', '3');
+    expect(badge).toBeTruthy();
+    expect(badge.closest('[data-badge]')?.getAttribute('data-badge')).toBe('3');
   });
 });

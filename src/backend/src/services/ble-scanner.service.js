@@ -20,6 +20,26 @@ class BLEScannerService {
     this.detectionRate = 0;
     this.lastDetectionTime = null;
     this.centralManager = null;
+
+    // Initialize missing properties
+    this.macRotationMap = new Map();
+    this.scanHistory = [];
+    this.errorHistory = [];
+    this.retryQueue = [];
+
+    // Background scan configuration
+    this.backgroundScanConfig = {
+      ios: {
+        restoreIdentifier: 'HsinchuPassVolunteerScanner',
+        allowDuplicates: false,
+        scanInterval: 10000
+      },
+      android: {
+        scanMode: 'SCAN_MODE_LOW_POWER',
+        callbackType: 'CALLBACK_TYPE_ALL_MATCHES',
+        matchMode: 'MATCH_MODE_AGGRESSIVE'
+      }
+    };
   }
 
   /**
@@ -105,7 +125,7 @@ class BLEScannerService {
   }
 
   /**
-   * Handle discovered device
+   * Handle discovered device with MAC rotation handling
    */
   async handleDeviceDiscovered(device) {
     try {
@@ -114,9 +134,16 @@ class BLEScannerService {
         return;
       }
 
+      // Handle MAC address rotation detection
+      await this.handleMACRotation(device);
+
       await this.processDiscoveredDevice(device, this.scanParameters);
+
+      // Update detection metrics
+      this.updateDetectionMetrics(device);
     } catch (error) {
-      console.error('Error handling discovered device:', error);
+      this.logError('Error handling discovered device', error);
+      await this.handleDiscoveryError(error, device);
     }
   }
 
@@ -141,6 +168,14 @@ class BLEScannerService {
           gridSquare: await this.fuzzLocationToGrid(options.currentLocation),
           timestamp: await this.roundTimestampToInterval(device.timestamp || new Date().toISOString()),
           anonymousId: this._generateAnonymousId()
+        });
+      } else {
+        // Default case - anonymize device without location inference
+        await this.anonymizationService.anonymizeDevice({
+          address: device.address,
+          rssi: device.rssi,
+          timestamp: device.timestamp || new Date().toISOString(),
+          includeLocation: false
         });
       }
     } catch (error) {
@@ -174,9 +209,14 @@ class BLEScannerService {
     date.setMinutes(minutes, 0, 0); // Set to nearest 5-minute interval
     date.setMilliseconds(0); // Ensure milliseconds are 0
 
-    // Format with milliseconds as .000
-    const isoString = date.toISOString();
-    return isoString.replace(/\.\d{3}Z$/, '.000Z');
+    // Ensure the format matches expected pattern: YYYY-MM-DDTHH:MM:00.000Z
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const roundedMinutes = String(minutes).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${roundedMinutes}:00.000Z`;
   }
 
   /**
@@ -461,6 +501,288 @@ class BLEScannerService {
   _generateAnonymousId() {
     const crypto = require('crypto');
     return crypto.randomUUID();
+  }
+
+  /**
+   * Handle MAC address rotation detection and tracking
+   */
+  async handleMACRotation(device) {
+    try {
+      // Ensure macRotationMap is initialized
+      if (!this.macRotationMap) {
+        this.macRotationMap = new Map();
+      }
+
+      const deviceKey = device.address;
+      const timestamp = new Date().toISOString();
+
+      // Track device appearances for rotation analysis
+      if (!this.macRotationMap.has(deviceKey)) {
+        this.macRotationMap.set(deviceKey, {
+          firstSeen: timestamp,
+          lastSeen: timestamp,
+          appearances: 1,
+          rssiHistory: [device.rssi]
+        });
+      } else {
+        const entry = this.macRotationMap.get(deviceKey);
+        entry.lastSeen = timestamp;
+        entry.appearances++;
+        entry.rssiHistory.push(device.rssi);
+
+        // Keep only recent RSSI values (last 10)
+        if (entry.rssiHistory.length > 10) {
+          entry.rssiHistory = entry.rssiHistory.slice(-10);
+        }
+      }
+
+      // Clean up old entries (older than 1 hour)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      for (const [key, entry] of this.macRotationMap.entries()) {
+        if (entry.lastSeen < oneHourAgo) {
+          this.macRotationMap.delete(key);
+        }
+      }
+    } catch (error) {
+      this.logError('MAC rotation handling failed', error);
+    }
+  }
+
+  /**
+   * Add background scanning capabilities for iOS/Android
+   */
+  async enableBackgroundScanning(platform = 'ios') {
+    try {
+      if (platform === 'ios') {
+        return await this.enableIOSBackgroundScanning();
+      } else if (platform === 'android') {
+        return await this.enableAndroidBackgroundScanning();
+      }
+
+      throw new Error(`Unsupported platform: ${platform}`);
+    } catch (error) {
+      throw new Error(`Failed to enable background scanning: ${error.message}`);
+    }
+  }
+
+  /**
+   * iOS background scanning with Core Bluetooth state preservation
+   */
+  async enableIOSBackgroundScanning() {
+    try {
+      // Ensure backgroundScanConfig is initialized
+      if (!this.backgroundScanConfig) {
+        this.backgroundScanConfig = {
+          ios: {
+            restoreIdentifier: 'HsinchuPassVolunteerScanner',
+            allowDuplicates: false,
+            scanInterval: 10000
+          },
+          android: {
+            scanMode: 'SCAN_MODE_LOW_POWER',
+            callbackType: 'CALLBACK_TYPE_ALL_MATCHES',
+            matchMode: 'MATCH_MODE_AGGRESSIVE'
+          }
+        };
+      }
+
+      const config = this.backgroundScanConfig.ios;
+
+      if (this.centralManager && this.centralManager.initWithDelegate) {
+        await this.centralManager.initWithDelegate(this, {
+          restoreIdentifier: config.restoreIdentifier,
+          showPowerAlert: true
+        });
+      }
+
+      // Configure for background scanning
+      const scanOptions = {
+        allowDuplicatesKey: config.allowDuplicates,
+        CBCentralManagerScanOptionSolicitedServiceUUIDs: []
+      };
+
+      if (this.bleAdapter && this.bleAdapter.setScanParameters) {
+        await this.bleAdapter.setScanParameters({
+          ...scanOptions,
+          backgroundMode: true,
+          intervalMs: config.scanInterval
+        });
+      }
+
+      return { success: true, platform: 'ios', config };
+    } catch (error) {
+      throw new Error(`iOS background scanning failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Android background scanning with JobScheduler compliance
+   */
+  async enableAndroidBackgroundScanning() {
+    try {
+      // Ensure backgroundScanConfig is initialized
+      if (!this.backgroundScanConfig) {
+        this.backgroundScanConfig = {
+          ios: {
+            restoreIdentifier: 'HsinchuPassVolunteerScanner',
+            allowDuplicates: false,
+            scanInterval: 10000
+          },
+          android: {
+            scanMode: 'SCAN_MODE_LOW_POWER',
+            callbackType: 'CALLBACK_TYPE_ALL_MATCHES',
+            matchMode: 'MATCH_MODE_AGGRESSIVE'
+          }
+        };
+      }
+
+      const config = this.backgroundScanConfig.android;
+
+      // Check for required permissions
+      if (this.permissions) {
+        const bgLocationPermission = await this.permissions.check('android.permission.ACCESS_BACKGROUND_LOCATION');
+        if (bgLocationPermission !== 'granted') {
+          console.warn('Background location permission not granted, scanning capabilities limited');
+        }
+      }
+
+      // Configure Android-specific scanning
+      if (this.bleAdapter && this.bleAdapter.setScanParameters) {
+        await this.bleAdapter.setScanParameters({
+          scanMode: config.scanMode,
+          callbackType: config.callbackType,
+          matchMode: config.matchMode,
+          backgroundMode: true,
+          jobSchedulerCompliant: true
+        });
+      }
+
+      return { success: true, platform: 'android', config };
+    } catch (error) {
+      throw new Error(`Android background scanning failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update detection metrics and adaptive behavior
+   */
+  updateDetectionMetrics(device) {
+    try {
+      const timestamp = new Date();
+
+      // Update detection rate
+      this.lastDetectionTime = timestamp.toISOString();
+
+      // Ensure scanHistory is initialized
+      if (!this.scanHistory) {
+        this.scanHistory = [];
+      }
+
+      // Add to scan history
+      this.scanHistory.push({
+        timestamp: timestamp.toISOString(),
+        rssi: device.rssi,
+        deviceHash: this._generateDeviceHash(device.address)
+      });
+
+      // Keep history manageable (last 100 detections)
+      if (this.scanHistory.length > 100) {
+        this.scanHistory = this.scanHistory.slice(-100);
+      }
+
+      // Calculate detection rate (detections per minute)
+      const oneMinuteAgo = new Date(Date.now() - 60000);
+      const recentDetections = this.scanHistory.filter(
+        detection => new Date(detection.timestamp) > oneMinuteAgo
+      );
+
+      this.detectionRate = recentDetections.length;
+    } catch (error) {
+      this.logError('Detection metrics update failed', error);
+    }
+  }
+
+  /**
+   * Enhanced logging with error categorization
+   */
+  logError(context, error) {
+    const errorInfo = {
+      context,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      stack: error.stack
+    };
+
+    console.error(`[BLEScanner] ${context}:`, errorInfo);
+  }
+
+  /**
+   * Handle discovery errors with retry logic
+   */
+  async handleDiscoveryError(error, device) {
+    try {
+      // Ensure arrays are initialized
+      if (!this.errorHistory) {
+        this.errorHistory = [];
+      }
+      if (!this.retryQueue) {
+        this.retryQueue = [];
+      }
+
+      const errorEntry = {
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        device: device ? { address: device.address, rssi: device.rssi } : null,
+        retryable: this.isRetryableError(error)
+      };
+
+      this.errorHistory.push(errorEntry);
+
+      // Keep error history manageable
+      if (this.errorHistory.length > 50) {
+        this.errorHistory = this.errorHistory.slice(-50);
+      }
+
+      // Add to retry queue if retryable
+      if (errorEntry.retryable && device) {
+        this.retryQueue.push({
+          device,
+          timestamp: new Date().toISOString(),
+          attempts: 0,
+          maxAttempts: 3
+        });
+      }
+
+      // Update status to reflect error state
+      this.status = {
+        ...this.status,
+        lastError: error.message,
+        lastErrorTime: new Date().toISOString()
+      };
+    } catch (retryError) {
+      console.error('Error handling discovery error:', retryError);
+    }
+  }
+
+  /**
+   * Check if error is retryable
+   */
+  isRetryableError(error) {
+    const retryableErrors = [
+      'network',
+      'timeout',
+      'connection',
+      'temporary'
+    ];
+
+    const errorMessage = error.message.toLowerCase();
+    return retryableErrors.some(keyword => errorMessage.includes(keyword));
+  }
+
+  _generateDeviceHash(address) {
+    const crypto = require('crypto');
+    const salt = 'device_tracking_salt_2025';
+    return crypto.createHash('sha256').update(address + salt).digest('hex').substring(0, 16);
   }
 }
 

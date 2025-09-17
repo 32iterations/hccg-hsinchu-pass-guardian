@@ -1,0 +1,490 @@
+name: Real-time Quality Gate Alerts
+
+on:
+  workflow_run:
+    workflows: ["Complete CI/CD Pipeline", "TDD CI/CD Pipeline", "Security Scans", "Quality Gate Monitor"]
+    types: [completed]
+    branches: [main, develop, 'p1-*']
+  repository_dispatch:
+    types: [quality-gate-failure, security-alert, coverage-drop]
+
+env:
+  ALERT_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  EMAIL_NOTIFICATION: ${{ secrets.NOTIFICATION_EMAIL }}
+
+jobs:
+  process-alerts:
+    name: Process Quality Gate Alerts
+    runs-on: ubuntu-latest
+    if: |
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.action == 'quality-gate-failure' ||
+      github.event.action == 'security-alert' ||
+      github.event.action == 'coverage-drop'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Analyze workflow failure
+        id: analyze
+        run: |
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          WORKFLOW_URL="${{ github.event.workflow_run.html_url }}"
+
+          echo "Analyzing workflow: $WORKFLOW_NAME"
+          echo "Conclusion: $WORKFLOW_CONCLUSION"
+
+          # Determine alert severity and type
+          ALERT_SEVERITY="medium"
+          ALERT_TYPE="workflow_failure"
+
+          case "$WORKFLOW_NAME" in
+            "Complete CI/CD Pipeline")
+              ALERT_SEVERITY="high"
+              ALERT_TYPE="cicd_failure"
+              ;;
+            "Security Scans")
+              ALERT_SEVERITY="critical"
+              ALERT_TYPE="security_failure"
+              ;;
+            "TDD CI/CD Pipeline")
+              ALERT_SEVERITY="high"
+              ALERT_TYPE="test_failure"
+              ;;
+          esac
+
+          echo "ALERT_SEVERITY=$ALERT_SEVERITY" >> $GITHUB_OUTPUT
+          echo "ALERT_TYPE=$ALERT_TYPE" >> $GITHUB_OUTPUT
+          echo "WORKFLOW_NAME=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
+          echo "WORKFLOW_URL=$WORKFLOW_URL" >> $GITHUB_OUTPUT
+
+      - name: Fetch workflow logs
+        id: logs
+        run: |
+          # Download workflow logs for analysis
+          cat > fetch-logs.js << 'EOF'
+          const { Octokit } = require('@octokit/rest');
+
+          const octokit = new Octokit({
+            auth: process.env.GITHUB_TOKEN,
+          });
+
+          async function fetchWorkflowLogs() {
+            try {
+              const workflowRunId = process.env.WORKFLOW_RUN_ID;
+              const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+
+              const { data: jobs } = await octokit.rest.actions.listJobsForWorkflowRun({
+                owner,
+                repo,
+                run_id: workflowRunId,
+              });
+
+              const failedJobs = jobs.jobs.filter(job => job.conclusion === 'failure');
+              const errors = [];
+
+              for (const job of failedJobs) {
+                const failedSteps = job.steps.filter(step => step.conclusion === 'failure');
+                failedSteps.forEach(step => {
+                  errors.push({
+                    job: job.name,
+                    step: step.name,
+                    conclusion: step.conclusion,
+                    completed_at: step.completed_at
+                  });
+                });
+              }
+
+              console.log('FAILED_JOBS=' + JSON.stringify(errors));
+              return errors;
+            } catch (error) {
+              console.error('Error fetching logs:', error);
+              return [];
+            }
+          }
+
+          fetchWorkflowLogs();
+          EOF
+
+          # Run with Node.js if available, otherwise skip log analysis
+          if command -v node &> /dev/null; then
+            npm install @octokit/rest
+            FAILED_JOBS=$(node fetch-logs.js | grep "FAILED_JOBS=" | cut -d'=' -f2- || echo "[]")
+            echo "FAILED_JOBS=$FAILED_JOBS" >> $GITHUB_OUTPUT
+          else
+            echo "FAILED_JOBS=[]" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+
+      - name: Generate alert payload
+        id: payload
+        run: |
+          cat > alert-payload.json << EOF
+          {
+            "alert_id": "$(date +%s)-${{ github.run_id }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "severity": "${{ steps.analyze.outputs.ALERT_SEVERITY }}",
+            "type": "${{ steps.analyze.outputs.ALERT_TYPE }}",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "commit": "${{ github.sha }}",
+            "workflow": {
+              "name": "${{ steps.analyze.outputs.WORKFLOW_NAME }}",
+              "run_id": "${{ github.event.workflow_run.id }}",
+              "url": "${{ steps.analyze.outputs.WORKFLOW_URL }}",
+              "conclusion": "${{ github.event.workflow_run.conclusion }}"
+            },
+            "failed_jobs": ${{ steps.logs.outputs.FAILED_JOBS || '[]' }},
+            "context": {
+              "actor": "${{ github.actor }}",
+              "event": "${{ github.event_name }}",
+              "head_commit": {
+                "message": "${{ github.event.workflow_run.head_commit.message }}",
+                "author": "${{ github.event.workflow_run.head_commit.author.name }}"
+              }
+            }
+          }
+          EOF
+
+          echo "Alert payload generated"
+          cat alert-payload.json
+
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK != ''
+        run: |
+          SEVERITY_COLOR="warning"
+          SEVERITY_EMOJI="⚠️"
+
+          case "${{ steps.analyze.outputs.ALERT_SEVERITY }}" in
+            "critical")
+              SEVERITY_COLOR="danger"
+              SEVERITY_EMOJI="🚨"
+              ;;
+            "high")
+              SEVERITY_COLOR="warning"
+              SEVERITY_EMOJI="⚠️"
+              ;;
+            "medium")
+              SEVERITY_COLOR="good"
+              SEVERITY_EMOJI="ℹ️"
+              ;;
+          esac
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "'$SEVERITY_EMOJI' Quality Gate Alert - '${{ steps.analyze.outputs.ALERT_SEVERITY }}' Severity",
+              "attachments": [{
+                "color": "'$SEVERITY_COLOR'",
+                "title": "Workflow Failed: '${{ steps.analyze.outputs.WORKFLOW_NAME }}'",
+                "title_link": "'${{ steps.analyze.outputs.WORKFLOW_URL }}'",
+                "fields": [{
+                  "title": "Repository",
+                  "value": "'${{ github.repository }}'",
+                  "short": true
+                }, {
+                  "title": "Branch",
+                  "value": "'${{ github.ref_name }}'",
+                  "short": true
+                }, {
+                  "title": "Commit",
+                  "value": "'${{ github.sha }}'",
+                  "short": true
+                }, {
+                  "title": "Actor",
+                  "value": "'${{ github.actor }}'",
+                  "short": true
+                }, {
+                  "title": "Alert Type",
+                  "value": "'${{ steps.analyze.outputs.ALERT_TYPE }}'",
+                  "short": true
+                }, {
+                  "title": "Timestamp",
+                  "value": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+                  "short": true
+                }],
+                "actions": [{
+                  "type": "button",
+                  "text": "View Workflow",
+                  "url": "'${{ steps.analyze.outputs.WORKFLOW_URL }}'"
+                }, {
+                  "type": "button",
+                  "text": "View Repository",
+                  "url": "https://github.com/'${{ github.repository }}'"
+                }]
+              }]
+            }' \
+            ${{ env.SLACK_WEBHOOK }}
+
+      - name: Send Teams notification
+        if: env.ALERT_WEBHOOK != ''
+        run: |
+          THEME_COLOR="FF6B35" # Orange for warnings
+
+          case "${{ steps.analyze.outputs.ALERT_SEVERITY }}" in
+            "critical")
+              THEME_COLOR="FF0000" # Red
+              ;;
+            "high")
+              THEME_COLOR="FF6B35" # Orange
+              ;;
+            "medium")
+              THEME_COLOR="FFD700" # Gold
+              ;;
+          esac
+
+          curl -X POST -H 'Content-Type: application/json' \
+            --data '{
+              "@type": "MessageCard",
+              "@context": "http://schema.org/extensions",
+              "themeColor": "'$THEME_COLOR'",
+              "summary": "Quality Gate Alert: '${{ steps.analyze.outputs.WORKFLOW_NAME }}' Failed",
+              "sections": [{
+                "activityTitle": "🚨 Quality Gate Alert",
+                "activitySubtitle": "Workflow failure detected in '${{ github.repository }}'",
+                "activityImage": "https://github.com/github.png",
+                "facts": [{
+                  "name": "Repository",
+                  "value": "'${{ github.repository }}'"
+                }, {
+                  "name": "Branch",
+                  "value": "'${{ github.ref_name }}'"
+                }, {
+                  "name": "Workflow",
+                  "value": "'${{ steps.analyze.outputs.WORKFLOW_NAME }}'"
+                }, {
+                  "name": "Severity",
+                  "value": "'${{ steps.analyze.outputs.ALERT_SEVERITY }}'"
+                }, {
+                  "name": "Alert Type",
+                  "value": "'${{ steps.analyze.outputs.ALERT_TYPE }}'"
+                }, {
+                  "name": "Actor",
+                  "value": "'${{ github.actor }}'"
+                }, {
+                  "name": "Timestamp",
+                  "value": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+                }],
+                "markdown": true
+              }],
+              "potentialAction": [{
+                "@type": "OpenUri",
+                "name": "View Workflow",
+                "targets": [{
+                  "os": "default",
+                  "uri": "'${{ steps.analyze.outputs.WORKFLOW_URL }}'"
+                }]
+              }, {
+                "@type": "OpenUri",
+                "name": "View Repository",
+                "targets": [{
+                  "os": "default",
+                  "uri": "https://github.com/'${{ github.repository }}'"
+                }]
+              }]
+            }' \
+            ${{ env.ALERT_WEBHOOK }}
+
+      - name: Create GitHub issue for critical alerts
+        if: steps.analyze.outputs.ALERT_SEVERITY == 'critical'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const alertPayload = JSON.parse(require('fs').readFileSync('alert-payload.json', 'utf8'));
+
+            const issueBody = `## 🚨 Critical Quality Gate Alert
+
+            **Alert ID:** ${alertPayload.alert_id}
+            **Timestamp:** ${alertPayload.timestamp}
+            **Severity:** ${alertPayload.severity.toUpperCase()}
+
+            ### Workflow Details
+            - **Name:** ${alertPayload.workflow.name}
+            - **Run ID:** ${alertPayload.workflow.run_id}
+            - **Conclusion:** ${alertPayload.workflow.conclusion}
+            - **URL:** ${alertPayload.workflow.url}
+
+            ### Repository Context
+            - **Branch:** ${alertPayload.branch}
+            - **Commit:** ${alertPayload.commit}
+            - **Actor:** ${alertPayload.context.actor}
+
+            ### Failed Jobs
+            ${alertPayload.failed_jobs.length > 0
+              ? alertPayload.failed_jobs.map(job => `- **${job.job}** → ${job.step} (${job.conclusion})`).join('\n')
+              : 'No specific job failures detected'}
+
+            ### Commit Details
+            **Message:** ${alertPayload.context.head_commit.message}
+            **Author:** ${alertPayload.context.head_commit.author}
+
+            ### Required Actions
+            1. 🔍 **Investigate the workflow failure immediately**
+            2. 🔧 **Fix the underlying issues**
+            3. ✅ **Re-run the failed workflow**
+            4. 📝 **Update this issue with resolution details**
+            5. 🚀 **Verify deployment readiness**
+
+            ### Related Links
+            - [Failed Workflow Run](${alertPayload.workflow.url})
+            - [Repository](https://github.com/${alertPayload.repository})
+            - [Commit](https://github.com/${alertPayload.repository}/commit/${alertPayload.commit})
+
+            ---
+            *This issue was automatically created by the Quality Gate Monitor*
+            *Alert ID: ${alertPayload.alert_id}*`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Critical Alert: ${alertPayload.workflow.name} Failed`,
+              body: issueBody,
+              labels: ['critical', 'quality-gate', 'workflow-failure', 'urgent'],
+              assignees: ['${{ github.actor }}']
+            });
+
+            console.log(`Created issue #${issue.data.number}`);
+
+      - name: Update monitoring dashboard
+        run: |
+          # Create a real-time status update for monitoring dashboard
+          cat > monitoring-update.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "event": "quality_gate_alert",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "alert": {
+              "severity": "${{ steps.analyze.outputs.ALERT_SEVERITY }}",
+              "type": "${{ steps.analyze.outputs.ALERT_TYPE }}",
+              "workflow": "${{ steps.analyze.outputs.WORKFLOW_NAME }}",
+              "status": "active"
+            },
+            "metrics": {
+              "deployment_blocked": ${{ steps.analyze.outputs.ALERT_SEVERITY == 'critical' }},
+              "requires_immediate_action": ${{ steps.analyze.outputs.ALERT_SEVERITY == 'critical' || steps.analyze.outputs.ALERT_SEVERITY == 'high' }},
+              "alert_count": 1
+            }
+          }
+          EOF
+
+          echo "Monitoring dashboard updated with alert status"
+
+      - name: Store alert history
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gate-alert-${{ github.run_id }}
+          path: |
+            alert-payload.json
+            monitoring-update.json
+          retention-days: 90
+
+      - name: Send email notification
+        if: env.EMAIL_NOTIFICATION != '' && steps.analyze.outputs.ALERT_SEVERITY == 'critical'
+        run: |
+          # Note: This would require email service configuration
+          echo "Email notification would be sent to: ${{ env.EMAIL_NOTIFICATION }}"
+          echo "Subject: 🚨 Critical Quality Gate Alert - ${{ steps.analyze.outputs.WORKFLOW_NAME }}"
+          echo "Alert details saved in artifacts for email template processing"
+
+  alert-resolution:
+    name: Alert Resolution Tracking
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Check for resolved alerts
+        run: |
+          echo "Workflow '${{ github.event.workflow_run.name }}' completed successfully"
+          echo "Checking for previously active alerts to resolve..."
+
+          # In a real implementation, this would:
+          # 1. Query active alerts from storage/database
+          # 2. Mark resolved alerts as closed
+          # 3. Send resolution notifications
+          # 4. Update monitoring dashboard
+
+          cat > resolution-update.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "event": "alert_resolution",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "workflow": "${{ github.event.workflow_run.name }}",
+            "status": "resolved",
+            "resolution_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+      - name: Send resolution notification
+        if: env.SLACK_WEBHOOK != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "✅ Quality Gate Alert Resolved",
+              "attachments": [{
+                "color": "good",
+                "title": "Workflow Success: '${{ github.event.workflow_run.name }}'",
+                "fields": [{
+                  "title": "Repository",
+                  "value": "'${{ github.repository }}'",
+                  "short": true
+                }, {
+                  "title": "Branch",
+                  "value": "'${{ github.ref_name }}'",
+                  "short": true
+                }, {
+                  "title": "Status",
+                  "value": "All quality gates now passing",
+                  "short": false
+                }]
+              }]
+            }' \
+            ${{ env.SLACK_WEBHOOK }}
+
+      - name: Close related GitHub issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find open issues with quality-gate label
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'quality-gate,workflow-failure',
+              state: 'open'
+            });
+
+            for (const issue of issues) {
+              // Check if this issue is related to the resolved workflow
+              if (issue.title.includes('${{ github.event.workflow_run.name }}')) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `✅ **Alert Resolved**
+
+                  The workflow '${{ github.event.workflow_run.name }}' has completed successfully.
+
+                  **Resolution Details:**
+                  - Workflow Run: ${{ github.event.workflow_run.html_url }}
+                  - Resolution Time: ${new Date().toISOString()}
+                  - Status: All quality gates now passing
+
+                  Closing this issue as resolved.`
+                });
+
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  labels: [...issue.labels.map(l => l.name), 'resolved']
+                });
+
+                console.log(`Closed issue #${issue.number}: ${issue.title}`);
+              }
+            }

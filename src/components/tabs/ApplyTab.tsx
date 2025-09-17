@@ -97,8 +97,8 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({ role, user }) => {
           description={`您的申請已成功送出\n申請編號：${application.id}`}
           statusTimeline={[
             {
-              date: application.submittedAt,
-              time: new Date(application.submittedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+              date: application.submittedAt ? new Date(application.submittedAt).toLocaleDateString('zh-TW') : new Date().toLocaleDateString('zh-TW'),
+              time: application.submittedAt ? new Date(application.submittedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
               status: '已送出',
               current: true
             },

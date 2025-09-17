@@ -8,7 +8,7 @@ const mydataRoutes = require('./mydata');
 const kpiRoutes = require('./kpi');
 const deviceBindingRoutes = require('./device-binding');
 const bleScannerRoutes = require('./ble-scanner');
-const mydataEnhancedRoutes = require('./mydata-enhanced');
+// const mydataEnhancedRoutes = require('./mydata-enhanced'); // Commented out until file exists
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.use(`${API_VERSION}/mydata`, mydataRoutes);
 router.use(`${API_VERSION}/kpi`, kpiRoutes);
 router.use(`${API_VERSION}/devices`, deviceBindingRoutes);
 router.use(`${API_VERSION}/ble`, bleScannerRoutes);
-router.use(`${API_VERSION}/mydata-enhanced`, mydataEnhancedRoutes);
+// router.use(`${API_VERSION}/mydata-enhanced`, mydataEnhancedRoutes); // Commented out until file exists
 
 // Health check endpoint
 router.get('/health', (req, res) => {

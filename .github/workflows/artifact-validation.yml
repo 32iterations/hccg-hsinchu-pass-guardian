@@ -1,0 +1,507 @@
+name: Artifact Validation & Monitoring
+
+on:
+  workflow_run:
+    workflows: ["Complete CI/CD Pipeline", "TDD CI/CD Pipeline"]
+    types: [completed]
+  schedule:
+    - cron: '0 */4 * * *' # Every 4 hours
+  workflow_dispatch:
+    inputs:
+      validation_type:
+        description: 'Type of validation to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - security
+          - integrity
+          - size
+          - performance
+
+env:
+  MAX_ARTIFACT_SIZE_MB: 100
+  RETENTION_DAYS: 30
+  SECURITY_SCAN_LEVEL: 'high'
+
+jobs:
+  validate-artifacts:
+    name: Validate Build Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        artifact-type: [backend, frontend, mobile, coverage, security]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup validation environment
+        run: |
+          # Install validation tools
+          sudo apt-get update
+          sudo apt-get install -y file jq curl unzip
+
+          # Install security scanning tools
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+          # Install integrity checking tools
+          sudo apt-get install -y openssl
+
+      - name: Download artifacts
+        id: download
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*${{ matrix.artifact-type }}*"
+          path: ./artifacts-validation
+        continue-on-error: true
+
+      - name: Validate artifact existence
+        id: existence
+        run: |
+          ARTIFACT_PATH="./artifacts-validation"
+          ARTIFACT_TYPE="${{ matrix.artifact-type }}"
+
+          echo "Validating existence of $ARTIFACT_TYPE artifacts..."
+
+          if [ ! -d "$ARTIFACT_PATH" ] || [ -z "$(ls -A $ARTIFACT_PATH 2>/dev/null)" ]; then
+            echo "ARTIFACT_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "VALIDATION_STATUS=missing" >> $GITHUB_OUTPUT
+            echo "❌ No $ARTIFACT_TYPE artifacts found"
+          else
+            echo "ARTIFACT_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "✅ $ARTIFACT_TYPE artifacts found"
+
+            # List found artifacts
+            echo "Found artifacts:"
+            find "$ARTIFACT_PATH" -type f -exec ls -lh {} \;
+          fi
+
+      - name: Validate artifact integrity
+        id: integrity
+        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true'
+        run: |
+          ARTIFACT_PATH="./artifacts-validation"
+          INTEGRITY_PASSED=true
+
+          echo "🔍 Validating artifact integrity..."
+
+          # Check for SHA256SUMS files and validate
+          find "$ARTIFACT_PATH" -name "SHA256SUMS*.txt" | while read -r sum_file; do
+            echo "Checking checksums in: $sum_file"
+            if [ -f "$sum_file" ]; then
+              # Change to the directory containing the checksum file
+              SUM_DIR=$(dirname "$sum_file")
+              cd "$SUM_DIR"
+
+              if sha256sum -c "$(basename "$sum_file")" --quiet; then
+                echo "✅ Checksums valid for $(basename "$sum_file")"
+              else
+                echo "❌ Checksum validation failed for $(basename "$sum_file")"
+                INTEGRITY_PASSED=false
+              fi
+              cd - > /dev/null
+            fi
+          done
+
+          # Validate file types and structure
+          find "$ARTIFACT_PATH" -type f | while read -r file; do
+            echo "Analyzing file: $(basename "$file")"
+            file_type=$(file "$file")
+            echo "  Type: $file_type"
+
+            # Basic file validation
+            case "$file" in
+              *.tar.gz|*.tgz)
+                if tar -tzf "$file" >/dev/null 2>&1; then
+                  echo "  ✅ Valid tar.gz archive"
+                else
+                  echo "  ❌ Corrupted tar.gz archive"
+                  INTEGRITY_PASSED=false
+                fi
+                ;;
+              *.zip)
+                if unzip -t "$file" >/dev/null 2>&1; then
+                  echo "  ✅ Valid zip archive"
+                else
+                  echo "  ❌ Corrupted zip archive"
+                  INTEGRITY_PASSED=false
+                fi
+                ;;
+              *.json)
+                if jq . "$file" >/dev/null 2>&1; then
+                  echo "  ✅ Valid JSON file"
+                else
+                  echo "  ❌ Invalid JSON file"
+                  INTEGRITY_PASSED=false
+                fi
+                ;;
+            esac
+          done
+
+          echo "INTEGRITY_PASSED=$INTEGRITY_PASSED" >> $GITHUB_OUTPUT
+
+      - name: Validate artifact size
+        id: size-check
+        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true'
+        run: |
+          ARTIFACT_PATH="./artifacts-validation"
+          SIZE_PASSED=true
+          TOTAL_SIZE=0
+
+          echo "📏 Validating artifact sizes..."
+
+          # Check individual file sizes
+          find "$ARTIFACT_PATH" -type f | while read -r file; do
+            size_bytes=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+            size_mb=$((size_bytes / 1024 / 1024))
+
+            echo "File: $(basename "$file") - Size: ${size_mb}MB"
+
+            if [ "$size_mb" -gt "${{ env.MAX_ARTIFACT_SIZE_MB }}" ]; then
+              echo "❌ File $(basename "$file") exceeds maximum size limit (${size_mb}MB > ${{ env.MAX_ARTIFACT_SIZE_MB }}MB)"
+              SIZE_PASSED=false
+            fi
+
+            TOTAL_SIZE=$((TOTAL_SIZE + size_mb))
+          done
+
+          echo "Total artifact size: ${TOTAL_SIZE}MB"
+          echo "SIZE_PASSED=$SIZE_PASSED" >> $GITHUB_OUTPUT
+          echo "TOTAL_SIZE_MB=$TOTAL_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Security scan artifacts
+        id: security-scan
+        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true' && (matrix.artifact-type == 'backend' || matrix.artifact-type == 'frontend')
+        run: |
+          ARTIFACT_PATH="./artifacts-validation"
+          SECURITY_PASSED=true
+
+          echo "🛡️ Running security scans on artifacts..."
+
+          # Scan for known vulnerabilities in built artifacts
+          find "$ARTIFACT_PATH" -name "*.tar.gz" -o -name "*.zip" | while read -r archive; do
+            echo "Scanning archive: $(basename "$archive")"
+
+            # Extract for scanning
+            temp_dir=$(mktemp -d)
+            case "$archive" in
+              *.tar.gz|*.tgz)
+                tar -xzf "$archive" -C "$temp_dir"
+                ;;
+              *.zip)
+                unzip -q "$archive" -d "$temp_dir"
+                ;;
+            esac
+
+            # Scan for secrets and sensitive data
+            echo "Scanning for sensitive data..."
+            if grep -r -i "password\|secret\|token\|key\|credential" "$temp_dir" | grep -v "\.test\." | grep -v "example" | grep -q .; then
+              echo "⚠️ Potential sensitive data found in $(basename "$archive")"
+              # Don't fail for warnings, but log them
+            fi
+
+            # Scan for common vulnerability patterns
+            echo "Scanning for vulnerability patterns..."
+            if find "$temp_dir" -name "*.js" -exec grep -l "eval\|innerHTML\|document.write" {} \; | grep -q .; then
+              echo "⚠️ Potential security issues found in JavaScript files"
+            fi
+
+            # Use grype for vulnerability scanning if available
+            if command -v grype >/dev/null 2>&1; then
+              echo "Running Grype vulnerability scan..."
+              if ! grype "$temp_dir" --fail-on high --quiet; then
+                echo "❌ High severity vulnerabilities found"
+                SECURITY_PASSED=false
+              fi
+            fi
+
+            rm -rf "$temp_dir"
+          done
+
+          echo "SECURITY_PASSED=$SECURITY_PASSED" >> $GITHUB_OUTPUT
+
+      - name: Performance validation
+        id: performance
+        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true'
+        run: |
+          ARTIFACT_PATH="./artifacts-validation"
+          PERFORMANCE_PASSED=true
+
+          echo "⚡ Validating artifact performance characteristics..."
+
+          # Measure compression ratios
+          find "$ARTIFACT_PATH" -name "*.tar.gz" -o -name "*.zip" | while read -r archive; do
+            original_size=$(stat -f%z "$archive" 2>/dev/null || stat -c%s "$archive" 2>/dev/null || echo 0)
+
+            case "$archive" in
+              *.tar.gz|*.tgz)
+                uncompressed_size=$(tar -tzf "$archive" --totals 2>&1 | grep "Total bytes written" | awk '{print $4}' || echo "$original_size")
+                ;;
+              *)
+                uncompressed_size=$original_size
+                ;;
+            esac
+
+            if [ "$uncompressed_size" -gt 0 ] && [ "$original_size" -gt 0 ]; then
+              compression_ratio=$((100 - (original_size * 100 / uncompressed_size)))
+              echo "Archive: $(basename "$archive") - Compression: ${compression_ratio}%"
+
+              # Check if compression is reasonable (at least 10% for typical web assets)
+              if [ "$compression_ratio" -lt 10 ] && [[ "$archive" == *"frontend"* ]]; then
+                echo "⚠️ Poor compression ratio for frontend assets: ${compression_ratio}%"
+              fi
+            fi
+          done
+
+          echo "PERFORMANCE_PASSED=$PERFORMANCE_PASSED" >> $GITHUB_OUTPUT
+
+      - name: Generate validation report
+        id: report
+        if: always()
+        run: |
+          ARTIFACT_TYPE="${{ matrix.artifact-type }}"
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          cat > "validation-report-${ARTIFACT_TYPE}.json" << EOF
+          {
+            "artifact_type": "$ARTIFACT_TYPE",
+            "timestamp": "$TIMESTAMP",
+            "validation_results": {
+              "existence": {
+                "status": "${{ steps.existence.outputs.ARTIFACT_EXISTS == 'true' && 'pass' || 'fail' }}",
+                "exists": ${{ steps.existence.outputs.ARTIFACT_EXISTS || false }}
+              },
+              "integrity": {
+                "status": "${{ steps.integrity.outputs.INTEGRITY_PASSED == 'true' && 'pass' || 'fail' }}",
+                "passed": ${{ steps.integrity.outputs.INTEGRITY_PASSED || false }}
+              },
+              "size": {
+                "status": "${{ steps.size-check.outputs.SIZE_PASSED == 'true' && 'pass' || 'fail' }}",
+                "total_size_mb": ${{ steps.size-check.outputs.TOTAL_SIZE_MB || 0 }},
+                "within_limits": ${{ steps.size-check.outputs.SIZE_PASSED || false }}
+              },
+              "security": {
+                "status": "${{ steps.security-scan.outputs.SECURITY_PASSED == 'true' && 'pass' || 'skip' }}",
+                "passed": ${{ steps.security-scan.outputs.SECURITY_PASSED || true }}
+              },
+              "performance": {
+                "status": "${{ steps.performance.outputs.PERFORMANCE_PASSED == 'true' && 'pass' || 'fail' }}",
+                "passed": ${{ steps.performance.outputs.PERFORMANCE_PASSED || false }}
+              }
+            },
+            "overall_status": "${{
+              steps.existence.outputs.ARTIFACT_EXISTS == 'true' &&
+              steps.integrity.outputs.INTEGRITY_PASSED != 'false' &&
+              steps.size-check.outputs.SIZE_PASSED != 'false' &&
+              steps.security-scan.outputs.SECURITY_PASSED != 'false' &&
+              steps.performance.outputs.PERFORMANCE_PASSED != 'false' && 'pass' || 'fail'
+            }}",
+            "metadata": {
+              "github_run_id": "${{ github.run_id }}",
+              "repository": "${{ github.repository }}",
+              "branch": "${{ github.ref_name }}",
+              "commit": "${{ github.sha }}"
+            }
+          }
+          EOF
+
+          echo "Validation report generated for $ARTIFACT_TYPE"
+          cat "validation-report-${ARTIFACT_TYPE}.json"
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: artifact-validation-${{ matrix.artifact-type }}-${{ github.run_id }}
+          path: |
+            validation-report-*.json
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+      - name: Set job status
+        if: always()
+        run: |
+          OVERALL_STATUS="${{
+            steps.existence.outputs.ARTIFACT_EXISTS == 'true' &&
+            steps.integrity.outputs.INTEGRITY_PASSED != 'false' &&
+            steps.size-check.outputs.SIZE_PASSED != 'false' &&
+            steps.security-scan.outputs.SECURITY_PASSED != 'false' &&
+            steps.performance.outputs.PERFORMANCE_PASSED != 'false' && 'pass' || 'fail'
+          }}"
+
+          if [ "$OVERALL_STATUS" = "fail" ]; then
+            echo "❌ Artifact validation failed for ${{ matrix.artifact-type }}"
+            exit 1
+          else
+            echo "✅ Artifact validation passed for ${{ matrix.artifact-type }}"
+          fi
+
+  consolidate-validation:
+    name: Consolidate Validation Results
+    runs-on: ubuntu-latest
+    needs: validate-artifacts
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all validation reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifact-validation-*-${{ github.run_id }}
+          path: ./validation-results
+          merge-multiple: true
+
+      - name: Consolidate results
+        id: consolidate
+        run: |
+          echo "📊 Consolidating artifact validation results..."
+
+          TOTAL_ARTIFACTS=0
+          PASSED_ARTIFACTS=0
+          FAILED_ARTIFACTS=0
+
+          # Process all validation reports
+          for report in validation-results/validation-report-*.json; do
+            if [ -f "$report" ]; then
+              TOTAL_ARTIFACTS=$((TOTAL_ARTIFACTS + 1))
+
+              artifact_type=$(jq -r '.artifact_type' "$report")
+              overall_status=$(jq -r '.overall_status' "$report")
+
+              echo "Artifact: $artifact_type - Status: $overall_status"
+
+              if [ "$overall_status" = "pass" ]; then
+                PASSED_ARTIFACTS=$((PASSED_ARTIFACTS + 1))
+              else
+                FAILED_ARTIFACTS=$((FAILED_ARTIFACTS + 1))
+              fi
+            fi
+          done
+
+          echo "TOTAL_ARTIFACTS=$TOTAL_ARTIFACTS" >> $GITHUB_OUTPUT
+          echo "PASSED_ARTIFACTS=$PASSED_ARTIFACTS" >> $GITHUB_OUTPUT
+          echo "FAILED_ARTIFACTS=$FAILED_ARTIFACTS" >> $GITHUB_OUTPUT
+
+          # Generate consolidated report
+          cat > consolidated-validation-report.json << EOF
+          {
+            "timestamp": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+            "summary": {
+              "total_artifacts": $TOTAL_ARTIFACTS,
+              "passed_artifacts": $PASSED_ARTIFACTS,
+              "failed_artifacts": $FAILED_ARTIFACTS,
+              "success_rate": $(echo "scale=2; $PASSED_ARTIFACTS * 100 / $TOTAL_ARTIFACTS" | bc -l 2>/dev/null || echo "0"),
+              "overall_status": "${{ needs.validate-artifacts.result }}"
+            },
+            "details": $(jq -s '.' validation-results/validation-report-*.json 2>/dev/null || echo '[]'),
+            "metadata": {
+              "github_run_id": "${{ github.run_id }}",
+              "repository": "${{ github.repository }}",
+              "validation_workflow": "artifact-validation"
+            }
+          }
+          EOF
+
+          echo "Consolidated validation report:"
+          cat consolidated-validation-report.json
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('consolidated-validation-report.json', 'utf8'));
+
+            let state = 'success';
+            let description = `All ${report.summary.total_artifacts} artifacts validated successfully`;
+
+            if (report.summary.failed_artifacts > 0) {
+              state = 'failure';
+              description = `${report.summary.failed_artifacts}/${report.summary.total_artifacts} artifacts failed validation`;
+            } else if (report.summary.total_artifacts === 0) {
+              state = 'pending';
+              description = 'No artifacts found for validation';
+            }
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: state,
+              description: description,
+              context: 'Artifact Validation'
+            });
+
+      - name: Generate validation summary
+        run: |
+          cat > ARTIFACT_VALIDATION_SUMMARY.md << 'EOF'
+          # 📦 Artifact Validation Report
+
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Validation Run:** ${{ github.run_id }}
+          **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          ## 📊 Validation Summary
+
+          | Metric | Value |
+          |--------|-------|
+          | Total Artifacts | ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }} |
+          | Passed Validation | ${{ steps.consolidate.outputs.PASSED_ARTIFACTS }} |
+          | Failed Validation | ${{ steps.consolidate.outputs.FAILED_ARTIFACTS }} |
+          | Success Rate | $(echo "scale=1; ${{ steps.consolidate.outputs.PASSED_ARTIFACTS }} * 100 / ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }}" | bc -l 2>/dev/null || echo "N/A")% |
+          | Overall Status | ${{ needs.validate-artifacts.result == 'success' && '✅ PASSED' || '❌ FAILED' }} |
+
+          ## 🔍 Validation Details
+
+          ### Validation Criteria
+          - ✅ **Existence:** Artifacts are present and accessible
+          - ✅ **Integrity:** Checksums and file structures are valid
+          - ✅ **Size:** Artifacts are within acceptable size limits
+          - ✅ **Security:** No high-severity vulnerabilities detected
+          - ✅ **Performance:** Compression and optimization are adequate
+
+          ### Quality Gates Status
+          ${{ needs.validate-artifacts.result == 'success' && '🟢 **All artifact quality gates passed**' || '🔴 **Artifact quality gates failed - Review required**' }}
+
+          ## 📋 Recommendations
+
+          ${{ steps.consolidate.outputs.FAILED_ARTIFACTS > 0 && '- 🔧 **Address failed artifact validations before deployment**' || '- 🚀 **Artifacts ready for deployment**' }}
+          - 📊 Monitor artifact sizes and compression ratios
+          - 🛡️ Continue security scanning for all builds
+          - 📈 Track validation trends over time
+
+          ## 🔗 Related Links
+
+          - [Validation Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - [Repository](https://github.com/${{ github.repository }})
+          - [Commit Details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+          ---
+          *Generated by Artifact Validation & Monitoring workflow*
+          EOF
+
+      - name: Upload consolidated report
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-artifact-validation-${{ github.run_id }}
+          path: |
+            consolidated-validation-report.json
+            ARTIFACT_VALIDATION_SUMMARY.md
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+      - name: Send notification on failures
+        if: steps.consolidate.outputs.FAILED_ARTIFACTS > 0
+        run: |
+          echo "🚨 Artifact validation failures detected!"
+          echo "Failed artifacts: ${{ steps.consolidate.outputs.FAILED_ARTIFACTS }}"
+          echo "Total artifacts: ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }}"
+
+          # This would trigger alert workflows in a production environment
+          echo "Alert notification would be sent to configured channels"

@@ -19,12 +19,13 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["jest", "node"]
+    "types": ["jest", "node", "@testing-library/jest-dom"]
   },
   "include": [
     "src/**/*",
     "tests/**/*",
-    "jest.setup.js"
+    "jest.setup.js",
+    "global.d.ts"
   ],
   "exclude": [
     "node_modules",

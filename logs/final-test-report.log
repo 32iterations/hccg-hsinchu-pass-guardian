@@ -1,0 +1,203 @@
+
+> hccg-hsinchu-pass-guardian@2.0.0 test
+> jest --coverage --coverage --coverageReporters=json-summary --passWithNoTests --testPathIgnorePatterns=/integration/ --maxWorkers=1
+
+PASS tests/guardian.test.ts
+PASS src/backend/tests/unit/case-flow.service.test.js
+PASS src/backend/tests/unit/revocation.service.test.js
+PASS src/backend/tests/unit/kpi.service.test.js
+PASS src/backend/tests/unit/retention.service.test.js
+PASS src/backend/tests/unit/anonymization.service.test.js
+  ● Console
+
+    console.warn
+      Hash collision detected for same_hash_collision
+
+      78 |     return;
+      79 |   }
+    > 80 |   originalWarn.apply(console, args);
+         |                ^
+      81 | };
+      82 |
+      83 | // Setup global test utilities
+
+      at console.apply [as warn] (jest.setup.js:80:16)
+      at AnonymizationService.warn [as handleHashCollision] (src/backend/src/services/anonymization.service.js:370:13)
+      at Object.handleHashCollision (src/backend/tests/unit/anonymization.service.test.js:176:51)
+
+    console.log
+      Uploading cluster of 3 anonymized hits
+
+      at AnonymizationService.log [as uploadCluster] (src/backend/src/services/anonymization.service.js:221:13)
+
+PASS src/backend/tests/unit/rbac.service.test.js
+PASS src/backend/tests/unit/audit.service.test.js
+PASS src/backend/tests/unit/geofence-engine.service.test.js
+PASS src/backend/tests/unit/geo-alert.service.test.js
+PASS src/backend/tests/unit/device-binding.service.test.js
+PASS src/backend/tests/unit/volunteer-consent.service.test.js
+PASS src/backend/tests/unit/mydata-adapter.test.js
+FAIL src/backend/tests/unit/ble-scanner.service.test.js
+  ● Console
+
+    console.error
+      [BLEScannerService] Error handling discovered device: TypeError: this.handleMACRotation is not a function
+          at BLEScannerService.handleMACRotation [as handleDeviceDiscovered] (/home/ubuntu/dev/hccg-hsinchu-pass-guardian/src/backend/src/services/ble-scanner.service.js:118:18)
+
+      475 |    */
+      476 |   logError(message, error) {
+    > 477 |     console.error(`[BLEScannerService] ${message}:`, error);
+          |             ^
+      478 |   }
+      479 |
+      480 |   /**
+
+      at BLEScannerService.error [as logError] (src/backend/src/services/ble-scanner.service.js:477:13)
+      at BLEScannerService.logError [as handleDeviceDiscovered] (src/backend/src/services/ble-scanner.service.js:125:12)
+
+    console.error
+      [BLEScannerService] Error handling discovered device: TypeError: this.handleMACRotation is not a function
+          at BLEScannerService.handleMACRotation [as handleDeviceDiscovered] (/home/ubuntu/dev/hccg-hsinchu-pass-guardian/src/backend/src/services/ble-scanner.service.js:118:18)
+          at Object.<anonymous> (/home/ubuntu/dev/hccg-hsinchu-pass-guardian/src/backend/tests/unit/ble-scanner.service.test.js:196:9)
+
+      475 |    */
+      476 |   logError(message, error) {
+    > 477 |     console.error(`[BLEScannerService] ${message}:`, error);
+          |             ^
+      478 |   }
+      479 |
+      480 |   /**
+
+      at BLEScannerService.error [as logError] (src/backend/src/services/ble-scanner.service.js:477:13)
+      at BLEScannerService.logError [as handleDeviceDiscovered] (src/backend/src/services/ble-scanner.service.js:125:12)
+      at Object.<anonymous> (src/backend/tests/unit/ble-scanner.service.test.js:196:9)
+
+    console.error
+      [BLEScannerService] Error handling discovered device: TypeError: this.handleMACRotation is not a function
+          at BLEScannerService.handleMACRotation [as handleDeviceDiscovered] (/home/ubuntu/dev/hccg-hsinchu-pass-guardian/src/backend/src/services/ble-scanner.service.js:118:18)
+
+      475 |    */
+      476 |   logError(message, error) {
+    > 477 |     console.error(`[BLEScannerService] ${message}:`, error);
+          |             ^
+      478 |   }
+      479 |
+      480 |   /**
+
+      at BLEScannerService.error [as logError] (src/backend/src/services/ble-scanner.service.js:477:13)
+      at BLEScannerService.logError [as handleDeviceDiscovered] (src/backend/src/services/ble-scanner.service.js:125:12)
+
+  ● BLEScannerService › Android 12+ Permission Handling › neverForLocation Scanning › should discover BLE devices without location inference
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: {"address": "AA:BB:CC:DD:EE:FF", "includeLocation": false, "rssi": -75, "timestamp": Any<String>}
+
+    Number of calls: 0
+
+      197 |
+      198 |         // Assert
+    > 199 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledWith({
+          |                                                          ^
+      200 |           address: 'AA:BB:CC:DD:EE:FF',
+      201 |           rssi: -75,
+      202 |           timestamp: expect.any(String),
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:199:58)
+
+  ● BLEScannerService › Android 12+ Permission Handling › Location-Based Scanning for Positioning › should round timestamps to 5-minute intervals
+
+    expect(received).toMatch(expected)
+
+    Expected pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:[0-5][05]:00\.000Z$/
+    Received string:  "2025-09-17T16:47:32Z"
+
+      310 |
+      311 |         // Assert
+    > 312 |         expect(roundedTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:[0-5][05]:00\.000Z$/); // Rounded to 5-min intervals
+          |                                  ^
+      313 |       });
+      314 |     });
+      315 |   });
+
+      at Object.toMatch (src/backend/tests/unit/ble-scanner.service.test.js:312:34)
+
+  ● BLEScannerService › Device Discovery and Filtering › MAC Address Rotation Handling › should handle MAC rotation by treating each MAC as separate device
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 2
+    Received number of calls: 0
+
+      442 |
+      443 |         // Assert
+    > 444 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledTimes(2);
+          |                                                          ^
+      445 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenNthCalledWith(1,
+      446 |           expect.objectContaining({ address: 'AA:BB:CC:DD:EE:F0' })
+      447 |         );
+
+      at Object.toHaveBeenCalledTimes (src/backend/tests/unit/ble-scanner.service.test.js:444:58)
+
+  ● BLEScannerService › Device Discovery and Filtering › MAC Address Rotation Handling › should maintain k-anonymity across MAC rotations
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 3
+    Received number of calls: 0
+
+      475 |
+      476 |         // Assert - devices are processed separately (no correlation)
+    > 477 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledTimes(3);
+          |                                                          ^
+      478 |         // Each device is treated independently for privacy
+      479 |       });
+      480 |     });
+
+      at Object.toHaveBeenCalledTimes (src/backend/tests/unit/ble-scanner.service.test.js:477:58)
+
+  ● BLEScannerService › VolunteerHit Creation › Complete Anonymization › should never store original MAC addresses
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectNotContaining {"macAddress": Any<String>, "originalAddress": Any<String>}
+
+    Number of calls: 0
+
+      619 |
+      620 |         // Assert - ensure original MAC is never persisted
+    > 621 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledWith(
+          |                                                          ^
+      622 |           expect.not.objectContaining({
+      623 |             originalAddress: expect.any(String),
+      624 |             macAddress: expect.any(String)
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:621:58)
+
+  ● BLEScannerService › VolunteerHit Creation › Complete Anonymization › should never store device names or personal identifiers
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectNotContaining {"deviceName": Any<String>, "name": Any<String>, "ownerName": Any<String>, "services": Any<Array>}
+
+    Number of calls: 0
+
+      649 |
+      650 |         // Assert - ensure NO personal data is stored
+    > 651 |         expect(mockAnonymizationService.anonymizeDevice).toHaveBeenCalledWith(
+          |                                                          ^
+      652 |           expect.not.objectContaining({
+      653 |             name: expect.any(String),
+      654 |             deviceName: expect.any(String),
+
+      at Object.toHaveBeenCalledWith (src/backend/tests/unit/ble-scanner.service.test.js:651:58)
+
+Jest: "global" coverage threshold for statements (50%) not met: 21.47%
+Jest: "global" coverage threshold for branches (50%) not met: 21.12%
+Jest: "global" coverage threshold for lines (50%) not met: 25.17%
+Jest: "global" coverage threshold for functions (50%) not met: 19.1%
+Test Suites: 1 failed, 13 passed, 14 total
+Tests:       6 failed, 423 passed, 429 total
+Snapshots:   0 total
+Time:        17.889 s
+Ran all test suites.

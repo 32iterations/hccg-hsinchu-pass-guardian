@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/shared');
 const { DeviceBindingService } = require('../services/safety/device-binding.service');
 const { ValidationError, NCCValidationError, DuplicateDeviceError, BLEConnectionError } = require('../services/safety/errors');
 

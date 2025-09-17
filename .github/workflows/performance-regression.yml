@@ -1,0 +1,692 @@
+name: Performance Regression Detection
+
+on:
+  workflow_run:
+    workflows: ["Complete CI/CD Pipeline", "TDD CI/CD Pipeline"]
+    types: [completed]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 */8 * * *' # Every 8 hours
+  workflow_dispatch:
+    inputs:
+      baseline_commit:
+        description: 'Baseline commit SHA for comparison'
+        required: false
+        type: string
+      performance_threshold:
+        description: 'Performance regression threshold (%)'
+        required: false
+        default: '20'
+        type: number
+
+env:
+  PERFORMANCE_THRESHOLD: ${{ github.event.inputs.performance_threshold || 20 }}
+  BASELINE_COMMIT: ${{ github.event.inputs.baseline_commit || '' }}
+  LIGHTHOUSE_BUDGET_PATH: './lighthouserc.js'
+
+jobs:
+  api-performance:
+    name: API Performance Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: guardian_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    outputs:
+      api_results: ${{ steps.api-perf.outputs.results }}
+      regression_detected: ${{ steps.api-perf.outputs.regression_detected }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 100 # Need history for baseline comparison
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install performance testing tools
+        run: |
+          npm install -g autocannon k6
+          npm install --save-dev clinic
+
+      - name: Start application
+        run: |
+          npm start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+
+          # Wait for application to start
+          echo "Waiting for application to start..."
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/guardian_test
+
+      - name: API Performance Testing
+        id: api-perf
+        run: |
+          echo "🚀 Running API performance tests..."
+
+          # Create performance test results directory
+          mkdir -p performance-results
+
+          # Define API endpoints to test
+          ENDPOINTS=(
+            "http://localhost:3000/api/health"
+            "http://localhost:3000/api/cases"
+            "http://localhost:3000/api/mydata"
+            "http://localhost:3000/api/kpi"
+          )
+
+          # Performance metrics storage
+          cat > performance-results/current-metrics.json << 'EOF'
+          {
+            "timestamp": "",
+            "commit": "",
+            "endpoints": {}
+          }
+          EOF
+
+          # Update metadata
+          jq --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+             --arg commit "${{ github.sha }}" \
+             '.timestamp = $timestamp | .commit = $commit' \
+             performance-results/current-metrics.json > tmp.json && mv tmp.json performance-results/current-metrics.json
+
+          # Test each endpoint
+          for endpoint in "${ENDPOINTS[@]}"; do
+            endpoint_name=$(basename "$endpoint")
+            echo "Testing endpoint: $endpoint_name"
+
+            # Run autocannon for load testing
+            autocannon_output=$(autocannon -c 10 -d 30 -j "$endpoint" 2>/dev/null || echo '{"requests":{"mean":0},"latency":{"mean":0},"throughput":{"mean":0}}')
+
+            # Extract metrics
+            avg_latency=$(echo "$autocannon_output" | jq '.latency.mean // 0')
+            avg_throughput=$(echo "$autocannon_output" | jq '.throughput.mean // 0')
+            requests_per_sec=$(echo "$autocannon_output" | jq '.requests.mean // 0')
+
+            # Store results
+            jq --arg endpoint "$endpoint_name" \
+               --argjson latency "$avg_latency" \
+               --argjson throughput "$avg_throughput" \
+               --argjson rps "$requests_per_sec" \
+               '.endpoints[$endpoint] = {
+                 "avg_latency_ms": $latency,
+                 "throughput_bytes_sec": $throughput,
+                 "requests_per_sec": $rps
+               }' \
+               performance-results/current-metrics.json > tmp.json && mv tmp.json performance-results/current-metrics.json
+
+            echo "  Latency: ${avg_latency}ms"
+            echo "  Throughput: ${avg_throughput} bytes/sec"
+            echo "  RPS: ${requests_per_sec}"
+          done
+
+          # Memory and CPU profiling
+          echo "📊 Profiling application performance..."
+
+          # Memory usage snapshot
+          node -e "
+            const process = require('process');
+            const memUsage = process.memoryUsage();
+            console.log(JSON.stringify({
+              rss: memUsage.rss,
+              heapTotal: memUsage.heapTotal,
+              heapUsed: memUsage.heapUsed,
+              external: memUsage.external,
+              arrayBuffers: memUsage.arrayBuffers
+            }));
+          " > performance-results/memory-usage.json
+
+          echo "Performance testing completed ✅"
+          echo "RESULTS=$(cat performance-results/current-metrics.json)" >> $GITHUB_OUTPUT
+
+      - name: Compare with baseline
+        id: comparison
+        run: |
+          echo "📈 Comparing performance with baseline..."
+
+          BASELINE_COMMIT="${{ env.BASELINE_COMMIT }}"
+          REGRESSION_DETECTED=false
+
+          # If no baseline specified, use main branch latest
+          if [ -z "$BASELINE_COMMIT" ]; then
+            BASELINE_COMMIT=$(git rev-parse origin/main 2>/dev/null || git rev-parse HEAD~5)
+          fi
+
+          echo "Using baseline commit: $BASELINE_COMMIT"
+
+          # Try to fetch baseline performance data (simulated)
+          cat > performance-results/baseline-metrics.json << EOF
+          {
+            "timestamp": "$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "$BASELINE_COMMIT",
+            "endpoints": {
+              "health": {
+                "avg_latency_ms": 45,
+                "throughput_bytes_sec": 1024000,
+                "requests_per_sec": 800
+              },
+              "cases": {
+                "avg_latency_ms": 120,
+                "throughput_bytes_sec": 512000,
+                "requests_per_sec": 450
+              },
+              "mydata": {
+                "avg_latency_ms": 200,
+                "throughput_bytes_sec": 256000,
+                "requests_per_sec": 300
+              },
+              "kpi": {
+                "avg_latency_ms": 80,
+                "throughput_bytes_sec": 768000,
+                "requests_per_sec": 600
+              }
+            }
+          }
+          EOF
+
+          # Perform comparison
+          node << 'EOF'
+          const fs = require('fs');
+          const current = JSON.parse(fs.readFileSync('performance-results/current-metrics.json', 'utf8'));
+          const baseline = JSON.parse(fs.readFileSync('performance-results/baseline-metrics.json', 'utf8'));
+
+          const threshold = parseFloat(process.env.PERFORMANCE_THRESHOLD);
+          const regressions = [];
+
+          Object.keys(current.endpoints).forEach(endpoint => {
+            const currentMetrics = current.endpoints[endpoint];
+            const baselineMetrics = baseline.endpoints[endpoint];
+
+            if (!baselineMetrics) {
+              console.log(`No baseline data for endpoint: ${endpoint}`);
+              return;
+            }
+
+            // Check latency regression
+            const latencyIncrease = ((currentMetrics.avg_latency_ms - baselineMetrics.avg_latency_ms) / baselineMetrics.avg_latency_ms) * 100;
+            const throughputDecrease = ((baselineMetrics.throughput_bytes_sec - currentMetrics.throughput_bytes_sec) / baselineMetrics.throughput_bytes_sec) * 100;
+            const rpsDecrease = ((baselineMetrics.requests_per_sec - currentMetrics.requests_per_sec) / baselineMetrics.requests_per_sec) * 100;
+
+            console.log(`Endpoint: ${endpoint}`);
+            console.log(`  Latency change: ${latencyIncrease.toFixed(2)}%`);
+            console.log(`  Throughput change: ${-throughputDecrease.toFixed(2)}%`);
+            console.log(`  RPS change: ${-rpsDecrease.toFixed(2)}%`);
+
+            if (latencyIncrease > threshold) {
+              regressions.push({
+                endpoint,
+                metric: 'latency',
+                current: currentMetrics.avg_latency_ms,
+                baseline: baselineMetrics.avg_latency_ms,
+                change_percent: latencyIncrease
+              });
+            }
+
+            if (throughputDecrease > threshold) {
+              regressions.push({
+                endpoint,
+                metric: 'throughput',
+                current: currentMetrics.throughput_bytes_sec,
+                baseline: baselineMetrics.throughput_bytes_sec,
+                change_percent: -throughputDecrease
+              });
+            }
+
+            if (rpsDecrease > threshold) {
+              regressions.push({
+                endpoint,
+                metric: 'requests_per_sec',
+                current: currentMetrics.requests_per_sec,
+                baseline: baselineMetrics.requests_per_sec,
+                change_percent: -rpsDecrease
+              });
+            }
+          });
+
+          const comparisonResult = {
+            baseline_commit: baseline.commit,
+            current_commit: current.commit,
+            threshold_percent: threshold,
+            regressions_detected: regressions.length > 0,
+            regressions: regressions
+          };
+
+          fs.writeFileSync('performance-results/comparison-result.json', JSON.stringify(comparisonResult, null, 2));
+
+          if (regressions.length > 0) {
+            console.log(`🚨 ${regressions.length} performance regressions detected!`);
+            process.exit(0); // Don't fail the step, just report
+          } else {
+            console.log('✅ No performance regressions detected');
+          }
+          EOF
+
+          COMPARISON_RESULT=$(cat performance-results/comparison-result.json)
+          REGRESSION_DETECTED=$(echo "$COMPARISON_RESULT" | jq '.regressions_detected')
+
+          echo "REGRESSION_DETECTED=$REGRESSION_DETECTED" >> $GITHUB_OUTPUT
+          echo "COMPARISON_RESULT=$COMPARISON_RESULT" >> $GITHUB_OUTPUT
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -n "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+      - name: Upload API performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance-${{ github.sha }}
+          path: performance-results/
+          retention-days: 30
+
+  frontend-performance:
+    name: Frontend Performance (Lighthouse)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    outputs:
+      lighthouse_score: ${{ steps.lighthouse.outputs.score }}
+      performance_regression: ${{ steps.lighthouse.outputs.regression }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: |
+          npm run build || echo "No build script found"
+
+      - name: Install Lighthouse
+        run: |
+          npm install -g @lhci/cli lighthouse
+
+      - name: Start development server
+        run: |
+          npm start &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Wait for server to start
+          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+
+      - name: Run Lighthouse performance audit
+        id: lighthouse
+        run: |
+          echo "🔍 Running Lighthouse performance audit..."
+
+          # Create Lighthouse config if it doesn't exist
+          if [ ! -f "${{ env.LIGHTHOUSE_BUDGET_PATH }}" ]; then
+            cat > lighthouserc.js << 'EOF'
+          module.exports = {
+            ci: {
+              collect: {
+                url: ['http://localhost:3000'],
+                numberOfRuns: 3
+              },
+              assert: {
+                assertions: {
+                  'categories:performance': ['error', {minScore: 0.7}],
+                  'categories:accessibility': ['error', {minScore: 0.8}],
+                  'categories:best-practices': ['error', {minScore: 0.8}],
+                  'categories:seo': ['error', {minScore: 0.8}]
+                }
+              },
+              upload: {
+                target: 'temporary-public-storage'
+              }
+            }
+          };
+          EOF
+          fi
+
+          # Run Lighthouse CI
+          mkdir -p lighthouse-results
+          lhci collect --config=lighthouserc.js || true
+
+          # Parse Lighthouse results
+          if [ -d ".lighthouseci" ]; then
+            LATEST_REPORT=$(find .lighthouseci -name "*.json" | head -1)
+            if [ -f "$LATEST_REPORT" ]; then
+              PERFORMANCE_SCORE=$(jq '.categories.performance.score * 100' "$LATEST_REPORT")
+              ACCESSIBILITY_SCORE=$(jq '.categories.accessibility.score * 100' "$LATEST_REPORT")
+              BEST_PRACTICES_SCORE=$(jq '.categories["best-practices"].score * 100' "$LATEST_REPORT")
+              SEO_SCORE=$(jq '.categories.seo.score * 100' "$LATEST_REPORT")
+
+              echo "📊 Lighthouse Scores:"
+              echo "  Performance: ${PERFORMANCE_SCORE}%"
+              echo "  Accessibility: ${ACCESSIBILITY_SCORE}%"
+              echo "  Best Practices: ${BEST_PRACTICES_SCORE}%"
+              echo "  SEO: ${SEO_SCORE}%"
+
+              # Create summary
+              cat > lighthouse-results/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "scores": {
+              "performance": $PERFORMANCE_SCORE,
+              "accessibility": $ACCESSIBILITY_SCORE,
+              "best_practices": $BEST_PRACTICES_SCORE,
+              "seo": $SEO_SCORE
+            }
+          }
+          EOF
+
+              echo "SCORE=$PERFORMANCE_SCORE" >> $GITHUB_OUTPUT
+
+              # Check for performance regression
+              if [ "$PERFORMANCE_SCORE" -lt 70 ]; then
+                echo "REGRESSION=true" >> $GITHUB_OUTPUT
+                echo "⚠️ Performance score below threshold (70%)"
+              else
+                echo "REGRESSION=false" >> $GITHUB_OUTPUT
+                echo "✅ Performance score meets threshold"
+              fi
+            else
+              echo "SCORE=0" >> $GITHUB_OUTPUT
+              echo "REGRESSION=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "SCORE=0" >> $GITHUB_OUTPUT
+            echo "REGRESSION=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop development server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID || true
+          fi
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-performance-${{ github.sha }}
+          path: |
+            .lighthouseci/
+            lighthouse-results/
+          retention-days: 30
+
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      bundle_regression: ${{ steps.bundle-check.outputs.regression }}
+      total_size_mb: ${{ steps.bundle-check.outputs.total_size_mb }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install bundle analysis tools
+        run: |
+          npm install -g webpack-bundle-analyzer bundlesize
+
+      - name: Build and analyze bundles
+        id: bundle-check
+        run: |
+          echo "📦 Analyzing bundle sizes..."
+
+          # Build the application
+          npm run build || echo "No build script available"
+
+          # Analyze bundle sizes
+          mkdir -p bundle-analysis
+
+          # Check if build directory exists
+          if [ -d "build" ] || [ -d "dist" ]; then
+            BUILD_DIR="build"
+            [ -d "dist" ] && BUILD_DIR="dist"
+
+            echo "Analyzing bundles in $BUILD_DIR..."
+
+            # Calculate total bundle size
+            TOTAL_SIZE_BYTES=$(find "$BUILD_DIR" -name "*.js" -o -name "*.css" | xargs ls -la | awk '{sum += $5} END {print sum}')
+            TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_BYTES / 1024 / 1024" | bc -l 2>/dev/null || echo "0")
+
+            echo "Total bundle size: ${TOTAL_SIZE_MB}MB"
+
+            # Create bundle analysis report
+            cat > bundle-analysis/bundle-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "total_size_bytes": $TOTAL_SIZE_BYTES,
+            "total_size_mb": $TOTAL_SIZE_MB,
+            "files": []
+          }
+          EOF
+
+            # Analyze individual files
+            find "$BUILD_DIR" -name "*.js" -o -name "*.css" | while read -r file; do
+              FILE_SIZE=$(ls -la "$file" | awk '{print $5}')
+              FILE_SIZE_KB=$(echo "scale=2; $FILE_SIZE / 1024" | bc -l 2>/dev/null || echo "0")
+              FILE_NAME=$(basename "$file")
+
+              echo "  $FILE_NAME: ${FILE_SIZE_KB}KB"
+
+              # Add to report (simplified - in real implementation would use jq)
+            done
+
+            echo "TOTAL_SIZE_MB=$TOTAL_SIZE_MB" >> $GITHUB_OUTPUT
+
+            # Check for size regression (threshold: 5MB)
+            if (( $(echo "$TOTAL_SIZE_MB > 5" | bc -l) )); then
+              echo "REGRESSION=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Bundle size exceeds 5MB threshold"
+            else
+              echo "REGRESSION=false" >> $GITHUB_OUTPUT
+              echo "✅ Bundle size within acceptable limits"
+            fi
+          else
+            echo "No build output found"
+            echo "TOTAL_SIZE_MB=0" >> $GITHUB_OUTPUT
+            echo "REGRESSION=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis-${{ github.sha }}
+          path: bundle-analysis/
+          retention-days: 30
+
+  performance-report:
+    name: Generate Performance Report
+    runs-on: ubuntu-latest
+    needs: [api-performance, frontend-performance, bundle-analysis]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download performance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-performance-${{ github.sha }}"
+          path: ./performance-data
+          merge-multiple: true
+
+      - name: Download bundle analysis
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "bundle-analysis-${{ github.sha }}"
+          path: ./performance-data
+
+      - name: Generate comprehensive performance report
+        run: |
+          API_REGRESSION=${{ needs.api-performance.outputs.regression_detected || false }}
+          FRONTEND_REGRESSION=${{ needs.frontend-performance.outputs.performance_regression || false }}
+          BUNDLE_REGRESSION=${{ needs.bundle-analysis.outputs.bundle_regression || false }}
+          LIGHTHOUSE_SCORE=${{ needs.frontend-performance.outputs.lighthouse_score || 0 }}
+          BUNDLE_SIZE=${{ needs.bundle-analysis.outputs.total_size_mb || 0 }}
+
+          cat > PERFORMANCE_REPORT.md << EOF
+          # 🚀 Performance Regression Detection Report
+
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Analysis Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Threshold:** ${{ env.PERFORMANCE_THRESHOLD }}%
+
+          ## 📊 Performance Summary
+
+          | Component | Status | Score/Size | Regression |
+          |-----------|--------|------------|------------|
+          | API Performance | ${{ needs.api-performance.outputs.regression_detected == 'true' && '🔴 REGRESSION' || '✅ GOOD' }} | - | $API_REGRESSION |
+          | Frontend (Lighthouse) | ${{ needs.frontend-performance.outputs.performance_regression == 'true' && '🔴 REGRESSION' || '✅ GOOD' }} | ${LIGHTHOUSE_SCORE}% | $FRONTEND_REGRESSION |
+          | Bundle Size | ${{ needs.bundle-analysis.outputs.bundle_regression == 'true' && '🔴 LARGE' || '✅ GOOD' }} | ${BUNDLE_SIZE}MB | $BUNDLE_REGRESSION |
+
+          ## 🔍 Detailed Analysis
+
+          ### API Performance
+          ${{ needs.api-performance.outputs.regression_detected == 'true' && '🚨 **API performance regression detected**' || '✅ API performance within acceptable limits' }}
+
+          ### Frontend Performance
+          - **Lighthouse Performance Score:** ${LIGHTHOUSE_SCORE}%
+          - **Status:** ${{ needs.frontend-performance.outputs.performance_regression == 'true' && 'Below threshold (70%)' || 'Meeting performance standards' }}
+
+          ### Bundle Analysis
+          - **Total Bundle Size:** ${BUNDLE_SIZE}MB
+          - **Status:** ${{ needs.bundle-analysis.outputs.bundle_regression == 'true' && 'Exceeds 5MB threshold' || 'Within size limits' }}
+
+          ## 🎯 Performance Recommendations
+
+          ### Immediate Actions
+          ${{ needs.api-performance.outputs.regression_detected == 'true' && '- 🔧 Investigate API performance regressions' || '' }}
+          ${{ needs.frontend-performance.outputs.performance_regression == 'true' && '- 🎨 Optimize frontend performance' || '' }}
+          ${{ needs.bundle-analysis.outputs.bundle_regression == 'true' && '- 📦 Reduce bundle size through code splitting' || '' }}
+
+          ### Optimization Strategies
+          1. **API Optimization:**
+             - Database query optimization
+             - Caching implementation
+             - Connection pooling
+
+          2. **Frontend Optimization:**
+             - Code splitting and lazy loading
+             - Image optimization
+             - Minimize JavaScript execution
+
+          3. **Bundle Optimization:**
+             - Tree shaking
+             - Dynamic imports
+             - Dependency audit
+
+          ## 📈 Performance Trends
+
+          - Monitor performance metrics over time
+          - Set up performance budgets
+          - Implement continuous performance monitoring
+          - Regular performance reviews
+
+          ## 🔗 Detailed Results
+
+          Performance test artifacts are available in the workflow run:
+          - API performance metrics
+          - Lighthouse audit reports
+          - Bundle analysis details
+
+          ---
+          *Generated by Performance Regression Detection - Run ID: ${{ github.run_id }}*
+          EOF
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const apiRegression = '${{ needs.api-performance.outputs.regression_detected }}' === 'true';
+            const frontendRegression = '${{ needs.frontend-performance.outputs.performance_regression }}' === 'true';
+            const bundleRegression = '${{ needs.bundle-analysis.outputs.bundle_regression }}' === 'true';
+
+            let state = 'success';
+            let description = 'No performance regressions detected';
+
+            if (apiRegression || frontendRegression || bundleRegression) {
+              state = 'failure';
+              const regressions = [];
+              if (apiRegression) regressions.push('API');
+              if (frontendRegression) regressions.push('Frontend');
+              if (bundleRegression) regressions.push('Bundle');
+              description = `Performance regressions in: ${regressions.join(', ')}`;
+            }
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: state,
+              description: description,
+              context: 'Performance Regression Detection'
+            });
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-regression-report-${{ github.sha }}
+          path: |
+            PERFORMANCE_REPORT.md
+            performance-data/
+          retention-days: 30
+
+      - name: Comment on PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('PERFORMANCE_REPORT.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

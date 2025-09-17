@@ -10,19 +10,22 @@
  * - Secure token management
  */
 
-import { MyDataIntegrationService } from '../../src/services/MyDataIntegrationService';
-import { Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Keychain from 'react-native-keychain';
+// Mock imports
+let MyDataIntegrationService;
+try {
+  MyDataIntegrationService = require('../../src/services/MyDataIntegrationService').MyDataIntegrationService;
+} catch (error) {
+  // Expected to fail in RED phase
+  MyDataIntegrationService = class {
+    constructor() {
+      throw new Error('MyDataIntegrationService implementation not found');
+    }
+  };
+}
 
-// Mock Linking for OAuth flow
-jest.mock('react-native/Libraries/Linking/Linking', () => ({
-  openURL: jest.fn(),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  getInitialURL: jest.fn(),
-  canOpenURL: jest.fn().mockResolvedValue(true)
-}));
+const Linking = require('react-native').Linking;
+const AsyncStorage = require('@react-native-async-storage/async-storage');
+const Keychain = require('react-native-keychain');
 
 describe('MyDataIntegrationService - RED Phase Tests', () => {
   let myDataService;
@@ -67,7 +70,7 @@ describe('MyDataIntegrationService - RED Phase Tests', () => {
           'response_type=code&' +
           'state=';
 
-        Linking.openURL.mockResolvedValue(true);
+        // Linking is already mocked in jest.setup.js
 
         // Act & Assert - Will fail in RED phase
         await expect(async () => {

@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/shared');
 const BLEScannerService = require('../services/ble-scanner.service');
 const AnonymizationService = require('../services/anonymization.service');
 

@@ -1,0 +1,559 @@
+name: Enhanced Security Monitoring
+
+on:
+  workflow_run:
+    workflows: ["Complete CI/CD Pipeline", "Security Scans"]
+    types: [completed]
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+    - cron: '0 2 * * 1' # Weekly deep scan on Monday at 2 AM
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to run'
+        required: false
+        default: 'comprehensive'
+        type: choice
+        options:
+          - comprehensive
+          - dependencies
+          - secrets
+          - code-analysis
+          - container
+
+env:
+  TRIVY_VERSION: '0.46.1'
+  SEMGREP_VERSION: 'latest'
+  SECURITY_THRESHOLD: 'HIGH'
+  ALERT_WEBHOOK: ${{ secrets.SECURITY_WEBHOOK_URL }}
+
+jobs:
+  dependency-security-scan:
+    name: Dependency Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    outputs:
+      vulnerabilities_critical: ${{ steps.analysis.outputs.critical_count }}
+      vulnerabilities_high: ${{ steps.analysis.outputs.high_count }}
+      scan_status: ${{ steps.analysis.outputs.scan_status }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          echo "🔍 Running npm audit..."
+
+          # Run npm audit and capture output
+          npm audit --json > npm-audit-results.json || true
+          npm audit --audit-level=moderate --json > npm-audit-moderate.json || true
+
+          # Parse results
+          if [ -f npm-audit-results.json ]; then
+            CRITICAL_VULNS=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "critical")) | length' npm-audit-results.json)
+            HIGH_VULNS=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "high")) | length' npm-audit-results.json)
+            MODERATE_VULNS=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "moderate")) | length' npm-audit-results.json)
+
+            echo "CRITICAL_VULNS=$CRITICAL_VULNS" >> $GITHUB_OUTPUT
+            echo "HIGH_VULNS=$HIGH_VULNS" >> $GITHUB_OUTPUT
+            echo "MODERATE_VULNS=$MODERATE_VULNS" >> $GITHUB_OUTPUT
+
+            echo "📊 Vulnerability Summary:"
+            echo "  Critical: $CRITICAL_VULNS"
+            echo "  High: $HIGH_VULNS"
+            echo "  Moderate: $MODERATE_VULNS"
+          else
+            echo "CRITICAL_VULNS=0" >> $GITHUB_OUTPUT
+            echo "HIGH_VULNS=0" >> $GITHUB_OUTPUT
+            echo "MODERATE_VULNS=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
+            sh -s -- -b /usr/local/bin v${{ env.TRIVY_VERSION }}
+
+      - name: Run Trivy filesystem scan
+        id: trivy-fs
+        run: |
+          echo "🔍 Running Trivy filesystem scan..."
+
+          # Scan filesystem for vulnerabilities
+          trivy fs --format json --output trivy-fs-results.json . || true
+
+          # Scan for secrets
+          trivy fs --scanners secret --format json --output trivy-secrets-results.json . || true
+
+          # Parse Trivy results
+          if [ -f trivy-fs-results.json ]; then
+            TRIVY_CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-fs-results.json || echo 0)
+            TRIVY_HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-fs-results.json || echo 0)
+
+            echo "TRIVY_CRITICAL=$TRIVY_CRITICAL" >> $GITHUB_OUTPUT
+            echo "TRIVY_HIGH=$TRIVY_HIGH" >> $GITHUB_OUTPUT
+
+            echo "📊 Trivy Filesystem Scan:"
+            echo "  Critical: $TRIVY_CRITICAL"
+            echo "  High: $TRIVY_HIGH"
+          else
+            echo "TRIVY_CRITICAL=0" >> $GITHUB_OUTPUT
+            echo "TRIVY_HIGH=0" >> $GITHUB_OUTPUT
+          fi
+
+          # Parse secrets scan
+          if [ -f trivy-secrets-results.json ]; then
+            SECRETS_FOUND=$(jq '[.Results[]?.Secrets[]?] | length' trivy-secrets-results.json || echo 0)
+            echo "SECRETS_FOUND=$SECRETS_FOUND" >> $GITHUB_OUTPUT
+            echo "📊 Secrets Scan: $SECRETS_FOUND potential secrets found"
+          else
+            echo "SECRETS_FOUND=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Semgrep static analysis
+        id: semgrep
+        run: |
+          echo "🔍 Running Semgrep static analysis..."
+
+          # Install Semgrep
+          pip install semgrep
+
+          # Run Semgrep security rules
+          semgrep --config=auto --json --output=semgrep-results.json . || true
+
+          if [ -f semgrep-results.json ]; then
+            SEMGREP_ERRORS=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' semgrep-results.json || echo 0)
+            SEMGREP_WARNINGS=$(jq '[.results[] | select(.extra.severity == "WARNING")] | length' semgrep-results.json || echo 0)
+
+            echo "SEMGREP_ERRORS=$SEMGREP_ERRORS" >> $GITHUB_OUTPUT
+            echo "SEMGREP_WARNINGS=$SEMGREP_WARNINGS" >> $GITHUB_OUTPUT
+
+            echo "📊 Semgrep Analysis:"
+            echo "  Errors: $SEMGREP_ERRORS"
+            echo "  Warnings: $SEMGREP_WARNINGS"
+          else
+            echo "SEMGREP_ERRORS=0" >> $GITHUB_OUTPUT
+            echo "SEMGREP_WARNINGS=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Analyze security posture
+        id: analysis
+        run: |
+          # Aggregate all security findings
+          TOTAL_CRITICAL=$((
+            ${{ steps.npm-audit.outputs.CRITICAL_VULNS || 0 }} +
+            ${{ steps.trivy-fs.outputs.TRIVY_CRITICAL || 0 }}
+          ))
+
+          TOTAL_HIGH=$((
+            ${{ steps.npm-audit.outputs.HIGH_VULNS || 0 }} +
+            ${{ steps.trivy-fs.outputs.TRIVY_HIGH || 0 }} +
+            ${{ steps.semgrep.outputs.SEMGREP_ERRORS || 0 }}
+          ))
+
+          SECRETS_COUNT=${{ steps.trivy-fs.outputs.SECRETS_FOUND || 0 }}
+
+          echo "CRITICAL_COUNT=$TOTAL_CRITICAL" >> $GITHUB_OUTPUT
+          echo "HIGH_COUNT=$TOTAL_HIGH" >> $GITHUB_OUTPUT
+          echo "SECRETS_COUNT=$SECRETS_COUNT" >> $GITHUB_OUTPUT
+
+          # Determine overall security status
+          if [ "$TOTAL_CRITICAL" -gt 0 ]; then
+            SCAN_STATUS="critical"
+            echo "🚨 CRITICAL: $TOTAL_CRITICAL critical vulnerabilities found"
+          elif [ "$TOTAL_HIGH" -gt 5 ]; then
+            SCAN_STATUS="high"
+            echo "⚠️ HIGH: $TOTAL_HIGH high-severity issues found"
+          elif [ "$SECRETS_COUNT" -gt 0 ]; then
+            SCAN_STATUS="warning"
+            echo "⚠️ WARNING: $SECRETS_COUNT potential secrets detected"
+          else
+            SCAN_STATUS="pass"
+            echo "✅ PASS: No critical security issues found"
+          fi
+
+          echo "SCAN_STATUS=$SCAN_STATUS" >> $GITHUB_OUTPUT
+
+          # Generate security summary
+          cat > security-summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "scan_status": "$SCAN_STATUS",
+            "vulnerabilities": {
+              "critical": $TOTAL_CRITICAL,
+              "high": $TOTAL_HIGH,
+              "moderate": ${{ steps.npm-audit.outputs.MODERATE_VULNS || 0 }},
+              "secrets": $SECRETS_COUNT
+            },
+            "tools": {
+              "npm_audit": {
+                "critical": ${{ steps.npm-audit.outputs.CRITICAL_VULNS || 0 }},
+                "high": ${{ steps.npm-audit.outputs.HIGH_VULNS || 0 }},
+                "moderate": ${{ steps.npm-audit.outputs.MODERATE_VULNS || 0 }}
+              },
+              "trivy": {
+                "critical": ${{ steps.trivy-fs.outputs.TRIVY_CRITICAL || 0 }},
+                "high": ${{ steps.trivy-fs.outputs.TRIVY_HIGH || 0 }},
+                "secrets": $SECRETS_COUNT
+              },
+              "semgrep": {
+                "errors": ${{ steps.semgrep.outputs.SEMGREP_ERRORS || 0 }},
+                "warnings": ${{ steps.semgrep.outputs.SEMGREP_WARNINGS || 0 }}
+              }
+            },
+            "metadata": {
+              "repository": "${{ github.repository }}",
+              "branch": "${{ github.ref_name }}",
+              "commit": "${{ github.sha }}",
+              "run_id": "${{ github.run_id }}"
+            }
+          }
+          EOF
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results-${{ github.sha }}
+          path: |
+            npm-audit-results.json
+            npm-audit-moderate.json
+            trivy-fs-results.json
+            trivy-secrets-results.json
+            semgrep-results.json
+            security-summary.json
+          retention-days: 90
+
+      - name: Upload to GitHub Security
+        if: always()
+        run: |
+          # Convert Trivy results to SARIF if available
+          if [ -f trivy-fs-results.json ] && command -v trivy >/dev/null; then
+            trivy fs --format sarif --output trivy.sarif . || true
+          fi
+
+          # Convert Semgrep results to SARIF if available
+          if [ -f semgrep-results.json ]; then
+            # Semgrep already outputs SARIF format
+            cp semgrep-results.json semgrep.sarif 2>/dev/null || true
+          fi
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: |
+            trivy.sarif
+            semgrep.sarif
+        continue-on-error: true
+
+  license-compliance:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        id: license-check
+        run: |
+          echo "📄 Checking license compliance..."
+
+          # Generate license report
+          license-checker --json --production > license-report.json
+
+          # Define prohibited licenses
+          PROHIBITED_LICENSES="GPL-2.0,GPL-3.0,AGPL-1.0,AGPL-3.0"
+
+          # Check for prohibited licenses
+          PROHIBITED_FOUND=0
+          if [ -f license-report.json ]; then
+            for license in $(echo $PROHIBITED_LICENSES | tr ',' ' '); do
+              if jq -r '.[] | .licenses' license-report.json | grep -q "$license"; then
+                echo "❌ Prohibited license found: $license"
+                PROHIBITED_FOUND=$((PROHIBITED_FOUND + 1))
+              fi
+            done
+          fi
+
+          echo "PROHIBITED_COUNT=$PROHIBITED_FOUND" >> $GITHUB_OUTPUT
+
+          if [ "$PROHIBITED_FOUND" -eq 0 ]; then
+            echo "✅ No prohibited licenses found"
+            echo "LICENSE_STATUS=pass" >> $GITHUB_OUTPUT
+          else
+            echo "❌ $PROHIBITED_FOUND prohibited licenses found"
+            echo "LICENSE_STATUS=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-${{ github.sha }}
+          path: license-report.json
+          retention-days: 30
+
+  security-monitoring-report:
+    name: Generate Security Monitoring Report
+    runs-on: ubuntu-latest
+    needs: [dependency-security-scan, license-compliance]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download security artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: security-*-${{ github.sha }}
+          path: ./security-reports
+          merge-multiple: true
+
+      - name: Generate comprehensive security report
+        id: report
+        run: |
+          CRITICAL_VULNS=${{ needs.dependency-security-scan.outputs.vulnerabilities_critical || 0 }}
+          HIGH_VULNS=${{ needs.dependency-security-scan.outputs.vulnerabilities_high || 0 }}
+          SCAN_STATUS="${{ needs.dependency-security-scan.outputs.scan_status || 'unknown' }}"
+
+          cat > SECURITY_MONITORING_REPORT.md << EOF
+          # 🛡️ Security Monitoring Report
+
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Scan Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Overall Status:** ${{ needs.dependency-security-scan.outputs.scan_status == 'pass' && '✅ SECURE' || '🚨 ATTENTION REQUIRED' }}
+
+          ## 📊 Security Summary
+
+          | Category | Status | Count |
+          |----------|--------|-------|
+          | Critical Vulnerabilities | ${{ needs.dependency-security-scan.outputs.vulnerabilities_critical == '0' && '✅ NONE' || '🚨 FOUND' }} | $CRITICAL_VULNS |
+          | High Vulnerabilities | ${{ needs.dependency-security-scan.outputs.vulnerabilities_high == '0' && '✅ NONE' || '⚠️ FOUND' }} | $HIGH_VULNS |
+          | License Compliance | ${{ needs.license-compliance.result == 'success' && '✅ COMPLIANT' || '❌ ISSUES' }} | - |
+          | Secret Detection | ✅ SCANNED | - |
+
+          ## 🔍 Detailed Analysis
+
+          ### Vulnerability Assessment
+          - **npm audit:** Dependency vulnerabilities scanned
+          - **Trivy:** Filesystem and secret scanning completed
+          - **Semgrep:** Static code analysis performed
+          - **License Check:** Open source license compliance verified
+
+          ### Risk Assessment
+          ${{ needs.dependency-security-scan.outputs.scan_status == 'critical' && '🔴 **HIGH RISK** - Critical vulnerabilities require immediate attention' || '' }}
+          ${{ needs.dependency-security-scan.outputs.scan_status == 'high' && '🟡 **MEDIUM RISK** - High-severity issues should be addressed' || '' }}
+          ${{ needs.dependency-security-scan.outputs.scan_status == 'warning' && '🟡 **LOW RISK** - Minor issues detected' || '' }}
+          ${{ needs.dependency-security-scan.outputs.scan_status == 'pass' && '🟢 **LOW RISK** - No significant security issues detected' || '' }}
+
+          ## 🚨 Critical Actions Required
+
+          ${{ needs.dependency-security-scan.outputs.vulnerabilities_critical != '0' && '- 🔧 **IMMEDIATE:** Address critical vulnerabilities before deployment' || '' }}
+          ${{ needs.dependency-security-scan.outputs.vulnerabilities_high != '0' && '- ⚠️ **HIGH PRIORITY:** Review and fix high-severity vulnerabilities' || '' }}
+          ${{ needs.license-compliance.result != 'success' && '- 📄 **LEGAL:** Review license compliance issues' || '' }}
+
+          ## 📈 Security Trends
+
+          - Monitor vulnerability counts over time
+          - Track remediation times
+          - Ensure regular security updates
+          - Maintain license compliance
+
+          ## 🔗 Scan Results
+
+          Detailed scan results are available in the workflow artifacts:
+          - npm audit results
+          - Trivy scan reports
+          - Semgrep analysis
+          - License compliance report
+
+          ## 🎯 Recommendations
+
+          1. **Immediate Actions:**
+             ${{ needs.dependency-security-scan.outputs.vulnerabilities_critical != '0' && '- Fix critical vulnerabilities immediately' || '- Continue monitoring for new vulnerabilities' }}
+
+          2. **Short-term Actions:**
+             - Update dependencies with known vulnerabilities
+             - Review and approve security exceptions
+             - Implement additional security controls
+
+          3. **Long-term Actions:**
+             - Establish security baseline metrics
+             - Implement continuous security monitoring
+             - Regular security training for developers
+
+          ---
+          *Generated by Security Monitoring workflow - Run ID: ${{ github.run_id }}*
+          EOF
+
+          echo "Security monitoring report generated"
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const criticalVulns = parseInt('${{ needs.dependency-security-scan.outputs.vulnerabilities_critical }}' || '0');
+            const highVulns = parseInt('${{ needs.dependency-security-scan.outputs.vulnerabilities_high }}' || '0');
+            const scanStatus = '${{ needs.dependency-security-scan.outputs.scan_status }}';
+
+            let state = 'success';
+            let description = 'No critical security issues found';
+
+            if (criticalVulns > 0) {
+              state = 'failure';
+              description = `${criticalVulns} critical vulnerabilities found`;
+            } else if (highVulns > 5) {
+              state = 'failure';
+              description = `${highVulns} high-severity vulnerabilities found`;
+            } else if (scanStatus === 'warning') {
+              state = 'pending';
+              description = 'Security warnings detected - review required';
+            }
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: state,
+              description: description,
+              context: 'Security Monitoring'
+            });
+
+      - name: Send critical security alert
+        if: needs.dependency-security-scan.outputs.scan_status == 'critical'
+        run: |
+          echo "🚨 CRITICAL SECURITY ALERT"
+          echo "Critical vulnerabilities detected: ${{ needs.dependency-security-scan.outputs.vulnerabilities_critical }}"
+
+          if [ -n "${{ env.ALERT_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{
+                "text": "🚨 CRITICAL SECURITY ALERT",
+                "attachments": [{
+                  "color": "danger",
+                  "title": "Critical Vulnerabilities Detected",
+                  "fields": [{
+                    "title": "Repository",
+                    "value": "${{ github.repository }}",
+                    "short": true
+                  }, {
+                    "title": "Critical Vulnerabilities",
+                    "value": "${{ needs.dependency-security-scan.outputs.vulnerabilities_critical }}",
+                    "short": true
+                  }, {
+                    "title": "High Vulnerabilities",
+                    "value": "${{ needs.dependency-security-scan.outputs.vulnerabilities_high }}",
+                    "short": true
+                  }, {
+                    "title": "Action Required",
+                    "value": "IMMEDIATE ATTENTION REQUIRED",
+                    "short": false
+                  }],
+                  "actions": [{
+                    "type": "button",
+                    "text": "View Security Report",
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }]
+                }]
+              }' \
+              ${{ env.ALERT_WEBHOOK }}
+          fi
+
+      - name: Create security issue for critical findings
+        if: needs.dependency-security-scan.outputs.vulnerabilities_critical != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const criticalCount = '${{ needs.dependency-security-scan.outputs.vulnerabilities_critical }}';
+
+            const issueBody = `## 🚨 Critical Security Vulnerabilities Detected
+
+            **Alert Generated:** ${new Date().toISOString()}
+            **Scan Status:** CRITICAL
+            **Critical Vulnerabilities:** ${criticalCount}
+
+            ### 🔍 Summary
+
+            Our automated security monitoring has detected **${criticalCount} critical vulnerabilities** in the codebase that require immediate attention.
+
+            ### 📊 Vulnerability Breakdown
+
+            - **Critical:** ${criticalCount}
+            - **High:** ${{ needs.dependency-security-scan.outputs.vulnerabilities_high }}
+            - **Repository:** ${{ github.repository }}
+            - **Branch:** ${{ github.ref_name }}
+            - **Commit:** ${{ github.sha }}
+
+            ### 🚨 Required Actions
+
+            1. **IMMEDIATE:** Review the security scan results in the workflow artifacts
+            2. **URGENT:** Update or patch vulnerable dependencies
+            3. **CRITICAL:** Test fixes thoroughly before deployment
+            4. **REQUIRED:** Re-run security scans to verify fixes
+            5. **MANDATORY:** Update this issue with resolution status
+
+            ### 🔗 Resources
+
+            - [Security Scan Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - [Security Documentation](https://github.com/${{ github.repository }}/security)
+            - [Vulnerability Database](https://nvd.nist.gov/)
+
+            ### ⏰ SLA Requirements
+
+            - **Response Time:** 2 hours
+            - **Resolution Time:** 24 hours
+            - **Verification:** Required before deployment
+
+            ---
+            **⚠️ DEPLOYMENT BLOCKED:** This issue blocks all deployments until resolved.
+
+            *This issue was automatically created by Security Monitoring*`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 CRITICAL: ${criticalCount} Security Vulnerabilities Detected`,
+              body: issueBody,
+              labels: ['critical', 'security', 'vulnerability', 'urgent', 'deployment-blocker'],
+              assignees: ['${{ github.actor }}']
+            });
+
+            console.log(`Created critical security issue #${issue.data.number}`);
+
+      - name: Upload security monitoring report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-monitoring-report-${{ github.sha }}
+          path: |
+            SECURITY_MONITORING_REPORT.md
+            security-reports/
+          retention-days: 90

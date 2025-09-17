@@ -1,0 +1,1784 @@
+
+> hsinchu-pass-guardian-mobile@1.0.0 test
+> jest --coverage --verbose --coverage --watchAll=false
+
+FAIL tests/services/MobileGeofenceEngine.test.js
+  MobileGeofenceEngine - RED Phase Tests
+    iOS Core Location Integration
+      Location Permission Management
+        ✕ should request Always location permission for background geofencing (5 ms)
+        ✕ should handle permission upgrade from WhenInUse to Always (1 ms)
+        ✕ should provide user guidance when permissions denied (1 ms)
+      Core Location Geofence Setup
+        ✕ should register geofences with CLLocationManager
+        ✕ should handle iOS geofence limit (20 maximum) (1 ms)
+        ✕ should configure significant location monitoring as fallback
+    Android GeofencingClient Integration
+      Android Geofencing Setup
+        ✕ should create GeofencingRequest with proper configuration (1 ms)
+        ✕ should handle Android background location limitations
+        ✕ should implement PendingIntent for geofence transitions
+    Accuracy and GPS Uncertainty Handling
+      10m Accuracy Requirement
+        ✓ should reject location updates with accuracy > 10m (30 ms)
+        ✕ should handle GPS uncertainty in boundary detection (2 ms)
+        ✕ should implement accuracy-based confidence levels
+    Background Processing and Notifications
+      Exit Confirmation with 30s Delay
+        ✕ should implement 30-second confirmation delay for exits (1 ms)
+        ✕ should cancel exit confirmation if user returns within 30s
+        ✕ should confirm exit after 30-second delay expires (2 ms)
+      Notification Integration
+        ✕ should send entry notifications immediately
+        ✕ should respect 5-minute notification cooldown (6 ms)
+        ✕ should handle critical alerts for emergency geofences (1 ms)
+    Backend Integration
+      Geofence Synchronization
+        ✕ should sync geofences from backend on app launch (1 ms)
+        ✕ should report geofence events to backend (1 ms)
+        ✓ should queue events for offline sync (2 ms)
+    Error Handling and Edge Cases
+      Location Service Failures
+        ✕ should handle GPS unavailable gracefully
+        ✕ should implement fallback strategies for location failures
+      Platform-Specific Edge Cases
+        ✕ should handle iOS app backgrounding and foregrounding
+        ✕ should handle Android doze mode and battery optimization
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Location Permission Management › should request Always location permission for background geofencing
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Location Permission Management › should handle permission upgrade from WhenInUse to Always
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Location Permission Management › should provide user guidance when permissions denied
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Core Location Geofence Setup › should register geofences with CLLocationManager
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Core Location Geofence Setup › should handle iOS geofence limit (20 maximum)
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › iOS Core Location Integration › Core Location Geofence Setup › should configure significant location monitoring as fallback
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      61 |   describe('iOS Core Location Integration', () => {
+      62 |     beforeEach(() => {
+    > 63 |       Platform.OS = 'ios';
+         |                  ^
+      64 |       Platform.Version = '16.0';
+      65 |     });
+      66 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:63:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Android GeofencingClient Integration › Android Geofencing Setup › should create GeofencingRequest with proper configuration
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      185 |   describe('Android GeofencingClient Integration', () => {
+      186 |     beforeEach(() => {
+    > 187 |       Platform.OS = 'android';
+          |                  ^
+      188 |       Platform.Version = 33;
+      189 |     });
+      190 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:187:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Android GeofencingClient Integration › Android Geofencing Setup › should handle Android background location limitations
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      185 |   describe('Android GeofencingClient Integration', () => {
+      186 |     beforeEach(() => {
+    > 187 |       Platform.OS = 'android';
+          |                  ^
+      188 |       Platform.Version = 33;
+      189 |     });
+      190 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:187:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Android GeofencingClient Integration › Android Geofencing Setup › should implement PendingIntent for geofence transitions
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      185 |   describe('Android GeofencingClient Integration', () => {
+      186 |     beforeEach(() => {
+    > 187 |       Platform.OS = 'android';
+          |                  ^
+      188 |       Platform.Version = 33;
+      189 |     });
+      190 |
+
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:187:18)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Accuracy and GPS Uncertainty Handling › 10m Accuracy Requirement › should handle GPS uncertainty in boundary detection
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      303 |         // Act & Assert - Will fail in RED phase
+      304 |         for (const location of edgeCaseLocations) {
+    > 305 |           await expect(async () => {
+          |                 ^
+      306 |             const result = await geofenceEngine.evaluateGeofenceTransition(
+      307 |               geofence,
+      308 |               location
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:305:17)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Accuracy and GPS Uncertainty Handling › 10m Accuracy Requirement › should implement accuracy-based confidence levels
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      329 |         // Act & Assert - Will fail in RED phase
+      330 |         for (const update of locationUpdates) {
+    > 331 |           await expect(async () => {
+          |                 ^
+      332 |             const confidence = await geofenceEngine.calculateLocationConfidence(update);
+      333 |           }).rejects.toThrow();
+      334 |         }
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:331:17)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Exit Confirmation with 30s Delay › should implement 30-second confirmation delay for exits
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      359 |
+      360 |         // Act & Assert - Will fail in RED phase
+    > 361 |         await expect(async () => {
+          |               ^
+      362 |           await geofenceEngine.handlePotentialExit(geofence, exitLocation);
+      363 |         }).rejects.toThrow();
+      364 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:361:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Exit Confirmation with 30s Delay › should cancel exit confirmation if user returns within 30s
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      381 |
+      382 |         // Act & Assert - Will fail in RED phase
+    > 383 |         await expect(async () => {
+          |               ^
+      384 |           await geofenceEngine.handlePotentialExit(geofence, exitLocation);
+      385 |           // Simulate 20 seconds later (within 30s window)
+      386 |           setTimeout(async () => {
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:383:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Exit Confirmation with 30s Delay › should confirm exit after 30-second delay expires
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      406 |
+      407 |         // Act & Assert - Will fail in RED phase
+    > 408 |         await expect(async () => {
+          |               ^
+      409 |           await geofenceEngine.handlePotentialExit(geofence, exitLocation);
+      410 |
+      411 |           // Fast-forward 30 seconds
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:408:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Notification Integration › should send entry notifications immediately
+
+    TypeError: Cannot read properties of undefined (reading 'mockImplementation')
+
+      444 |         };
+      445 |
+    > 446 |         PushNotification.localNotification.mockImplementation(() => {});
+          |                                            ^
+      447 |
+      448 |         // Act & Assert - Will fail in RED phase
+      449 |         await expect(async () => {
+
+      at mockImplementation (tests/services/MobileGeofenceEngine.test.js:446:44)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Notification Integration › should respect 5-minute notification cooldown
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      471 |
+      472 |         // Act & Assert - Will fail in RED phase
+    > 473 |         await expect(async () => {
+          |               ^
+      474 |           // First notification
+      475 |           await geofenceEngine.handleGeofenceEntry(geofence, location);
+      476 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:473:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Background Processing and Notifications › Notification Integration › should handle critical alerts for emergency geofences
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      498 |
+      499 |         // Act & Assert - Will fail in RED phase
+    > 500 |         await expect(async () => {
+          |               ^
+      501 |           await geofenceEngine.handleEmergencyGeofenceEvent(emergencyGeofence, 'entry');
+      502 |         }).rejects.toThrow();
+      503 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:500:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Backend Integration › Geofence Synchronization › should sync geofences from backend on app launch
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      537 |
+      538 |         // Act & Assert - Will fail in RED phase
+    > 539 |         await expect(async () => {
+          |               ^
+      540 |           await geofenceEngine.syncWithBackend();
+      541 |         }).rejects.toThrow();
+      542 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:539:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Backend Integration › Geofence Synchronization › should report geofence events to backend
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      570 |
+      571 |         // Act & Assert - Will fail in RED phase
+    > 572 |         await expect(async () => {
+          |               ^
+      573 |           await geofenceEngine.reportEventToBackend(geofenceEvent);
+      574 |         }).rejects.toThrow();
+      575 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:572:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Error Handling and Edge Cases › Location Service Failures › should handle GPS unavailable gracefully
+
+    TypeError: Cannot read properties of undefined (reading 'mockImplementation')
+
+      621 |       it('should handle GPS unavailable gracefully', async () => {
+      622 |         // Arrange
+    > 623 |         Geolocation.getCurrentPosition.mockImplementation((success, error) => {
+          |                                        ^
+      624 |           error({ code: 2, message: 'Position unavailable' });
+      625 |         });
+      626 |
+
+      at mockImplementation (tests/services/MobileGeofenceEngine.test.js:623:40)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Error Handling and Edge Cases › Location Service Failures › should implement fallback strategies for location failures
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      641 |       it('should implement fallback strategies for location failures', async () => {
+      642 |         // Act & Assert - Will fail in RED phase
+    > 643 |         await expect(async () => {
+          |               ^
+      644 |           await geofenceEngine.enableFallbackLocationStrategy();
+      645 |         }).rejects.toThrow();
+      646 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MobileGeofenceEngine.test.js:643:15)
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Error Handling and Edge Cases › Platform-Specific Edge Cases › should handle iOS app backgrounding and foregrounding
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      658 |       it('should handle iOS app backgrounding and foregrounding', async () => {
+      659 |         // Arrange
+    > 660 |         Platform.OS = 'ios';
+          |                    ^
+      661 |
+      662 |         // Act & Assert - Will fail in RED phase
+      663 |         await expect(async () => {
+
+      at tests/services/MobileGeofenceEngine.test.js:660:20
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+  ● MobileGeofenceEngine - RED Phase Tests › Error Handling and Edge Cases › Platform-Specific Edge Cases › should handle Android doze mode and battery optimization
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      676 |       it('should handle Android doze mode and battery optimization', async () => {
+      677 |         // Arrange
+    > 678 |         Platform.OS = 'android';
+          |                    ^
+      679 |
+      680 |         // Act & Assert - Will fail in RED phase
+      681 |         await expect(async () => {
+
+      at tests/services/MobileGeofenceEngine.test.js:678:20
+      at Generator.call (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at _next (tests/services/MobileGeofenceEngine.test.js:2:1)
+      at Object.<anonymous> (tests/services/MobileGeofenceEngine.test.js:2:1)
+
+FAIL tests/services/MyDataIntegrationService.test.js
+  MyDataIntegrationService - RED Phase Tests
+    OAuth Authorization Flow
+      Single-Use Authorization
+        ✕ should initiate OAuth flow with correct parameters (5 ms)
+        ✕ should generate secure random state parameter (2 ms)
+        ✕ should validate state parameter on callback (1 ms)
+        ✓ should reject callback with invalid state (21 ms)
+      Token Exchange
+        ✕ should exchange authorization code for access token (2 ms)
+        ✕ should handle token exchange errors (1 ms)
+        ✕ should store access token securely and temporarily
+    Data Access and Processing
+      Profile Data Retrieval
+        ✕ should fetch user profile with minimal data principle (1 ms)
+        ✕ should encrypt sensitive data before local storage (1 ms)
+        ✕ should implement data minimization principles (1 ms)
+    Consent Management
+      Consent Recording
+        ✕ should generate detailed consent receipt (2 ms)
+        ✕ should provide user-readable consent summary (1 ms)
+        ✕ should validate consent before data processing (1 ms)
+      Consent Revocation
+        ✕ should support immediate consent revocation
+        ✕ should delete all associated data on consent revocation (1 ms)
+        ✕ should provide revocation confirmation to user (1 ms)
+    Data Retention and Deletion
+      Automatic Data Expiration
+        ✕ should automatically delete data after retention period (3 ms)
+        ✕ should clean up expired tokens regularly (1 ms)
+      Receipt Management
+        ✕ should retain consent receipts for 7 days after data deletion (1 ms)
+        ✕ should generate GDPR-compliant deletion certificates (1 ms)
+    Security and Privacy
+      Token Security
+        ✕ should implement secure token storage with biometric protection (1 ms)
+        ✕ should implement token refresh without user interaction (1 ms)
+      Data Encryption
+        ✓ should encrypt all stored personal data (2 ms)
+        ✕ should use different encryption keys per user
+    Error Handling and Edge Cases
+      OAuth Flow Errors
+        ✕ should handle network failures during OAuth (1 ms)
+        ✕ should handle cancelled OAuth flow (1 ms)
+      Data Processing Errors
+        ✕ should handle API rate limiting gracefully (1 ms)
+        ✕ should handle partial data responses (1 ms)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Single-Use Authorization › should initiate OAuth flow with correct parameters
+
+    TypeError: Cannot read properties of undefined (reading 'openURL')
+
+      68 |           'state=';
+      69 |
+    > 70 |         Linking.openURL.mockResolvedValue(true);
+         |                 ^
+      71 |
+      72 |         // Act & Assert - Will fail in RED phase
+      73 |         await expect(async () => {
+
+      at openURL (tests/services/MyDataIntegrationService.test.js:70:17)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Single-Use Authorization › should generate secure random state parameter
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      88 |       it('should generate secure random state parameter', async () => {
+      89 |         // Act & Assert - Will fail in RED phase
+    > 90 |         await expect(async () => {
+         |               ^
+      91 |           const state1 = await myDataService.generateSecureState();
+      92 |           const state2 = await myDataService.generateSecureState();
+      93 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:90:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Single-Use Authorization › should validate state parameter on callback
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      105 |
+      106 |         // Act & Assert - Will fail in RED phase
+    > 107 |         await expect(async () => {
+          |               ^
+      108 |           await myDataService.handleOAuthCallback(callbackUrl, validState);
+      109 |         }).rejects.toThrow();
+      110 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:107:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Token Exchange › should exchange authorization code for access token
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      149 |
+      150 |         // Act & Assert - Will fail in RED phase
+    > 151 |         await expect(async () => {
+          |               ^
+      152 |           await myDataService.exchangeCodeForToken(authCode);
+      153 |         }).rejects.toThrow();
+      154 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:151:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Token Exchange › should handle token exchange errors
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      181 |
+      182 |         // Act & Assert - Will fail in RED phase
+    > 183 |         await expect(async () => {
+          |               ^
+      184 |           await myDataService.exchangeCodeForToken(invalidAuthCode);
+      185 |         }).rejects.toThrow();
+      186 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:183:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › OAuth Authorization Flow › Token Exchange › should store access token securely and temporarily
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      198 |         const expiresIn = 3600; // 1 hour
+      199 |
+    > 200 |         Keychain.setInternetCredentials.mockResolvedValue(true);
+          |                                         ^
+      201 |
+      202 |         // Act & Assert - Will fail in RED phase
+      203 |         await expect(async () => {
+
+      at mockResolvedValue (tests/services/MyDataIntegrationService.test.js:200:41)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Access and Processing › Profile Data Retrieval › should fetch user profile with minimal data principle
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      244 |
+      245 |         // Act & Assert - Will fail in RED phase
+    > 246 |         await expect(async () => {
+          |               ^
+      247 |           await myDataService.fetchUserProfile(['name', 'emergency_contacts']);
+      248 |         }).rejects.toThrow();
+      249 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:246:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Access and Processing › Profile Data Retrieval › should encrypt sensitive data before local storage
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      281 |
+      282 |         // Act & Assert - Will fail in RED phase
+    > 283 |         await expect(async () => {
+          |               ^
+      284 |           await myDataService.storeProfileDataSecurely(sensitiveData);
+      285 |         }).rejects.toThrow();
+      286 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:283:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Access and Processing › Profile Data Retrieval › should implement data minimization principles
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      300 |
+      301 |         // Act & Assert - Will fail in RED phase
+    > 302 |         await expect(async () => {
+          |               ^
+      303 |           await myDataService.validateDataRequest(requestedFields);
+      304 |           await myDataService.validateDataRequest([...requestedFields, ...unnecessaryFields]);
+      305 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:302:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Recording › should generate detailed consent receipt
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      332 |
+      333 |         // Act & Assert - Will fail in RED phase
+    > 334 |         await expect(async () => {
+          |               ^
+      335 |           await myDataService.generateConsentReceipt(consentData);
+      336 |         }).rejects.toThrow();
+      337 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:334:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Recording › should provide user-readable consent summary
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      361 |
+      362 |         // Act & Assert - Will fail in RED phase
+    > 363 |         await expect(async () => {
+          |               ^
+      364 |           const summary = await myDataService.generateConsentSummary(consentScopes);
+      365 |         }).rejects.toThrow();
+      366 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:363:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Recording › should validate consent before data processing
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      398 |
+      399 |         // Act & Assert - Will fail in RED phase
+    > 400 |         await expect(async () => {
+          |               ^
+      401 |           const validResult = await myDataService.validateConsent(validConsent);
+      402 |           const expiredResult = await myDataService.validateConsent(expiredConsent);
+      403 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:400:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Revocation › should support immediate consent revocation
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      427 |
+      428 |         // Act & Assert - Will fail in RED phase
+    > 429 |         await expect(async () => {
+          |               ^
+      430 |           await myDataService.revokeConsent(revokeRequest);
+      431 |         }).rejects.toThrow();
+      432 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:429:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Revocation › should delete all associated data on consent revocation
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      443 |         // Arrange
+      444 |         const userId = 'user-123';
+    > 445 |         AsyncStorage.getItem.mockResolvedValue('{"name":"王小明","phone":"0912345678"}');
+          |                              ^
+      446 |         Keychain.getInternetCredentials.mockResolvedValue({
+      447 |           username: 'hsinchu_guardian',
+      448 |           password: 'access_token_123'
+
+      at mockResolvedValue (tests/services/MyDataIntegrationService.test.js:445:30)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Consent Management › Consent Revocation › should provide revocation confirmation to user
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      470 |
+      471 |         // Act & Assert - Will fail in RED phase
+    > 472 |         await expect(async () => {
+          |               ^
+      473 |           const confirmation = await myDataService.generateRevocationConfirmation(revocationConfirmation);
+      474 |         }).rejects.toThrow();
+      475 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:472:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Retention and Deletion › Automatic Data Expiration › should automatically delete data after retention period
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      500 |
+      501 |         // Act & Assert - Will fail in RED phase
+    > 502 |         await expect(async () => {
+          |               ^
+      503 |           await myDataService.scheduleDataExpiration(testData);
+      504 |
+      505 |           // Fast-forward 30 days
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:502:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Retention and Deletion › Automatic Data Expiration › should clean up expired tokens regularly
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      532 |
+      533 |         // Act & Assert - Will fail in RED phase
+    > 534 |         await expect(async () => {
+          |               ^
+      535 |           await myDataService.performTokenCleanup([...expiredTokens, ...validTokens]);
+      536 |         }).rejects.toThrow();
+      537 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:534:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Retention and Deletion › Receipt Management › should retain consent receipts for 7 days after data deletion
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      559 |
+      560 |         // Act & Assert - Will fail in RED phase
+    > 561 |         await expect(async () => {
+          |               ^
+      562 |           await myDataService.manageReceiptRetention(consentReceipt);
+      563 |         }).rejects.toThrow();
+      564 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:561:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Data Retention and Deletion › Receipt Management › should generate GDPR-compliant deletion certificates
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      583 |
+      584 |         // Act & Assert - Will fail in RED phase
+    > 585 |         await expect(async () => {
+          |               ^
+      586 |           const certificate = await myDataService.generateDeletionCertificate(deletionEvent);
+      587 |         }).rejects.toThrow();
+      588 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:585:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Security and Privacy › Token Security › should implement secure token storage with biometric protection
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      608 |         const sensitiveToken = 'highly_sensitive_access_token_12345';
+      609 |
+    > 610 |         Keychain.setInternetCredentials.mockResolvedValue(true);
+          |                                         ^
+      611 |         Keychain.SECURITY_LEVEL = {
+      612 |           SECURE_HARDWARE: 'SECURE_HARDWARE'
+      613 |         };
+
+      at mockResolvedValue (tests/services/MyDataIntegrationService.test.js:610:41)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Security and Privacy › Token Security › should implement token refresh without user interaction
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      645 |
+      646 |         // Act & Assert - Will fail in RED phase
+    > 647 |         await expect(async () => {
+          |               ^
+      648 |           await myDataService.refreshAccessToken(refreshToken);
+      649 |         }).rejects.toThrow();
+      650 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:647:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Security and Privacy › Data Encryption › should use different encryption keys per user
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      689 |
+      690 |         // Act & Assert - Will fail in RED phase
+    > 691 |         await expect(async () => {
+          |               ^
+      692 |           const encrypted1 = await myDataService.encryptPersonalData(userData1, 'user-1');
+      693 |           const encrypted2 = await myDataService.encryptPersonalData(userData1, 'user-2');
+      694 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:691:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Error Handling and Edge Cases › OAuth Flow Errors › should handle network failures during OAuth
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      710 |
+      711 |         // Act & Assert - Will fail in RED phase
+    > 712 |         await expect(async () => {
+          |               ^
+      713 |           await myDataService.exchangeCodeForToken('auth_code_123');
+      714 |         }).rejects.toThrow();
+      715 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:712:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Error Handling and Edge Cases › OAuth Flow Errors › should handle cancelled OAuth flow
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      728 |
+      729 |         // Act & Assert - Will fail in RED phase
+    > 730 |         await expect(async () => {
+          |               ^
+      731 |           await myDataService.handleOAuthCallback(cancelledCallbackUrl);
+      732 |         }).rejects.toThrow();
+      733 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:730:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Error Handling and Edge Cases › Data Processing Errors › should handle API rate limiting gracefully
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      753 |
+      754 |         // Act & Assert - Will fail in RED phase
+    > 755 |         await expect(async () => {
+          |               ^
+      756 |           await myDataService.fetchUserProfile(['name']);
+      757 |         }).rejects.toThrow();
+      758 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:755:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+  ● MyDataIntegrationService - RED Phase Tests › Error Handling and Edge Cases › Data Processing Errors › should handle partial data responses
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      780 |
+      781 |         // Act & Assert - Will fail in RED phase
+    > 782 |         await expect(async () => {
+          |               ^
+      783 |           await myDataService.fetchUserProfile(['name', 'emergency_contacts']);
+      784 |         }).rejects.toThrow();
+      785 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/MyDataIntegrationService.test.js:782:15)
+      at Generator.call (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/MyDataIntegrationService.test.js:2:1)
+      at _next (tests/services/MyDataIntegrationService.test.js:2:1)
+      at Object.<anonymous> (tests/services/MyDataIntegrationService.test.js:2:1)
+
+FAIL tests/services/BLEBackgroundService.test.js
+  BLEBackgroundService - RED Phase Tests
+    Android 12+ Permission Management
+      neverForLocation Mode
+        ✕ should request only BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions (4 ms)
+        ✕ should scan for devices without location inference (1 ms)
+        ✕ should create anonymized volunteer hits without location data (2 ms)
+      Location-Based Mode for Positioning
+        ✕ should request location permissions when positioning enabled
+        ✕ should include fuzzed location in volunteer hits (1 ms)
+        ✕ should fuzz coordinates to 100m grid squares
+        ✕ should round timestamps to 5-minute intervals
+    iOS Core Bluetooth Integration
+      State Preservation and Restoration
+        ✕ should initialize with bluetooth-central background mode (1 ms)
+        ✕ should save state when app is backgrounded
+        ✕ should restore state when app is relaunched
+        ✕ should handle iOS background app refresh settings
+    Background Scanning Optimization
+      Battery-Aware Scanning
+        ✕ should adjust scan intervals based on battery level (1 ms)
+        ✕ should use aggressive scanning when charging
+        ✓ should implement adaptive scanning based on discovery rate (3 ms)
+      RSSI Filtering and Device Processing
+        ✕ should process devices with RSSI stronger than -90 dBm (1 ms)
+        ✕ should ignore devices weaker than -90 dBm
+        ✕ should handle MAC address rotation without correlation (1 ms)
+    Privacy and Anonymization
+      K-Anonymity Enforcement
+        ✕ should ensure minimum k=3 anonymity before submitting hits
+        ✕ should queue hits when k-anonymity threshold not met
+      PII Protection
+        ✕ should never store original MAC addresses
+        ✕ should use salted hashes for device identification
+    Backend Integration
+      Volunteer Hit Submission
+        ✕ should submit anonymized hits to backend API (1 ms)
+        ✕ should handle API failures gracefully with retry logic (1 ms)
+        ✕ should queue hits offline and sync when connected
+    Error Handling and Recovery
+      Permission Revocation
+        ✕ should stop scanning when permissions are revoked
+        ✕ should preserve queued data when permissions lost
+      Bluetooth State Changes
+        ✕ should handle Bluetooth disabled gracefully
+        ✕ should resume scanning when Bluetooth re-enabled
+    Integration with Device Binding
+      Care Recipient Device Detection
+        ✕ should prioritize scanning for registered care recipient devices (1 ms)
+        ✕ should trigger immediate alerts for priority device detection (6 ms)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › neverForLocation Mode › should request only BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › neverForLocation Mode › should scan for devices without location inference
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › neverForLocation Mode › should create anonymized volunteer hits without location data
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › Location-Based Mode for Positioning › should request location permissions when positioning enabled
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › Location-Based Mode for Positioning › should include fuzzed location in volunteer hits
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › Location-Based Mode for Positioning › should fuzz coordinates to 100m grid squares
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Android 12+ Permission Management › Location-Based Mode for Positioning › should round timestamps to 5-minute intervals
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      55 |   describe('Android 12+ Permission Management', () => {
+      56 |     beforeEach(() => {
+    > 57 |       Platform.OS = 'android';
+         |                  ^
+      58 |       Platform.Version = 33; // Android 13
+      59 |     });
+      60 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:57:18)
+
+  ● BLEBackgroundService - RED Phase Tests › iOS Core Bluetooth Integration › State Preservation and Restoration › should initialize with bluetooth-central background mode
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      244 |   describe('iOS Core Bluetooth Integration', () => {
+      245 |     beforeEach(() => {
+    > 246 |       Platform.OS = 'ios';
+          |                  ^
+      247 |       Platform.Version = '16.0';
+      248 |     });
+      249 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:246:18)
+
+  ● BLEBackgroundService - RED Phase Tests › iOS Core Bluetooth Integration › State Preservation and Restoration › should save state when app is backgrounded
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      244 |   describe('iOS Core Bluetooth Integration', () => {
+      245 |     beforeEach(() => {
+    > 246 |       Platform.OS = 'ios';
+          |                  ^
+      247 |       Platform.Version = '16.0';
+      248 |     });
+      249 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:246:18)
+
+  ● BLEBackgroundService - RED Phase Tests › iOS Core Bluetooth Integration › State Preservation and Restoration › should restore state when app is relaunched
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      244 |   describe('iOS Core Bluetooth Integration', () => {
+      245 |     beforeEach(() => {
+    > 246 |       Platform.OS = 'ios';
+          |                  ^
+      247 |       Platform.Version = '16.0';
+      248 |     });
+      249 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:246:18)
+
+  ● BLEBackgroundService - RED Phase Tests › iOS Core Bluetooth Integration › State Preservation and Restoration › should handle iOS background app refresh settings
+
+    TypeError: Cannot set properties of undefined (setting 'OS')
+
+      244 |   describe('iOS Core Bluetooth Integration', () => {
+      245 |     beforeEach(() => {
+    > 246 |       Platform.OS = 'ios';
+          |                  ^
+      247 |       Platform.Version = '16.0';
+      248 |     });
+      249 |
+
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:246:18)
+
+  ● BLEBackgroundService - RED Phase Tests › Background Scanning Optimization › Battery-Aware Scanning › should adjust scan intervals based on battery level
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      332 |       it('should adjust scan intervals based on battery level', async () => {
+      333 |         // Arrange
+    > 334 |         DeviceInfo.getBatteryLevel.mockResolvedValue(0.25); // 25% battery
+          |                                    ^
+      335 |         DeviceInfo.isCharging.mockResolvedValue(false);
+      336 |
+      337 |         // Act & Assert - Will fail in RED phase
+
+      at mockResolvedValue (tests/services/BLEBackgroundService.test.js:334:36)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Background Scanning Optimization › Battery-Aware Scanning › should use aggressive scanning when charging
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      351 |       it('should use aggressive scanning when charging', async () => {
+      352 |         // Arrange
+    > 353 |         DeviceInfo.getBatteryLevel.mockResolvedValue(0.80); // 80% battery
+          |                                    ^
+      354 |         DeviceInfo.isCharging.mockResolvedValue(true);
+      355 |
+      356 |         // Act & Assert - Will fail in RED phase
+
+      at mockResolvedValue (tests/services/BLEBackgroundService.test.js:353:36)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Background Scanning Optimization › RSSI Filtering and Device Processing › should process devices with RSSI stronger than -90 dBm
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      400 |
+      401 |         // Act & Assert - Will fail in RED phase
+    > 402 |         await expect(async () => {
+          |               ^
+      403 |           const shouldProcess = await bleService.shouldProcessDevice(strongDevice);
+      404 |         }).rejects.toThrow();
+      405 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:402:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Background Scanning Optimization › RSSI Filtering and Device Processing › should ignore devices weaker than -90 dBm
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      417 |
+      418 |         // Act & Assert - Will fail in RED phase
+    > 419 |         await expect(async () => {
+          |               ^
+      420 |           const shouldProcess = await bleService.shouldProcessDevice(weakDevice);
+      421 |         }).rejects.toThrow();
+      422 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:419:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Background Scanning Optimization › RSSI Filtering and Device Processing › should handle MAC address rotation without correlation
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      434 |
+      435 |         // Act & Assert - Will fail in RED phase
+    > 436 |         await expect(async () => {
+          |               ^
+      437 |           for (const device of rotatedDevices) {
+      438 |             await bleService.processDiscoveredDevice(device);
+      439 |           }
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:436:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Privacy and Anonymization › K-Anonymity Enforcement › should ensure minimum k=3 anonymity before submitting hits
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      458 |
+      459 |         // Act & Assert - Will fail in RED phase
+    > 460 |         await expect(async () => {
+          |               ^
+      461 |           const isAnonymous = await bleService.validateKAnonymity(deviceCluster);
+      462 |         }).rejects.toThrow();
+      463 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:460:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Privacy and Anonymization › K-Anonymity Enforcement › should queue hits when k-anonymity threshold not met
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      475 |
+      476 |         // Act & Assert - Will fail in RED phase
+    > 477 |         await expect(async () => {
+          |               ^
+      478 |           const isAnonymous = await bleService.validateKAnonymity(insufficientCluster);
+      479 |         }).rejects.toThrow();
+      480 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:477:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Privacy and Anonymization › PII Protection › should never store original MAC addresses
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      498 |
+      499 |         // Act & Assert - Will fail in RED phase
+    > 500 |         await expect(async () => {
+          |               ^
+      501 |           await bleService.processDiscoveredDevice(deviceWithPII);
+      502 |         }).rejects.toThrow();
+      503 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:500:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Privacy and Anonymization › PII Protection › should use salted hashes for device identification
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      520 |
+      521 |         // Act & Assert - Will fail in RED phase
+    > 522 |         await expect(async () => {
+          |               ^
+      523 |           const hash1 = await bleService.createDeviceHash(device.id);
+      524 |           const hash2 = await bleService.createDeviceHash(device.id);
+      525 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:522:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Backend Integration › Volunteer Hit Submission › should submit anonymized hits to backend API
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      553 |
+      554 |         // Act & Assert - Will fail in RED phase
+    > 555 |         await expect(async () => {
+          |               ^
+      556 |           await bleService.submitVolunteerHits(mockVolunteerHits);
+      557 |         }).rejects.toThrow();
+      558 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:555:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Backend Integration › Volunteer Hit Submission › should handle API failures gracefully with retry logic
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      587 |
+      588 |         // Act & Assert - Will fail in RED phase
+    > 589 |         await expect(async () => {
+          |               ^
+      590 |           await bleService.submitVolunteerHits(mockHits);
+      591 |         }).rejects.toThrow();
+      592 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:589:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Backend Integration › Volunteer Hit Submission › should queue hits offline and sync when connected
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      609 |
+      610 |         // Act & Assert - Will fail in RED phase
+    > 611 |         await expect(async () => {
+          |               ^
+      612 |           await bleService.submitVolunteerHits(offlineHits);
+      613 |           await bleService.syncOfflineHits(); // When connection restored
+      614 |         }).rejects.toThrow();
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:611:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Error Handling and Recovery › Permission Revocation › should stop scanning when permissions are revoked
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      628 |       it('should stop scanning when permissions are revoked', async () => {
+      629 |         // Arrange
+    > 630 |         check.mockResolvedValue(RESULTS.DENIED);
+          |               ^
+      631 |
+      632 |         // Act & Assert - Will fail in RED phase
+      633 |         await expect(async () => {
+
+      at mockResolvedValue (tests/services/BLEBackgroundService.test.js:630:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Error Handling and Recovery › Permission Revocation › should preserve queued data when permissions lost
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      652 |
+      653 |         // Act & Assert - Will fail in RED phase
+    > 654 |         await expect(async () => {
+          |               ^
+      655 |           await bleService.preserveDataOnPermissionLoss(queuedHits);
+      656 |         }).rejects.toThrow();
+      657 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:654:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Error Handling and Recovery › Bluetooth State Changes › should handle Bluetooth disabled gracefully
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      665 |       it('should handle Bluetooth disabled gracefully', async () => {
+      666 |         // Arrange
+    > 667 |         BleManager.checkState.mockResolvedValue('PoweredOff');
+          |                               ^
+      668 |
+      669 |         // Act & Assert - Will fail in RED phase
+      670 |         await expect(async () => {
+
+      at mockResolvedValue (tests/services/BLEBackgroundService.test.js:667:31)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Error Handling and Recovery › Bluetooth State Changes › should resume scanning when Bluetooth re-enabled
+
+    TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')
+
+      683 |       it('should resume scanning when Bluetooth re-enabled', async () => {
+      684 |         // Arrange
+    > 685 |         BleManager.checkState.mockResolvedValue('PoweredOn');
+          |                               ^
+      686 |         bleService.wasScanning = true; // Mock previous state
+      687 |
+      688 |         // Act & Assert - Will fail in RED phase
+
+      at mockResolvedValue (tests/services/BLEBackgroundService.test.js:685:31)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Integration with Device Binding › Care Recipient Device Detection › should prioritize scanning for registered care recipient devices
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      708 |
+      709 |         // Act & Assert - Will fail in RED phase
+    > 710 |         await expect(async () => {
+          |               ^
+      711 |           await bleService.setPrioritizedDevices(registeredDevices);
+      712 |         }).rejects.toThrow();
+      713 |
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:710:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+  ● BLEBackgroundService - RED Phase Tests › Integration with Device Binding › Care Recipient Device Detection › should trigger immediate alerts for priority device detection
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      732 |
+      733 |         // Act & Assert - Will fail in RED phase
+    > 734 |         await expect(async () => {
+          |               ^
+      735 |           await bleService.processDiscoveredDevice(priorityDevice, {
+      736 |             isPriorityDevice: true,
+      737 |             deviceHash: priorityHash
+
+      at expect (node_modules/expect/build/index.js:113:15)
+      at expect (tests/services/BLEBackgroundService.test.js:734:15)
+      at Generator.call (tests/services/BLEBackgroundService.test.js:2:1)
+      at Generator._invoke [as next] (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at asyncGeneratorStep (tests/services/BLEBackgroundService.test.js:2:1)
+      at _next (tests/services/BLEBackgroundService.test.js:2:1)
+      at Object.<anonymous> (tests/services/BLEBackgroundService.test.js:2:1)
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+-----------------------------|---------|----------|---------|---------|----------------------------------------------------------------------------------
+File                         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                
+-----------------------------|---------|----------|---------|---------|----------------------------------------------------------------------------------
+All files                    |   52.03 |    36.14 |   34.78 |   51.64 |                                                                                  
+ BLEBackgroundService.js     |   36.95 |    20.68 |      25 |   36.95 | 36-52,58,67-70,96-110,120-164,173,182-190,205-215,225-226,237-262,276-297        
+ MobileGeofenceEngine.js     |   39.34 |    32.14 |   22.91 |   39.31 | 34-156,170-179,184,200-202,224-252,272-279,304,327-342,356-392                   
+ MyDataIntegrationService.js |   74.61 |    57.69 |      54 |    73.8 | 39-54,99-107,126-151,180-185,195,205-209,274-284,312,336-340,354,373-374,406-414 
+-----------------------------|---------|----------|---------|---------|----------------------------------------------------------------------------------
+Test Suites: 3 failed, 3 total
+Tests:       78 failed, 5 passed, 83 total
+Snapshots:   0 total
+Time:        2.606 s, estimated 3 s
+Ran all test suites.

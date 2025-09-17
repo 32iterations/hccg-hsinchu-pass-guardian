@@ -89,5 +89,23 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(),
 }));
 
+// Mock Platform
+jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+  OS: 'ios',
+  Version: '16.0',
+  isPad: false,
+  isTesting: true,
+  select: jest.fn((specifics) => specifics.ios || specifics.default),
+}));
+
+// Mock Linking
+jest.mock('react-native/Libraries/Linking/Linking', () => ({
+  openURL: jest.fn(() => Promise.resolve()),
+  canOpenURL: jest.fn(() => Promise.resolve(true)),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  getInitialURL: jest.fn(() => Promise.resolve(null)),
+}));
+
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
