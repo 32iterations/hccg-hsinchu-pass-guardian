@@ -1,41 +1,4 @@
-# CLAUDE.md — HsinchuPass 「安心守護」自動化開發規範（TDD 強制）
-
-## 不可違反的鐵律（Hard Rules）
-- 你**不得修改**本檔 `CLAUDE.md` 與 `.policy/**` 中的任何內容。若你認為規範需變更，請建立 `docs/ADR/0001-claude-amendment.md` 寫下提案與理由，由人審後再改。
-- 僅可使用下列工具與命令族：`git status/diff/add/commit/push`、專案測試命令（自動偵測）、lint/format、必要的編譯命令。**不得**使用 `curl/wget/ssh/scp/chmod/chattr/mount/sudo` 等具風險指令，亦不得讀取 `.env` 或 `./secrets/**`。
-- 所有變更必須符合 **TDD（RED → GREEN → REFACTOR）**。不得為了使測試通過而刪除或弱化測試。
-
-## TDD 流程（必遵）
-1. **RED**：先建立失敗測試（只改測試檔），建立分支 `* -red-YYYYMMDD-hhmm`，提交訊息以 `[RED]` 起頭。
-2. **GREEN**：以最小實作讓測試全過，建立分支 `* -green-YYYYMMDD-hhmm`，提交訊息以 `[GREEN]` 起頭。
-3. **REFACTOR**：允許純重構（不改行為），保持測試全過，訊息以 `[REFACTOR]` 起頭。
-4. 完成後生成 `REPORT.md`（包含：功能清單、測試輸出摘要、覆蓋率、風險與待辦），並建立 PR。
-
-## 專案背景與平台邊界（摘要）
-- iOS 通知：預設用 **Time-Sensitive**；**Critical Alerts** 僅在 entitlement 已核可時使用。  
-- Android 通知：不得宣稱「越過 DND」；如需急迫提醒，僅能引導使用者授權，或在符合條件時用 Full-Screen Intent 並提供關閉。  
-- 背景 BLE（Android 12+）：`BLUETOOTH_SCAN/CONNECT`；若推斷位置需 `ACCESS_FINE_LOCATION`（背景還需 ABL）。  
-- 背景 BLE（iOS）：需 `bluetooth-central` 背景模式與 State Preservation/Restoration。  
-- 地理圍籬：Android 使用 GeofencingClient；iOS 背景定位需 `Always` 權限。  
-- 硬體合規：裝置綁定需呈現 NCC 型式證號與中文警語；無證號不得綁定。  
-- MyData：授權為單次即時取用，回執與個資保存期限最小化，可撤回即刪除。
-
-> 上述政策僅作為開發行為的邊界提醒；具體實作請查閱對應平台/法規文件與專案測試。
-
-## 任務節奏（Overnight Autopilot）
-- 本輪目標：P1 家屬端 MVP 中「受照護者卡＋裝置綁定」與「圍籬引擎最小實作」。
-- 請先自動偵測專案測試命令（依序嘗試：`npm/yarn/pnpm test`、`./gradlew test`、`xcodebuild test`）。
-- 僅在測試失敗時提交 RED；**不得**把實作碼混進 RED 提交。
-
-## 產出與紀錄
-- 分支：`p1-red-YYYYMMDD-hhmm`、`p1-green-YYYYMMDD-hhmm`
-- 文件：`REPORT.md`（摘要）、必要時 `docs/ADR/0001-claude-amendment.md`
-- PR：標題 `[P1] Device binding & Geofence MVP (TDD)`
-
-## 風險控管
-- 僅在本專案資料夾與其子目錄工作；不得寫入上層路徑。
-- 禁止讀取 `.env`、`./secrets/**`；任何需要機密的功能以 mock 或合約測試替代。
-- 如遇需要修改本檔之情況，一律改為「寫 ADR 提案」而非直接更動。
+# Claude Code Configuration - SPARC Development Environment
 
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 

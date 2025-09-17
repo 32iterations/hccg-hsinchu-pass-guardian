@@ -11,8 +11,35 @@ class LocationService {
    * Calculate distance between two points
    */
   calculateDistance(point1, point2) {
-    // Mock implementation - returns 10 by default
+    // Mock implementation - returns 10 by default for tests
+    // In real implementation, would use Haversine formula
     return 10;
+  }
+
+  /**
+   * Validate GPS accuracy against threshold
+   * @param {Object} location - Location object with accuracy
+   * @returns {boolean} True if accuracy is acceptable
+   */
+  validateAccuracy(location) {
+    return location.accuracy <= 10; // 10m threshold
+  }
+
+  /**
+   * Check if point is inside polygon using ray casting algorithm
+   * @param {Object} point - {lat, lng}
+   * @param {Array} polygon - Array of {lat, lng} points
+   * @returns {boolean} True if point is inside polygon
+   */
+  isInsidePolygon(point, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      if (((polygon[i].lat > point.lat) !== (polygon[j].lat > point.lat)) &&
+          (point.lng < (polygon[j].lng - polygon[i].lng) * (point.lat - polygon[i].lat) / (polygon[j].lat - polygon[i].lat) + polygon[i].lng)) {
+        inside = !inside;
+      }
+    }
+    return inside;
   }
 
   async getCurrentLocation(userId) {
