@@ -1,67 +1,41 @@
-# Claude Code Configuration - SPARC Development Environment
+# CLAUDE.md — HsinchuPass 「安心守護」自動化開發規範（TDD 強制）
 
-# CLAUDE.md — 新竹通「安心守護」專案協作說明
+## 不可違反的鐵律（Hard Rules）
+- 你**不得修改**本檔 `CLAUDE.md` 與 `.policy/**` 中的任何內容。若你認為規範需變更，請建立 `docs/ADR/0001-claude-amendment.md` 寫下提案與理由，由人審後再改。
+- 僅可使用下列工具與命令族：`git status/diff/add/commit/push`、專案測試命令（自動偵測）、lint/format、必要的編譯命令。**不得**使用 `curl/wget/ssh/scp/chmod/chattr/mount/sudo` 等具風險指令，亦不得讀取 `.env` 或 `./secrets/**`。
+- 所有變更必須符合 **TDD（RED → GREEN → REFACTOR）**。不得為了使測試通過而刪除或弱化測試。
 
-## 目的
-在不破壞既有 IA 的前提下，為「新竹通」新增「安心守護」能力（家屬端、志工找人、MyData 申辦、承辦端 Console），降低失智者走失風險。
+## TDD 流程（必遵）
+1. **RED**：先建立失敗測試（只改測試檔），建立分支 `* -red-YYYYMMDD-hhmm`，提交訊息以 `[RED]` 起頭。
+2. **GREEN**：以最小實作讓測試全過，建立分支 `* -green-YYYYMMDD-hhmm`，提交訊息以 `[GREEN]` 起頭。
+3. **REFACTOR**：允許純重構（不改行為），保持測試全過，訊息以 `[REFACTOR]` 起頭。
+4. 完成後生成 `REPORT.md`（包含：功能清單、測試輸出摘要、覆蓋率、風險與待辦），並建立 PR。
 
-## 架構約定
-- App：沿用既有原生/跨平台框架；新增 `features/safety/`（家屬、志工、申辦）與共用 `map`, `notifications`, `consent`.
-- 後端：新增 `services/safety`（事件流、圍籬、命中、案件、MyData 回傳），與現有 Auth/Push/Maps 共用。
-- Console：獨立 Web（RBAC），走同一 API 網關。
+## 專案背景與平台邊界（摘要）
+- iOS 通知：預設用 **Time-Sensitive**；**Critical Alerts** 僅在 entitlement 已核可時使用。  
+- Android 通知：不得宣稱「越過 DND」；如需急迫提醒，僅能引導使用者授權，或在符合條件時用 Full-Screen Intent 並提供關閉。  
+- 背景 BLE（Android 12+）：`BLUETOOTH_SCAN/CONNECT`；若推斷位置需 `ACCESS_FINE_LOCATION`（背景還需 ABL）。  
+- 背景 BLE（iOS）：需 `bluetooth-central` 背景模式與 State Preservation/Restoration。  
+- 地理圍籬：Android 使用 GeofencingClient；iOS 背景定位需 `Always` 權限。  
+- 硬體合規：裝置綁定需呈現 NCC 型式證號與中文警語；無證號不得綁定。  
+- MyData：授權為單次即時取用，回執與個資保存期限最小化，可撤回即刪除。
 
-## 權限與實名
-- 未登入：僅可看宣導、加入志工前的說明。
-- 一般會員：可收地理通知、志工模式（需同意）。
-- 實名會員（行動自然人憑證或證件）：才能綁受照護者、看定位、用圍籬與一鍵通報。  
-  *依官方實名流程：Mobile ID / 證件上傳。*
+> 上述政策僅作為開發行為的邊界提醒；具體實作請查閱對應平台/法規文件與專案測試。
 
-## 隱私/合規（強制）
-- **資料最小化**：定位/命中預設保存 30 天（家屬可選 90/180）；案件結案即清理。
-- **可稽核**：所有讀取/匯出皆留痕；MyData 授權/撤回完整記錄。
-- **標準**：延續 ISO 27001 & MAS APP L3+F；不引入高風險依賴。
+## 任務節奏（Overnight Autopilot）
+- 本輪目標：P1 家屬端 MVP 中「受照護者卡＋裝置綁定」與「圍籬引擎最小實作」。
+- 請先自動偵測專案測試命令（依序嘗試：`npm/yarn/pnpm test`、`./gradlew test`、`xcodebuild test`）。
+- 僅在測試失敗時提交 RED；**不得**把實作碼混進 RED 提交。
 
-## 開發流程
-- 以 **TDD** 為主；每個故事對應「驗收測試（E2E）」與「資料保護測試」。
-- 分支：`main`（受保護）、`release/*`、`feat/*`、`fix/*`。
-- 提交訊息格式：`type(scope): summary`（feat/fix/docs/chore/test/security）。
+## 產出與紀錄
+- 分支：`p1-red-YYYYMMDD-hhmm`、`p1-green-YYYYMMDD-hhmm`
+- 文件：`REPORT.md`（摘要）、必要時 `docs/ADR/0001-claude-amendment.md`
+- PR：標題 `[P1] Device binding & Geofence MVP (TDD)`
 
-## 定義完成（DoD）
-- 有單元/整合/E2E 測試（含推播/地圖模擬）。
-- 通過無障礙檢查（焦點順序/可達性標示）。
-- 有隱私告知/同意樣板與到期刪除測試。
-- 有回滾方案（功能旗標、灰度開關）。
-
-## 環境變數（範例）
-- `MAPS_KEY`, `PUSH_KEY`, `MYDATA_CLIENT_ID/SECRET`, `OPENAPI_BASE`, `FIREBASE_SENDER_ID`, `TELEMETRY_DSN`.
-- 嚴禁把私鑰/憑證入庫；本地用 `.env.local` + 密管（Vault/Secret Manager）。
-
-## 風險防呆
-- 不得在本地/測試資料上使用真實個資。
-- 禁止硬編（hardcode）第三方憑證、API 網域或內部網址。
-- App 背景 BLE 掃描必須可停用、可撤回，並清楚標示耗電提示。
-
-## TDD 流程（強制）
-- 每張 Story 先開 `*.feature`（Gherkin）與對應單元測試（Red）。
-- 僅提交使測試轉綠的最小實作（Green），隨後提交重構（Refactor）。
-- PR 模板必附：測試清單、風險/法遵影響、回滾策略（feature flag）。
-
-## 測試分層 & 覆蓋
-- 單元測試覆蓋目標：核心模組 ≥90%。
-- 合約測試：`/openapi.yaml` 與 `mydata.callback.json`，CI 驗簽與 schema。
-- E2E 僅保關鍵路徑：綁定→圍籬→通報→通知；志工同意→命中→家屬提示。
-
-## 通知策略（平台政策校正）
-- iOS：預設 **Active/Time-Sensitive**；**Critical** 需 Apple entitlement，未獲核可不得啟用。
-- Android：不得自動越過 DND；如需緊急提醒，引導使用者授權「通知政策存取」，或採 FSI（並提供關閉/冷卻選項）。
-
-## BLE/定位權限（最小權限）
-- Android 12+：`BLUETOOTH_SCAN`；如不推斷位置→ `neverForLocation`。需要推斷時，必須申請 Fine/Background Location。
-- iOS：`bluetooth-central` 背景模式 + State Preservation/Restoration；背景定位需 `Always` 權限。
-
-## 資安/資源
-- 對齊 **MAS App 基本資安檢測** L2/L3，必要時加測 F 類；CI 內建靜態檢查清單與自我聲明表。  
-
+## 風險控管
+- 僅在本專案資料夾與其子目錄工作；不得寫入上層路徑。
+- 禁止讀取 `.env`、`./secrets/**`；任何需要機密的功能以 mock 或合約測試替代。
+- 如遇需要修改本檔之情況，一律改為「寫 ADR 提案」而非直接更動。
 
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
