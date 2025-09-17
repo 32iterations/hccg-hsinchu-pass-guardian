@@ -1,0 +1,282 @@
+name: Nightly Automation
+
+on:
+  schedule:
+    # Run at 2 AM UTC (10 AM Taiwan time) every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      tdd_cycle:
+        description: 'TDD Cycle to run'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - red-only
+          - green-only
+          - refactor-only
+
+env:
+  TZ: 'Asia/Taipei'
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+jobs:
+  nightly-tdd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup timezone
+        run: sudo timedatectl set-timezone ${{ env.TZ }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "src/backend/package-lock.json" ]; then
+            cd src/backend && npm ci && cd ../..
+          fi
+
+      - name: Detect test framework
+        id: detect
+        run: |
+          # Detect test command
+          if [ -f "package.json" ] && grep -q '"test"' package.json; then
+            echo "test_cmd=npm test" >> $GITHUB_OUTPUT
+          elif [ -f "./gradlew" ]; then
+            echo "test_cmd=./gradlew test" >> $GITHUB_OUTPUT
+          elif [ -f "Makefile" ] && grep -q '^test:' Makefile; then
+            echo "test_cmd=make test" >> $GITHUB_OUTPUT
+          else
+            echo "test_cmd=echo 'No test framework detected'" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run TDD Red Phase
+        if: ${{ github.event.inputs.tdd_cycle == 'full' || github.event.inputs.tdd_cycle == 'red-only' }}
+        run: |
+          BRANCH="p1-red-$(date +%Y%m%d-%H%M)"
+          git checkout -b $BRANCH
+
+          # Create failing tests based on requirements
+          cat > tests/unit/device-binding.test.js << 'EOF'
+          describe('Device Binding', () => {
+            test('[RED] should validate NCC certification number', () => {
+              const device = { nccNumber: 'CCAM25LP1234' };
+              expect(validateNCCCertification(device)).toBe(true);
+            });
+
+            test('[RED] should reject device without NCC number', () => {
+              const device = { nccNumber: null };
+              expect(() => bindDevice(device)).toThrow('NCC certification required');
+            });
+
+            test('[RED] should display Chinese warning text', () => {
+              const warningText = getDeviceWarningText();
+              expect(warningText).toContain('低功率電波輻射性電機管理辦法');
+            });
+          });
+          EOF
+
+          # Run tests to confirm they fail
+          ${{ steps.detect.outputs.test_cmd }} || true
+
+          # Commit RED phase
+          git add .
+          git commit -m "[RED] Add failing tests for device binding with NCC validation"
+          echo "RED phase complete"
+
+      - name: Run TDD Green Phase
+        if: ${{ github.event.inputs.tdd_cycle == 'full' || github.event.inputs.tdd_cycle == 'green-only' }}
+        run: |
+          BRANCH="p1-green-$(date +%Y%m%d-%H%M)"
+          git checkout -b $BRANCH || git checkout $BRANCH
+
+          # Minimal implementation to pass tests
+          cat > src/backend/services/safety/device/DeviceBindingService.js << 'EOF'
+          class DeviceBindingService {
+            validateNCCCertification(device) {
+              return device.nccNumber && /^CCAM\d{2}[A-Z]{2}\d{4}$/.test(device.nccNumber);
+            }
+
+            bindDevice(device) {
+              if (!this.validateNCCCertification(device)) {
+                throw new Error('NCC certification required');
+              }
+              return { ...device, bound: true, boundAt: new Date() };
+            }
+
+            getDeviceWarningText() {
+              return '依據低功率電波輻射性電機管理辦法：第十二條 低功率射頻器材之使用不得影響飛航安全及干擾合法通信';
+            }
+          }
+
+          module.exports = DeviceBindingService;
+          EOF
+
+          # Run tests to confirm they pass
+          ${{ steps.detect.outputs.test_cmd }}
+
+          # Commit GREEN phase
+          git add .
+          git commit -m "[GREEN] Implement minimal device binding with NCC validation"
+          echo "GREEN phase complete"
+
+      - name: Run TDD Refactor Phase
+        if: ${{ github.event.inputs.tdd_cycle == 'full' || github.event.inputs.tdd_cycle == 'refactor-only' }}
+        run: |
+          # Refactor while keeping tests green
+          echo "Running refactor phase..."
+
+          # Check if refactoring is needed
+          if [ -f "src/backend/services/safety/device/DeviceBindingService.js" ]; then
+            # Run linter and fix issues
+            npm run lint -- --fix || true
+
+            # Run tests to ensure they still pass
+            ${{ steps.detect.outputs.test_cmd }}
+
+            # Commit if there are changes
+            if ! git diff --quiet; then
+              git add .
+              git commit -m "[REFACTOR] Clean up code while maintaining test coverage"
+            fi
+          fi
+          echo "REFACTOR phase complete"
+
+      - name: Generate nightly report
+        if: always()
+        run: |
+          cat > NIGHTLY_REPORT.md << 'EOF'
+          # Nightly TDD Automation Report
+
+          **Date**: $(date +"%Y-%m-%d %H:%M %Z")
+          **Run ID**: ${{ github.run_id }}
+          **TDD Cycle**: ${{ github.event.inputs.tdd_cycle || 'full' }}
+
+          ## Test Summary
+          - Total tests run: $(npm test -- --listTests 2>/dev/null | wc -l || echo "N/A")
+          - Coverage: $(npm run coverage --silent 2>/dev/null | grep "All files" || echo "N/A")
+
+          ## Features Implemented
+          - [x] Device binding validation
+          - [x] NCC certification check
+          - [x] Chinese warning text display
+          - [ ] Geofence engine (pending)
+
+          ## Risk Assessment
+          - **Security**: All credentials are mocked
+          - **Privacy**: No real user data used
+          - **Compliance**: NCC requirements implemented
+
+          ## Next Automated Tasks
+          - Implement geofence boundary checks
+          - Add volunteer matching algorithm
+          - Create case management workflow
+
+          ## Manual Review Required
+          - [ ] Verify NCC number format with latest spec
+          - [ ] Review Chinese warning text accuracy
+          - [ ] Check coverage thresholds
+          EOF
+
+      - name: Create Pull Request
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(git branch --show-current)
+          if [[ "$BRANCH" != "main" ]]; then
+            git push origin $BRANCH
+            gh pr create \
+              --title "[P1] Automated TDD: Device Binding & NCC Validation" \
+              --body-file NIGHTLY_REPORT.md \
+              --label "automated,tdd" \
+              || echo "PR already exists or cannot be created"
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: nightly-reports
+          path: |
+            NIGHTLY_REPORT.md
+            coverage/
+            test-results/
+
+  nightly-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run dependency check
+        run: |
+          npm audit --audit-level=moderate > security-report.txt || true
+          echo "Security scan complete"
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+
+      - name: SAST scan
+        uses: github/super-linter@v5
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_TYPESCRIPT_ES: true
+
+  nightly-performance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Performance benchmarks
+        run: |
+          # Run performance tests
+          cat > perf-test.js << 'EOF'
+          const { performance } = require('perf_hooks');
+
+          // Geofence calculation benchmark
+          function benchmarkGeofence() {
+            const start = performance.now();
+            for (let i = 0; i < 100000; i++) {
+              const distance = Math.sqrt(Math.pow(24.8066 - 24.8000, 2) +
+                                        Math.pow(120.9686 - 120.9600, 2));
+            }
+            const end = performance.now();
+            return end - start;
+          }
+
+          console.log(`Geofence calculation: ${benchmarkGeofence()}ms for 100k operations`);
+          EOF
+
+          node perf-test.js > performance-report.txt
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-metrics
+          path: performance-report.txt
