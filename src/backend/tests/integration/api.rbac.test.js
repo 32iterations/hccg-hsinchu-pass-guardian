@@ -56,9 +56,13 @@ describe('RBAC API Endpoints', () => {
       const response = await request(app)
         .post('/api/v1/rbac/roles/assign')
         .set('Authorization', 'Bearer admin-token')
-        .send(assignmentData)
-        .expect(200);
+        .send(assignmentData);
 
+      if (response.status !== 200) {
+        console.log('Error response:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(200);
       expect(response.body).toEqual({
         success: true,
         message: 'Roles assigned successfully',

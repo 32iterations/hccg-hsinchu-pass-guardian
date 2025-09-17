@@ -15,7 +15,7 @@ class ValidationMiddleware {
       if (error) {
         const details = error.details.map(detail => ({
           field: detail.path.join('.'),
-          message: detail.message
+          message: detail.message.replace(/"/g, '')
         }));
 
         return res.status(400).json({
@@ -49,6 +49,9 @@ class ValidationMiddleware {
             .replace(/javascript:/gi, '') // Remove javascript: protocols
             .replace(/on\w+\s*=/gi, ''); // Remove event handlers
         }
+        if (Array.isArray(value)) {
+          return value.map(item => sanitizeValue(item));
+        }
         if (typeof value === 'object' && value !== null) {
           const sanitized = {};
           for (const [key, val] of Object.entries(value)) {
@@ -77,12 +80,22 @@ const schemas = {
   // RBAC schemas
   roleAssignment: Joi.object({
     userId: Joi.string().required(),
-    roles: Joi.array().items(Joi.string()).min(1).required()
+    roles: Joi.array().items(
+      Joi.string().valid(
+        'viewer', 'operator', 'admin', 'family_member',
+        'volunteer', 'case_manager', 'user', 'case_worker'
+      )
+    ).min(1).required()
   }),
 
   roleRemoval: Joi.object({
     userId: Joi.string().required(),
-    roles: Joi.array().items(Joi.string()).min(1).required()
+    roles: Joi.array().items(
+      Joi.string().valid(
+        'viewer', 'operator', 'admin', 'family_member',
+        'volunteer', 'case_manager', 'user', 'case_worker'
+      )
+    ).min(1).required()
   }),
 
   permissionValidation: Joi.object({

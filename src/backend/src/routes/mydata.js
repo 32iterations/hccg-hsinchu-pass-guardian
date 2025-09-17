@@ -180,6 +180,15 @@ router.delete('/revoke/:id',
       const userId = req.user.userId;
       const { reason, confirmRevocation, immediateAnonymization } = req.body;
 
+      // Validate required confirmation
+      if (!confirmRevocation) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation Error',
+          message: 'Confirmation is required for revocation'
+        });
+      }
+
       // Check if consent exists and user owns it
       const consent = await myDataAdapter.getConsent(consentId);
       if (!consent) {

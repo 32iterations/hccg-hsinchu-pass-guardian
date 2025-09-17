@@ -1,4 +1,5 @@
 // Jest setup file for global test configuration
+require('@testing-library/jest-dom');
 
 // Polyfill for TextEncoder/TextDecoder (Node.js 18+ compatibility)
 const { TextEncoder, TextDecoder } = require('util');

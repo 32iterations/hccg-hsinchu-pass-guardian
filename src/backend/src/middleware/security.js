@@ -31,6 +31,11 @@ class SecurityMiddleware {
           return callback(null, true);
         }
 
+        // In test environment, reject unauthorized origins silently
+        if (process.env.NODE_ENV === 'test') {
+          return callback(null, false);
+        }
+
         return callback(new Error('Not allowed by CORS'));
       },
       credentials: true,

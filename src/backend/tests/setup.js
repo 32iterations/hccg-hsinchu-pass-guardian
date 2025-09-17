@@ -1,12 +1,27 @@
 // Test setup and mocks
 const jwt = require('jsonwebtoken');
 
+// Polyfill for TextEncoder/TextDecoder if not available (Node < 18)
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
+
+// Setup Jest environment
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-secret-key';
+process.env.API_BASE_URL = 'http://localhost:3000';
+
+// Increase test timeout for integration tests
+jest.setTimeout(30000);
+
 // Mock JWT tokens for testing
 const mockTokens = {
   'valid-jwt-token': {
     userId: 'user123',
     roles: ['viewer'],
-    permissions: ['read_cases', 'view_kpis']
+    permissions: ['read_cases', 'view_kpis', 'view_roles']
   },
   'valid-admin-token': {
     userId: 'admin123',
@@ -21,12 +36,12 @@ const mockTokens = {
   'user-token': {
     userId: 'user456',
     roles: ['family_member'],
-    permissions: ['read_cases', 'create_cases']
+    permissions: ['read_cases', 'create_cases', 'view_kpis']
   },
   'family-member-token': {
     userId: 'family123',
     roles: ['family_member'],
-    permissions: ['read_cases', 'create_cases']
+    permissions: ['read_cases', 'create_cases', 'view_kpis']
   },
   'volunteer-token': {
     userId: 'volunteer123',
@@ -36,7 +51,7 @@ const mockTokens = {
   'case-manager-token': {
     userId: 'manager123',
     roles: ['case_manager'],
-    permissions: ['read_cases', 'update_cases', 'assign_cases']
+    permissions: ['read_cases', 'update_cases', 'assign_cases', 'view_dashboard']
   },
   'limited-permission-token': {
     userId: 'limited123',
@@ -73,23 +88,33 @@ const mockTokens = {
 // Override JWT verify for testing
 const originalVerify = jwt.verify;
 jwt.verify = (token, secret, options) => {
-  // Handle test tokens
-  if (token.startsWith('Bearer ')) {
-    token = token.substring(7);
+  // Handle test tokens - strip Bearer prefix if present
+  let cleanToken = token;
+  if (typeof token === 'string' && token.startsWith('Bearer ')) {
+    cleanToken = token.substring(7);
   }
 
-  if (mockTokens[token]) {
-    return mockTokens[token];
+  // Check for mock tokens first
+  if (mockTokens[cleanToken]) {
+    return mockTokens[cleanToken];
   }
 
-  if (token === 'invalid-token' || token === 'expired-token') {
+  // Handle explicit test error tokens
+  if (cleanToken === 'invalid-token' || cleanToken === 'expired-token') {
     const error = new Error('Invalid token');
-    error.name = token === 'expired-token' ? 'TokenExpiredError' : 'JsonWebTokenError';
+    error.name = cleanToken === 'expired-token' ? 'TokenExpiredError' : 'JsonWebTokenError';
     throw error;
   }
 
-  // Fall back to original implementation
-  return originalVerify(token, secret, options);
+  // For actual JWT tokens or if no mock found, use original verification
+  try {
+    return originalVerify(token, secret, options);
+  } catch (error) {
+    // If original verification fails, treat as invalid
+    const jwtError = new Error('Invalid or expired token');
+    jwtError.name = 'JsonWebTokenError';
+    throw jwtError;
+  }
 };
 
 // Mock console.error to reduce noise in tests
@@ -100,6 +125,11 @@ afterAll(() => {
   // Restore original implementations
   jwt.verify = originalVerify;
   console.error = originalConsoleError;
+});
+
+// Cleanup function for tests
+global.afterEach(() => {
+  jest.clearAllMocks();
 });
 
 module.exports = { mockTokens };

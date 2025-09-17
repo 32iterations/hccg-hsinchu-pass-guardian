@@ -12,6 +12,12 @@ class VolunteerConsentService {
 
     this.currentConsentVersion = '2.1';
     this.retentionPeriod = '2 years';
+    this._isVolunteerActive = false;
+    this._volunteerStatus = {
+      enabled: false,
+      reason: 'not_initialized',
+      canRetry: true
+    };
   }
 
   /**
@@ -54,6 +60,14 @@ class VolunteerConsentService {
       // Start BLE scanning
       await this.bleScanner.start();
 
+      // Update volunteer state
+      this._isVolunteerActive = true;
+      this._volunteerStatus = {
+        enabled: true,
+        reason: 'consent_granted',
+        canRetry: true
+      };
+
       // Track analytics (anonymized)
       await this.analytics.track('volunteer_consent_granted', {
         version: consentVersion,
@@ -92,6 +106,14 @@ class VolunteerConsentService {
 
       // Purge volunteer data
       await this._purgeVolunteerData();
+
+      // Update volunteer state
+      this._isVolunteerActive = false;
+      this._volunteerStatus = {
+        enabled: false,
+        reason: 'consent_withdrawn',
+        canRetry: true
+      };
 
       // Track withdrawal
       await this.analytics.track('volunteer_consent_withdrawn', {
@@ -200,6 +222,15 @@ class VolunteerConsentService {
             preserveConfiguration: true
           });
         }
+
+        // Update volunteer state on successful restore
+        this._isVolunteerActive = true;
+        this._volunteerStatus = {
+          enabled: true,
+          reason: 'restored_from_storage',
+          canRetry: true
+        };
+
         return { restored: true, consentActive: true };
       }
 

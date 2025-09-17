@@ -3,6 +3,8 @@
  * Handles Android 12+ permissions, iOS state preservation, and privacy-first device discovery
  */
 
+const { ValidationError, SecurityError } = require('../utils/errors');
+
 class BLEScannerService {
   constructor(dependencies = {}) {
     this.bleAdapter = dependencies.bleAdapter;
@@ -12,8 +14,12 @@ class BLEScannerService {
 
     this.isScanning = false;
     this.scanParameters = {};
-    this.status = { isScanning: false };
+    this.status = { isScanning: false, error: null };
     this.rssiThreshold = -90; // dBm
+    this.queuedVolunteerHits = [];
+    this.detectionRate = 0;
+    this.lastDetectionTime = null;
+    this.centralManager = null;
   }
 
   /**
@@ -174,9 +180,13 @@ class BLEScannerService {
    */
   async initializeIOSScanning(centralManager) {
     try {
-      await centralManager.initWithDelegate(this, {
-        restoreIdentifier: 'HsinchuPassVolunteerScanner'
-      });
+      this.centralManager = centralManager;
+
+      if (centralManager && centralManager.initWithDelegate) {
+        await centralManager.initWithDelegate(this, {
+          restoreIdentifier: 'HsinchuPassVolunteerScanner'
+        });
+      }
 
       return { success: true };
     } catch (error) {
@@ -192,11 +202,14 @@ class BLEScannerService {
       const state = {
         isScanning: this.isScanning,
         scanParameters: this.scanParameters,
-        discoveredDevices: [], // Don't persist device data
+        discoveredDevices: [], // Don't persist device data for privacy
         restoreIdentifier: 'HsinchuPassVolunteerScanner'
       };
 
-      await this.bleAdapter.saveState(state);
+      if (this.bleAdapter && this.bleAdapter.saveState) {
+        await this.bleAdapter.saveState(state);
+      }
+
       return state;
     } catch (error) {
       throw new Error(`Failed to save state for preservation: ${error.message}`);
@@ -208,12 +221,16 @@ class BLEScannerService {
    */
   async restoreStateFromPreservation(restoredState) {
     try {
-      await this.bleAdapter.restoreState(restoredState);
+      if (this.bleAdapter && this.bleAdapter.restoreState) {
+        await this.bleAdapter.restoreState(restoredState);
+      }
 
-      if (restoredState.isScanning) {
-        await this.bleAdapter.startScan(restoredState.scanParameters);
+      if (restoredState && restoredState.isScanning) {
+        const scanParams = restoredState.scanParameters || {};
+        await this.bleAdapter.startScan(scanParams);
         this.isScanning = true;
-        this.scanParameters = restoredState.scanParameters;
+        this.scanParameters = scanParams;
+        this.status = { isScanning: true, error: null };
       }
 
       return { success: true };
@@ -230,6 +247,7 @@ class BLEScannerService {
       // Resume scanning automatically
       await this.bleAdapter.startScan();
       this.isScanning = true;
+      this.status = { isScanning: true, error: null };
       return { success: true };
     } catch (error) {
       throw new Error(`Failed to handle iOS background restore: ${error.message}`);
@@ -309,13 +327,62 @@ class BLEScannerService {
   }
 
   /**
+   * Analyze temporal clustering patterns
+   */
+  async analyzeTemporalClustering() {
+    try {
+      // No correlation logic - each MAC is treated separately for privacy
+      return {
+        correlationEnabled: false,
+        message: 'Temporal correlation disabled for privacy protection'
+      };
+    } catch (error) {
+      throw new SecurityError(`Failed to analyze temporal clustering: ${error.message}`);
+    }
+  }
+
+  /**
+   * Batch process multiple locations for efficiency
+   */
+  async batchProcessLocations(locations) {
+    try {
+      if (!Array.isArray(locations)) {
+        throw new ValidationError('Locations must be an array');
+      }
+
+      const processedLocations = [];
+      for (const location of locations) {
+        const gridSquare = await this.fuzzLocationToGrid(location);
+        processedLocations.push({
+          original: location,
+          gridSquare,
+          processed: true
+        });
+      }
+
+      return processedLocations;
+    } catch (error) {
+      throw new Error(`Failed to batch process locations: ${error.message}`);
+    }
+  }
+
+  /**
    * Handle Bluetooth state changes
    */
   async handleBluetoothStateChange(state) {
     try {
       if (state === 'enabled' && this.status.error === 'bluetooth_disabled') {
         await this.bleAdapter.startScan();
-        this.status = { isScanning: true };
+        this.status = { isScanning: true, error: null };
+        this.isScanning = true;
+      } else if (state === 'disabled') {
+        this.status = {
+          isScanning: false,
+          error: 'bluetooth_disabled',
+          canRetry: true,
+          message: '藍牙已關閉，掃描暫停'
+        };
+        this.isScanning = false;
       }
     } catch (error) {
       throw new Error(`Failed to handle Bluetooth state change: ${error.message}`);
@@ -329,9 +396,12 @@ class BLEScannerService {
     try {
       // Stop scanning immediately
       await this.bleAdapter.stopScan();
+      this.isScanning = false;
 
       // Preserve queued data
-      await this.anonymizationService.preserveQueuedData();
+      if (this.anonymizationService && this.anonymizationService.preserveQueuedData) {
+        await this.anonymizationService.preserveQueuedData();
+      }
 
       this.status = {
         isScanning: false,
@@ -342,7 +412,7 @@ class BLEScannerService {
 
       return this.status;
     } catch (error) {
-      throw new Error(`Failed to handle permission revocation: ${error.message}`);
+      throw new SecurityError(`Failed to handle permission revocation: ${error.message}`);
     }
   }
 
@@ -351,11 +421,18 @@ class BLEScannerService {
    */
   async handlePermissionRestored(preservedState) {
     try {
-      await this.bleAdapter.startScan(preservedState.scanParameters);
-      await this.anonymizationService.processQueuedHits(preservedState.queuedHits);
+      if (preservedState && preservedState.scanParameters) {
+        await this.bleAdapter.startScan(preservedState.scanParameters);
+      } else {
+        await this.bleAdapter.startScan();
+      }
+
+      if (this.anonymizationService && this.anonymizationService.processQueuedHits && preservedState.queuedHits) {
+        await this.anonymizationService.processQueuedHits(preservedState.queuedHits);
+      }
 
       this.isScanning = true;
-      this.status = { isScanning: true };
+      this.status = { isScanning: true, error: null };
 
       return { success: true };
     } catch (error) {

@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/36</span>
+                <span class='fraction'>0/39</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/34</span>
+                <span class='fraction'>0/36</span>
             </div>
         
             
@@ -246,7 +246,20 @@
 <a name='L181'></a><a href='#L181'>181</a>
 <a name='L182'></a><a href='#L182'>182</a>
 <a name='L183'></a><a href='#L183'>183</a>
-<a name='L184'></a><a href='#L184'>184</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -299,6 +312,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -322,6 +338,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -446,7 +472,7 @@ class ValidationMiddleware {
 <span class="cstat-no" title="statement not covered" >      if (error) {</span>
         const details = <span class="cstat-no" title="statement not covered" >error.details.map(<span class="fstat-no" title="function not covered" >de</span>tail =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
           field: detail.path.join('.'),
-          message: detail.message
+          message: detail.message.replace(/"/g, '')
         }));
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        return res.status(400).json({</span>
@@ -480,6 +506,9 @@ class ValidationMiddleware {
             .replace(/javascript:/gi, '') // Remove javascript: protocols
             .replace(/on\w+\s*=/gi, ''); // Remove event handlers
         }
+<span class="cstat-no" title="statement not covered" >        if (Array.isArray(value)) {</span>
+<span class="cstat-no" title="statement not covered" >          return value.map(<span class="fstat-no" title="function not covered" >it</span>em =&gt; <span class="cstat-no" title="statement not covered" >sanitizeValue(item))</span>;</span>
+        }
 <span class="cstat-no" title="statement not covered" >        if (typeof value === 'object' &amp;&amp; value !== null) {</span>
           const sanitized = <span class="cstat-no" title="statement not covered" >{};</span>
 <span class="cstat-no" title="statement not covered" >          for (const [key, val] of Object.entries(value)) {</span>
@@ -508,12 +537,22 @@ const schemas = <span class="cstat-no" title="statement not covered" >{</span>
   // RBAC schemas
   roleAssignment: Joi.object({
     userId: Joi.string().required(),
-    roles: Joi.array().items(Joi.string()).min(1).required()
+    roles: Joi.array().items(
+      Joi.string().valid(
+        'viewer', 'operator', 'admin', 'family_member',
+        'volunteer', 'case_manager', 'user', 'case_worker'
+      )
+    ).min(1).required()
   }),
 &nbsp;
   roleRemoval: Joi.object({
     userId: Joi.string().required(),
-    roles: Joi.array().items(Joi.string()).min(1).required()
+    roles: Joi.array().items(
+      Joi.string().valid(
+        'viewer', 'operator', 'admin', 'family_member',
+        'volunteer', 'case_manager', 'user', 'case_worker'
+      )
+    ).min(1).required()
   }),
 &nbsp;
   permissionValidation: Joi.object({
@@ -619,7 +658,7 @@ const schemas = <span class="cstat-no" title="statement not covered" >{</span>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-17T20:22:03.394Z
+                at 2025-09-17T21:02:23.400Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
