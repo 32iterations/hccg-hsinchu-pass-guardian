@@ -1,56 +1,57 @@
 /**
- * Custom error classes for Safety Guardian services
- * These will be implemented during the GREEN phase
+ * Safety Service Error Definitions
+ * 新竹通安心守護 - 錯誤定義
  */
 
-class SafetyGuardianError extends Error {
-  constructor(message, code = 'SAFETY_ERROR', details = {}) {
+class NCCValidationError extends Error {
+  constructor(message, code = 'NCC_VALIDATION_FAILED') {
     super(message);
-    this.name = this.constructor.name;
+    this.name = 'NCCValidationError';
     this.code = code;
-    this.details = details;
-    this.timestamp = new Date();
   }
 }
 
-class NCCValidationError extends SafetyGuardianError {
-  constructor(message = 'NCC certification validation failed', details = {}) {
-    super(message, 'NCC_VALIDATION_FAILED', details);
+class DuplicateDeviceError extends Error {
+  constructor(message, code = 'DUPLICATE_DEVICE') {
+    super(message);
+    this.name = 'DuplicateDeviceError';
+    this.code = code;
   }
 }
 
-class DuplicateDeviceError extends SafetyGuardianError {
-  constructor(message = 'Device serial number already registered', details = {}) {
-    super(message, 'DUPLICATE_DEVICE', details);
+class BLEConnectionError extends Error {
+  constructor(message, code = 'BLE_CONNECTION_FAILED') {
+    super(message);
+    this.name = 'BLEConnectionError';
+    this.code = code;
   }
 }
 
-class BLEConnectionError extends SafetyGuardianError {
-  constructor(message = 'BLE connection failed', details = {}) {
-    super(message, 'BLE_CONNECTION_FAILED', details);
+class GeofenceViolationError extends Error {
+  constructor(message, code = 'GEOFENCE_VIOLATION') {
+    super(message);
+    this.name = 'GeofenceViolationError';
+    this.code = code;
   }
 }
 
-class GeofenceViolationError extends SafetyGuardianError {
-  constructor(message = 'Geofence violation detected', details = {}) {
-    super(message, 'GEOFENCE_VIOLATION', details);
+class LocationAccuracyError extends Error {
+  constructor(message, code = 'LOCATION_ACCURACY_INSUFFICIENT') {
+    super(message);
+    this.name = 'LocationAccuracyError';
+    this.code = code;
   }
 }
 
-class LocationAccuracyError extends SafetyGuardianError {
-  constructor(message = 'Location accuracy insufficient for reliable geofence detection', details = {}) {
-    super(message, 'LOCATION_ACCURACY_ERROR', details);
-  }
-}
-
-class CooldownActiveError extends SafetyGuardianError {
-  constructor(message = 'Notification cooldown is still active', details = {}) {
-    super(message, 'COOLDOWN_ACTIVE', details);
+class CooldownActiveError extends Error {
+  constructor(message, code = 'COOLDOWN_ACTIVE') {
+    super(message);
+    this.name = 'CooldownActiveError';
+    this.code = code;
   }
 }
 
 module.exports = {
-  SafetyGuardianError,
   NCCValidationError,
   DuplicateDeviceError,
   BLEConnectionError,
