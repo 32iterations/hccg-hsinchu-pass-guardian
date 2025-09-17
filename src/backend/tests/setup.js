@@ -1,78 +1,105 @@
-// Jest test setup file
-// This file runs before each test suite
+// Test setup and mocks
+const jwt = require('jsonwebtoken');
 
-// Mock global console to reduce noise during testing
-global.console = {
-  ...console,
-  // Uncomment to ignore specific log levels during tests
-  // log: jest.fn(),
-  // debug: jest.fn(),
-  // info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-};
-
-// Global test utilities
-global.testHelpers = {
-  // Helper to create mock location objects
-  createMockLocation: (lat = 24.8138, lng = 120.9675, accuracy = 5) => ({
-    lat,
-    lng,
-    accuracy,
-    timestamp: new Date()
-  }),
-
-  // Helper to create mock geofence objects
-  createMockGeofence: (id = 'test-geofence', userId = 'test-user') => ({
-    id,
-    name: `測試地理圍籬 ${id}`,
-    center: { lat: 24.8138, lng: 120.9675 },
-    radius: 100,
-    userId,
-    type: 'safe_zone',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }),
-
-  // Helper to create mock device objects
-  createMockDevice: (serialNumber = 'HSC-GUARD-001234', userId = 'test-user') => ({
-    id: `device-${Date.now()}`,
-    serialNumber,
-    nccNumber: 'CCAM2301AB1234',
-    userId,
-    deviceType: 'safety-tracker',
-    status: 'registered',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  })
-};
-
-// Mock environment variables for consistent testing
-process.env.NODE_ENV = 'test';
-process.env.DB_CONNECTION = 'test';
-process.env.NOTIFICATION_SERVICE_URL = 'http://localhost:3001';
-process.env.LOCATION_SERVICE_URL = 'http://localhost:3002';
-
-// Increase timeout for integration tests if needed
-jest.setTimeout(10000);
-
-// Custom Jest matcher for temporal ordering
-expect.extend({
-  toHaveBeenCalledBefore(received, other) {
-    // Simple implementation - just check both were called
-    const receivedCalled = received.mock.calls.length > 0;
-    const otherCalled = other.mock.calls.length > 0;
-
-    if (receivedCalled && otherCalled) {
-      return {
-        message: () => `Expected ${received.getMockName()} to have been called before ${other.getMockName()}`,
-        pass: true,
-      };
-    }
-
-    return {
-      message: () => `Expected ${received.getMockName()} to have been called before ${other.getMockName()}, but one or both were not called`,
-      pass: false,
-    };
+// Mock JWT tokens for testing
+const mockTokens = {
+  'valid-jwt-token': {
+    userId: 'user123',
+    roles: ['viewer'],
+    permissions: ['read_cases', 'view_kpis']
   },
+  'valid-admin-token': {
+    userId: 'admin123',
+    roles: ['admin'],
+    permissions: ['*']
+  },
+  'admin-token': {
+    userId: 'admin123',
+    roles: ['admin'],
+    permissions: ['*']
+  },
+  'user-token': {
+    userId: 'user456',
+    roles: ['family_member'],
+    permissions: ['read_cases', 'create_cases']
+  },
+  'family-member-token': {
+    userId: 'family123',
+    roles: ['family_member'],
+    permissions: ['read_cases', 'create_cases']
+  },
+  'volunteer-token': {
+    userId: 'volunteer123',
+    roles: ['volunteer'],
+    permissions: ['read_cases', 'update_case_status', 'search_cases']
+  },
+  'case-manager-token': {
+    userId: 'manager123',
+    roles: ['case_manager'],
+    permissions: ['read_cases', 'update_cases', 'assign_cases']
+  },
+  'limited-permission-token': {
+    userId: 'limited123',
+    roles: ['limited'],
+    permissions: ['read_basic']
+  },
+  'unauthorized-user-token': {
+    userId: 'unauthorized123',
+    roles: ['guest'],
+    permissions: []
+  },
+  'unauthorized-token': {
+    userId: 'unauthorized456',
+    roles: [],
+    permissions: []
+  },
+  'other-user-token': {
+    userId: 'other789',
+    roles: ['user'],
+    permissions: ['read_own_data']
+  },
+  'valid-user-token': {
+    userId: 'user789',
+    roles: ['user'],
+    permissions: ['read_cases', 'create_cases']
+  },
+  'valid-token': {
+    userId: 'user999',
+    roles: ['user'],
+    permissions: ['read_cases']
+  }
+};
+
+// Override JWT verify for testing
+const originalVerify = jwt.verify;
+jwt.verify = (token, secret, options) => {
+  // Handle test tokens
+  if (token.startsWith('Bearer ')) {
+    token = token.substring(7);
+  }
+
+  if (mockTokens[token]) {
+    return mockTokens[token];
+  }
+
+  if (token === 'invalid-token' || token === 'expired-token') {
+    const error = new Error('Invalid token');
+    error.name = token === 'expired-token' ? 'TokenExpiredError' : 'JsonWebTokenError';
+    throw error;
+  }
+
+  // Fall back to original implementation
+  return originalVerify(token, secret, options);
+};
+
+// Mock console.error to reduce noise in tests
+const originalConsoleError = console.error;
+console.error = jest.fn();
+
+afterAll(() => {
+  // Restore original implementations
+  jwt.verify = originalVerify;
+  console.error = originalConsoleError;
 });
+
+module.exports = { mockTokens };

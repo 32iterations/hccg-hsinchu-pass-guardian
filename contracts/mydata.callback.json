@@ -1,0 +1,579 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Taiwan MyData API Callback Contract",
+  "description": "Contract specification for HsinchuPass Guardian MyData API integration compliance with Taiwan Digital Development Administration (數位發展部) MyData framework",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "authorization": {
+      "type": "object",
+      "description": "OAuth 2.0 authorization flow endpoints and parameters",
+      "properties": {
+        "authorize_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://mydata\\.hsinchu\\.gov\\.tw/authorize",
+          "description": "OAuth authorization endpoint"
+        },
+        "token_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://mydata\\.hsinchu\\.gov\\.tw/token",
+          "description": "OAuth token exchange endpoint"
+        },
+        "revoke_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://mydata\\.hsinchu\\.gov\\.tw/revoke",
+          "description": "OAuth token revocation endpoint"
+        },
+        "required_parameters": {
+          "type": "object",
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "const": "hsinchu-pass-guardian",
+              "description": "Registered application identifier"
+            },
+            "response_type": {
+              "type": "string",
+              "const": "code",
+              "description": "OAuth response type (authorization code flow)"
+            },
+            "scope": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["personal_info", "medical_records", "emergency_contacts", "financial_info"]
+              },
+              "description": "Requested data access scope"
+            },
+            "state": {
+              "type": "string",
+              "minLength": 32,
+              "description": "CSRF protection state parameter"
+            },
+            "redirect_uri": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://guardian\\.hsinchu\\.gov\\.tw/callback",
+              "description": "Callback URL after authorization"
+            }
+          },
+          "required": ["client_id", "response_type", "scope", "state", "redirect_uri"]
+        }
+      },
+      "required": ["authorize_url", "token_url", "revoke_url", "required_parameters"]
+    },
+    "callback_handling": {
+      "type": "object",
+      "description": "Authorization callback processing requirements",
+      "properties": {
+        "success_response": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 10,
+              "description": "Authorization code from MyData platform"
+            },
+            "state": {
+              "type": "string",
+              "description": "State parameter validation"
+            }
+          },
+          "required": ["code", "state"]
+        },
+        "error_response": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string",
+              "enum": ["access_denied", "invalid_request", "server_error", "temporarily_unavailable"]
+            },
+            "error_description": {
+              "type": "string",
+              "description": "Human-readable error description"
+            },
+            "state": {
+              "type": "string",
+              "description": "State parameter for correlation"
+            }
+          },
+          "required": ["error", "state"]
+        },
+        "state_validation": {
+          "type": "object",
+          "properties": {
+            "cache_key_pattern": {
+              "type": "string",
+              "const": "oauth_state:{state}",
+              "description": "Cache key format for state validation"
+            },
+            "ttl_seconds": {
+              "type": "integer",
+              "const": 300,
+              "description": "State cache TTL (5 minutes)"
+            },
+            "required_metadata": {
+              "type": "object",
+              "properties": {
+                "familyId": {"type": "string"},
+                "purpose": {"type": "string"},
+                "timestamp": {"type": "string", "format": "date-time"}
+              },
+              "required": ["familyId", "purpose", "timestamp"]
+            }
+          },
+          "required": ["cache_key_pattern", "ttl_seconds", "required_metadata"]
+        }
+      },
+      "required": ["success_response", "error_response", "state_validation"]
+    },
+    "token_exchange": {
+      "type": "object",
+      "description": "Token exchange and management specifications",
+      "properties": {
+        "request_format": {
+          "type": "object",
+          "properties": {
+            "grant_type": {
+              "type": "string",
+              "const": "authorization_code"
+            },
+            "code": {"type": "string"},
+            "client_id": {"type": "string"},
+            "client_secret": {"type": "string"},
+            "redirect_uri": {"type": "string", "format": "uri"}
+          },
+          "required": ["grant_type", "code", "client_id", "client_secret", "redirect_uri"]
+        },
+        "response_format": {
+          "type": "object",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "minLength": 20,
+              "description": "Single-use access token"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "Token for refreshing expired access tokens"
+            },
+            "expires_in": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 3600,
+              "description": "Token expiration time in seconds"
+            },
+            "scope": {
+              "type": "string",
+              "description": "Granted scope (space-separated)"
+            },
+            "token_type": {
+              "type": "string",
+              "const": "Bearer"
+            }
+          },
+          "required": ["access_token", "expires_in", "scope", "token_type"]
+        },
+        "single_use_enforcement": {
+          "type": "object",
+          "properties": {
+            "cache_key_pattern": {
+              "type": "string",
+              "const": "used_token:{access_token}"
+            },
+            "ttl_seconds": {
+              "type": "integer",
+              "const": 3600,
+              "description": "Token usage tracking TTL"
+            }
+          },
+          "required": ["cache_key_pattern", "ttl_seconds"]
+        }
+      },
+      "required": ["request_format", "response_format", "single_use_enforcement"]
+    },
+    "data_access": {
+      "type": "object",
+      "description": "Personal data access API specifications",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://mydata\\.hsinchu\\.gov\\.tw/api/v1/personal-data",
+          "description": "Personal data API endpoint"
+        },
+        "request_headers": {
+          "type": "object",
+          "properties": {
+            "Authorization": {
+              "type": "string",
+              "pattern": "^Bearer [A-Za-z0-9\\-_]+$",
+              "description": "Bearer token authorization header"
+            },
+            "Accept": {
+              "type": "string",
+              "const": "application/json"
+            },
+            "User-Agent": {
+              "type": "string",
+              "const": "HsinchuPass-Guardian/2.0.0"
+            }
+          },
+          "required": ["Authorization", "Accept", "User-Agent"]
+        },
+        "request_parameters": {
+          "type": "object",
+          "properties": {
+            "patient_id": {
+              "type": "string",
+              "pattern": "^PAT[0-9]{3,}$",
+              "description": "Patient identifier"
+            },
+            "scope": {
+              "type": "string",
+              "description": "Comma-separated scope values"
+            }
+          },
+          "required": ["patient_id", "scope"]
+        },
+        "response_format": {
+          "type": "object",
+          "properties": {
+            "personalInfo": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "idNumber": {"type": "string", "pattern": "^[A-Z][0-9]{9}$"},
+                "birthDate": {"type": "string", "format": "date"},
+                "address": {"type": "string"}
+              }
+            },
+            "medicalRecords": {
+              "type": "object",
+              "properties": {
+                "diagnosis": {"type": "string"},
+                "medications": {"type": "array", "items": {"type": "string"}},
+                "lastVisit": {"type": "string", "format": "date"}
+              }
+            },
+            "emergencyContacts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string"},
+                  "relationship": {"type": "string"},
+                  "phone": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["endpoint", "request_headers", "request_parameters", "response_format"]
+    },
+    "data_retention": {
+      "type": "object",
+      "description": "Data retention and TTL management",
+      "properties": {
+        "purpose_based_retention": {
+          "type": "object",
+          "properties": {
+            "emergency_location": {
+              "type": "object",
+              "properties": {
+                "max_ttl_minutes": {"type": "integer", "const": 30},
+                "scope": {"type": "array", "items": {"const": "personal_info"}}
+              }
+            },
+            "display_name": {
+              "type": "object",
+              "properties": {
+                "max_ttl_minutes": {"type": "integer", "const": 5},
+                "scope": {"type": "array", "items": {"const": "personal_info"}}
+              }
+            },
+            "medical_emergency": {
+              "type": "object",
+              "properties": {
+                "max_ttl_minutes": {"type": "integer", "const": 120},
+                "scope": {"type": "array", "items": {"enum": ["personal_info", "medical_records"]}}
+              }
+            },
+            "full_care": {
+              "type": "object",
+              "properties": {
+                "max_ttl_minutes": {"type": "integer", "const": 1440},
+                "scope": {"type": "array", "items": {"enum": ["personal_info", "medical_records", "emergency_contacts"]}}
+              }
+            }
+          }
+        },
+        "absolute_maximum": {
+          "type": "object",
+          "properties": {
+            "max_retention_seconds": {
+              "type": "integer",
+              "const": 86400,
+              "description": "Absolute maximum retention period (24 hours)"
+            }
+          },
+          "required": ["max_retention_seconds"]
+        },
+        "storage_format": {
+          "type": "object",
+          "properties": {
+            "data": {"type": "object"},
+            "expiresAt": {"type": "string", "format": "date-time"},
+            "purpose": {"type": "string"},
+            "storedAt": {"type": "string", "format": "date-time"}
+          },
+          "required": ["data", "expiresAt", "purpose", "storedAt"]
+        }
+      },
+      "required": ["purpose_based_retention", "absolute_maximum", "storage_format"]
+    },
+    "consent_revocation": {
+      "type": "object",
+      "description": "GDPR-compliant consent revocation and data deletion",
+      "properties": {
+        "immediate_deletion": {
+          "type": "object",
+          "properties": {
+            "patient_data_key": {
+              "type": "string",
+              "pattern": "^patient:[A-Z0-9]+$"
+            },
+            "consent_record_key": {
+              "type": "string",
+              "pattern": "^consent:[A-Z0-9]+:[A-Z0-9]+$"
+            },
+            "token_key": {
+              "type": "string",
+              "pattern": "^token:[A-Z0-9]+$"
+            }
+          },
+          "required": ["patient_data_key", "consent_record_key", "token_key"]
+        },
+        "cascade_deletion": {
+          "type": "object",
+          "properties": {
+            "related_keys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(location|alert|device):[A-Z0-9]+$"
+              }
+            }
+          },
+          "required": ["related_keys"]
+        },
+        "platform_notification": {
+          "type": "object",
+          "properties": {
+            "endpoint": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://mydata\\.hsinchu\\.gov\\.tw/revoke"
+            },
+            "request_format": {
+              "type": "object",
+              "properties": {
+                "token": {"type": "string"},
+                "token_type_hint": {"type": "string", "const": "access_token"}
+              },
+              "required": ["token", "token_type_hint"]
+            }
+          },
+          "required": ["endpoint", "request_format"]
+        },
+        "revocation_receipt": {
+          "type": "object",
+          "properties": {
+            "revocationId": {"type": "string", "format": "uuid"},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "patientId": {"type": "string"},
+            "dataDeleted": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {"type": "string"},
+                  "type": {"type": "string", "enum": ["patient_data", "consent_record", "access_token"]}
+                },
+                "required": ["key", "type"]
+              }
+            },
+            "signature": {
+              "type": "string",
+              "description": "HMAC-SHA256 signature for receipt integrity"
+            }
+          },
+          "required": ["revocationId", "timestamp", "patientId", "dataDeleted", "signature"]
+        }
+      },
+      "required": ["immediate_deletion", "cascade_deletion", "platform_notification", "revocation_receipt"]
+    },
+    "audit_compliance": {
+      "type": "object",
+      "description": "Audit logging and compliance reporting",
+      "properties": {
+        "required_logs": {
+          "type": "object",
+          "properties": {
+            "consent_granted": {
+              "type": "object",
+              "properties": {
+                "familyId": {"type": "string"},
+                "purpose": {"type": "string"},
+                "scope": {"type": "string"},
+                "timestamp": {"type": "string", "format": "date-time"}
+              },
+              "required": ["familyId", "purpose", "scope", "timestamp"]
+            },
+            "data_accessed": {
+              "type": "object",
+              "properties": {
+                "patientId": {"type": "string"},
+                "dataTypes": {"type": "array", "items": {"type": "string"}},
+                "timestamp": {"type": "string", "format": "date-time"},
+                "success": {"type": "boolean"},
+                "error": {"type": "string"}
+              },
+              "required": ["patientId", "dataTypes", "timestamp", "success"]
+            },
+            "consent_revoked": {
+              "type": "object",
+              "properties": {
+                "revocationId": {"type": "string"},
+                "patientId": {"type": "string"},
+                "familyId": {"type": "string"},
+                "reason": {"type": "string"},
+                "timestamp": {"type": "string", "format": "date-time"},
+                "deletedData": {"type": "array"}
+              },
+              "required": ["revocationId", "patientId", "timestamp", "deletedData"]
+            }
+          },
+          "required": ["consent_granted", "data_accessed", "consent_revoked"]
+        },
+        "compliance_report": {
+          "type": "object",
+          "properties": {
+            "period": {
+              "type": "object",
+              "properties": {
+                "startDate": {"type": "string", "format": "date"},
+                "endDate": {"type": "string", "format": "date"}
+              },
+              "required": ["startDate", "endDate"]
+            },
+            "totalAccess": {"type": "integer", "minimum": 0},
+            "totalRevocations": {"type": "integer", "minimum": 0},
+            "averageRetentionMinutes": {"type": "number", "minimum": 0},
+            "dataMinimization": {"type": "boolean"}
+          },
+          "required": ["period", "totalAccess", "totalRevocations", "averageRetentionMinutes", "dataMinimization"]
+        }
+      },
+      "required": ["required_logs", "compliance_report"]
+    },
+    "data_minimization": {
+      "type": "object",
+      "description": "GDPR Article 5(1)(c) data minimization principle enforcement",
+      "properties": {
+        "purpose_scope_mapping": {
+          "type": "object",
+          "properties": {
+            "emergency_location": {"type": "array", "items": {"const": "personal_info"}},
+            "display_name": {"type": "array", "items": {"const": "personal_info"}},
+            "medical_emergency": {"type": "array", "items": {"enum": ["personal_info", "medical_records"]}},
+            "full_care": {"type": "array", "items": {"enum": ["personal_info", "medical_records", "emergency_contacts"]}}
+          },
+          "required": ["emergency_location", "display_name", "medical_emergency", "full_care"]
+        },
+        "validation_rules": {
+          "type": "object",
+          "properties": {
+            "excessive_scope_rejection": {
+              "type": "boolean",
+              "const": true,
+              "description": "Reject requests exceeding purpose-based scope"
+            },
+            "scope_justification_required": {
+              "type": "boolean",
+              "const": true,
+              "description": "Require explicit justification for data access"
+            }
+          },
+          "required": ["excessive_scope_rejection", "scope_justification_required"]
+        }
+      },
+      "required": ["purpose_scope_mapping", "validation_rules"]
+    },
+    "error_handling": {
+      "type": "object",
+      "description": "Standardized error responses and recovery mechanisms",
+      "properties": {
+        "oauth_errors": {
+          "type": "object",
+          "properties": {
+            "invalid_state": {
+              "type": "object",
+              "properties": {
+                "code": {"type": "string", "const": "INVALID_OAUTH_STATE"},
+                "message": {"type": "string", "const": "Invalid OAuth state"},
+                "http_status": {"type": "integer", "const": 400}
+              }
+            },
+            "token_exchange_failed": {
+              "type": "object",
+              "properties": {
+                "code": {"type": "string", "const": "TOKEN_EXCHANGE_FAILED"},
+                "message": {"type": "string"},
+                "http_status": {"type": "integer", "const": 400}
+              }
+            }
+          }
+        },
+        "data_access_errors": {
+          "type": "object",
+          "properties": {
+            "token_already_used": {
+              "type": "object",
+              "properties": {
+                "code": {"type": "string", "const": "TOKEN_ALREADY_USED"},
+                "message": {"type": "string", "const": "Token already used"},
+                "http_status": {"type": "integer", "const": 403}
+              }
+            },
+            "token_expired": {
+              "type": "object",
+              "properties": {
+                "code": {"type": "string", "const": "TOKEN_EXPIRED"},
+                "message": {"type": "string"},
+                "http_status": {"type": "integer", "const": 401}
+              }
+            }
+          }
+        }
+      },
+      "required": ["oauth_errors", "data_access_errors"]
+    }
+  },
+  "required": [
+    "authorization",
+    "callback_handling",
+    "token_exchange",
+    "data_access",
+    "data_retention",
+    "consent_revocation",
+    "audit_compliance",
+    "data_minimization",
+    "error_handling"
+  ],
+  "additionalProperties": false
+}
