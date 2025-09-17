@@ -16,18 +16,40 @@ describe('DeviceBindingService - RED Phase Tests', () => {
   let mockNotificationService;
 
   beforeEach(() => {
-    mockDeviceRepository = new DeviceRepository();
-    mockBLEManager = new BLEManager();
-    mockNotificationService = new NotificationService();
+    // Clear all mocks first
+    jest.clearAllMocks();
+
+    // Create mock instances with proper London School patterns
+    mockDeviceRepository = {
+      findBySerialNumber: jest.fn().mockResolvedValue(null),
+      checkNCCRegistry: jest.fn().mockResolvedValue(true),
+      create: jest.fn().mockResolvedValue({}),
+      findById: jest.fn().mockResolvedValue({}),
+      updateStatus: jest.fn().mockResolvedValue({}),
+      saveUserConsent: jest.fn().mockResolvedValue({}),
+      getUserConsent: jest.fn().mockResolvedValue({ consentRecorded: true })
+    };
+
+    mockBLEManager = {
+      connect: jest.fn().mockResolvedValue({ connected: true }),
+      getConnectionStatus: jest.fn().mockResolvedValue({ connected: true }),
+      getDeviceMetrics: jest.fn().mockResolvedValue({
+        signalStrength: -45,
+        batteryLevel: 75,
+        lastSeen: new Date()
+      })
+    };
+
+    mockNotificationService = {
+      sendDeviceBindingNotification: jest.fn().mockResolvedValue(true),
+      sendConnectionAlert: jest.fn().mockResolvedValue(true)
+    };
 
     deviceBindingService = new DeviceBindingService(
       mockDeviceRepository,
       mockBLEManager,
       mockNotificationService
     );
-
-    // Clear all mocks
-    jest.clearAllMocks();
   });
 
   describe('NCC Certification Validation', () => {
