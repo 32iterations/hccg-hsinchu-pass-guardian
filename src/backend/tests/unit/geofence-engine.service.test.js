@@ -830,7 +830,7 @@ describe('GeofenceEngine - RED Phase Tests', () => {
 
         // First geofence calculation fails, others succeed
         mockLocationService.calculateDistance
-          .mockRejectedValueOnce(new Error('Calculation failed for geofence-1'))
+          .mockImplementationOnce(() => Promise.reject(new Error('Calculation failed for geofence-1')))
           .mockReturnValueOnce(10) // geofence-2 - inside
           .mockReturnValueOnce(200); // geofence-3 - outside
 

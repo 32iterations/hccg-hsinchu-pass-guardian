@@ -34,9 +34,34 @@ class GeofenceRepository {
     };
   }
 
-  async getLastNotification(userId, geofenceId) {
+  async getLastNotification(userId, geofenceId, eventType) {
     // Mock implementation - returns null for no previous notifications
     return null;
+  }
+
+  async saveEvent(event) {
+    // Mock implementation
+    return { ...event, id: `event-${Date.now()}` };
+  }
+
+  async getCooldownStatus(userId, geofenceId) {
+    // Mock implementation
+    return { active: false, remainingMs: 0 };
+  }
+
+  async findByCoordinates(lat, lng) {
+    // Mock implementation
+    return [];
+  }
+
+  async saveNotification(userId, geofenceId, eventType, timestamp = new Date()) {
+    // Mock implementation
+    return {
+      userId,
+      geofenceId,
+      eventType,
+      timestamp
+    };
   }
 
   async countUserGeofences(userId) {
