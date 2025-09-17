@@ -31,10 +31,45 @@ describe('GeofenceEngine - RED Phase Tests', () => {
   };
 
   beforeEach(() => {
-    mockGeofenceRepository = new GeofenceRepository();
-    mockLocationService = new LocationService();
-    mockNotificationService = new NotificationService();
-    mockEventEmitter = new EventEmitter();
+    // Setup fake timers first
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2024-01-15T10:00:00Z'));
+
+    // Clear all mocks first
+    jest.clearAllMocks();
+
+    // Create mock instances with proper function implementations
+    mockGeofenceRepository = {
+      findActiveByUser: jest.fn().mockResolvedValue([]),
+      findById: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
+      checkNCCRegistry: jest.fn().mockResolvedValue(true),
+      getUserGeofenceStatus: jest.fn().mockResolvedValue(null),
+      updateGeofenceStatus: jest.fn().mockResolvedValue({}),
+      getLastNotification: jest.fn().mockResolvedValue(null),
+      countUserGeofences: jest.fn().mockResolvedValue(0),
+      findByUserAndName: jest.fn().mockResolvedValue(null),
+      findActiveByUsers: jest.fn().mockResolvedValue([])
+    };
+
+    mockLocationService = {
+      calculateDistance: jest.fn().mockReturnValue(0),
+      getCurrentLocation: jest.fn().mockResolvedValue({})
+    };
+
+    mockNotificationService = {
+      sendGeofenceAlert: jest.fn().mockResolvedValue(true),
+      sendDwellAlert: jest.fn().mockResolvedValue(true),
+      sendEmergencyAlert: jest.fn().mockResolvedValue(true),
+      sendGeofenceUpdateNotification: jest.fn().mockResolvedValue(true)
+    };
+
+    mockEventEmitter = {
+      emit: jest.fn().mockReturnValue(true),
+      on: jest.fn().mockReturnValue(undefined),
+      off: jest.fn().mockReturnValue(undefined)
+    };
 
     geofenceEngine = new GeofenceEngine(
       mockGeofenceRepository,
@@ -42,13 +77,6 @@ describe('GeofenceEngine - RED Phase Tests', () => {
       mockNotificationService,
       mockEventEmitter
     );
-
-    // Mock current time for consistent testing
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2024-01-15T10:00:00Z'));
-
-    // Clear all mocks
-    jest.clearAllMocks();
   });
 
   afterEach(() => {

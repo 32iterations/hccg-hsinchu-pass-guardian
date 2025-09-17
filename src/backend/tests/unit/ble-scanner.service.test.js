@@ -53,6 +53,36 @@ describe('BLEScannerService', () => {
     mockTimestamp = '2025-09-17T16:47:32Z';
     jest.spyOn(Date.prototype, 'toISOString').mockReturnValue(mockTimestamp);
 
+    // Reset mock function implementations with proper return values
+    mockBLEAdapter.startScan.mockResolvedValue(true);
+    mockBLEAdapter.stopScan.mockResolvedValue(true);
+    mockBLEAdapter.isScanning.mockReturnValue(false);
+    mockBLEAdapter.setPowerLevel.mockResolvedValue(true);
+    mockBLEAdapter.setScanParameters.mockResolvedValue(true);
+
+    mockPermissions.check.mockResolvedValue(mockPermissions.RESULTS.GRANTED);
+    mockPermissions.request.mockResolvedValue({
+      'android.permission.BLUETOOTH_SCAN': mockPermissions.RESULTS.GRANTED,
+      'android.permission.BLUETOOTH_CONNECT': mockPermissions.RESULTS.GRANTED
+    });
+
+    mockBatteryOptimization.isIgnoringBatteryOptimizations.mockResolvedValue(true);
+    mockBatteryOptimization.requestIgnoreBatteryOptimizations.mockResolvedValue(true);
+
+    mockAnonymizationService.anonymizeDevice.mockResolvedValue({
+      deviceHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01',
+      salt: 'random_salt_value',
+      timestamp: mockTimestamp
+    });
+    mockAnonymizationService.createVolunteerHit.mockResolvedValue({
+      anonymousId: '550e8400-e29b-41d4-a716-446655440000',
+      timestamp: '2025-09-17T16:45:00Z',
+      gridSquare: '24.8067,120.9687',
+      rssi: -75,
+      deviceHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01'
+    });
+    mockAnonymizationService.validateKAnonymity.mockResolvedValue(true);
+
     // This will fail in RED phase as service doesn't exist yet
     try {
       scannerService = new BLEScannerService({
@@ -62,7 +92,28 @@ describe('BLEScannerService', () => {
         anonymizationService: mockAnonymizationService
       });
     } catch (error) {
-      // Expected in RED phase
+      // Expected in RED phase - create mock scanner service for testing
+      scannerService = {
+        initializeAndroidScanning: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        startScanning: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        processDiscoveredDevice: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        fuzzLocationToGrid: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        roundTimestampToInterval: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        shouldProcessDevice: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        createVolunteerHit: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        initializeIOSScanning: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        saveStateForPreservation: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        restoreStateFromPreservation: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        handleIOSBackgroundRestore: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        configureScanningForBattery: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        adaptScanningToDetectionRate: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        analyzeTemporalClustering: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        batchProcessLocations: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        getStatus: jest.fn().mockReturnValue({ isScanning: false, error: null }),
+        handleBluetoothStateChange: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        handlePermissionRevocation: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found')),
+        handlePermissionRestored: jest.fn().mockRejectedValue(new Error('BLEScannerService implementation not found'))
+      };
     }
   });
 
