@@ -1,17 +1,18 @@
 import { test, expect, describe, beforeEach } from '@jest/globals';
 import { render, fireEvent, waitFor } from '@testing-library/react';
-import { GuardianPage } from '../src/pages/GuardianPage';
+import * as React from 'react';
+import { GuardianPage } from '../src/pages/GuardianPage.tsx';
 import { UserRole } from '../src/types';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { NavigationProvider } from '../src/contexts/NavigationContext';
 
-const renderWithProviders = (component: React.ReactElement, mockUser = null) => {
+const renderWithProviders = (component: React.ReactElement, mockUser: any = null) => {
   return render(
-    <AuthProvider value={{ user: mockUser, isLoading: false }}>
-      <NavigationProvider>
-        {component}
-      </NavigationProvider>
-    </AuthProvider>
+    React.createElement(AuthProvider, { value: { user: mockUser, isLoading: false } },
+      React.createElement(NavigationProvider, {},
+        component
+      )
+    )
   );
 };
 
@@ -20,7 +21,7 @@ describe('安心守護頁面權限測試', () => {
   describe('未登入用戶', () => {
     test('顯示請先登入提示', () => {
       const { getByText, getByRole } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         { role: UserRole.GUEST }
       );
 
@@ -33,7 +34,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('點擊登入按鈕導向登入頁面', () => {
       const { getByRole } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         { role: UserRole.GUEST }
       );
 
@@ -54,7 +55,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('可以看到三個分頁', () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockMember
       );
 
@@ -65,7 +66,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('家屬分頁顯示需要實名驗證', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockMember
       );
 
@@ -77,7 +78,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('志工分頁顯示需要實名驗證', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockMember
       );
 
@@ -91,7 +92,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('申辦分頁可查看但不能申辦', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockMember
       );
 
@@ -119,7 +120,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('家屬分頁顯示完整功能', async () => {
       const { getByText, queryByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockVerified
       );
 
@@ -134,7 +135,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('無綁定時顯示綁定提示', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockVerified
       );
 
@@ -147,7 +148,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('志工分頁可接受任務', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockVerified
       );
 
@@ -160,7 +161,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('申辦分頁可提交申請', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockVerified
       );
 
@@ -182,7 +183,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('顯示管理功能按鈕', () => {
       const { getByLabelText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockAdmin
       );
 
@@ -191,7 +192,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('家屬分頁顯示額外管理功能', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockAdmin
       );
 
@@ -203,7 +204,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('志工分頁顯示管理選項', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockAdmin
       );
 
@@ -218,7 +219,7 @@ describe('安心守護頁面權限測試', () => {
 
     test('申辦分頁顯示審核功能', async () => {
       const { getByText } = renderWithProviders(
-        <GuardianPage />,
+        React.createElement(GuardianPage),
         mockAdmin
       );
 
@@ -241,7 +242,7 @@ describe('導航功能測試', () => {
 
   test('預設顯示家屬分頁', () => {
     const { container } = renderWithProviders(
-      <GuardianPage />,
+      React.createElement(GuardianPage),
       mockUser
     );
 
@@ -251,7 +252,7 @@ describe('導航功能測試', () => {
 
   test('點擊分頁切換內容', async () => {
     const { getByText, container } = renderWithProviders(
-      <GuardianPage />,
+      React.createElement(GuardianPage),
       mockUser
     );
 
@@ -272,7 +273,7 @@ describe('導航功能測試', () => {
 
   test('URL更新為對應分頁路徑', () => {
     const { getByText } = renderWithProviders(
-      <GuardianPage />,
+      React.createElement(GuardianPage),
       mockUser
     );
 
@@ -288,7 +289,7 @@ describe('導航功能測試', () => {
 
   test('返回按鈕導向首頁', () => {
     const { getByLabelText } = renderWithProviders(
-      <GuardianPage />,
+      React.createElement(GuardianPage),
       mockUser
     );
 
@@ -311,7 +312,7 @@ describe('通知徽章測試', () => {
     };
 
     const { getByText } = renderWithProviders(
-      <GuardianPage />,
+      React.createElement(GuardianPage),
       mockUser
     );
 

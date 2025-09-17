@@ -14,6 +14,7 @@ describe('DeviceBindingService - RED Phase Tests', () => {
   let mockDeviceRepository;
   let mockBLEManager;
   let mockNotificationService;
+  let sleepSpy;
 
   beforeEach(() => {
     // Clear all mocks first
@@ -50,6 +51,23 @@ describe('DeviceBindingService - RED Phase Tests', () => {
       mockBLEManager,
       mockNotificationService
     );
+
+    // Mock the _sleep method to avoid real timeouts in tests
+    sleepSpy = jest.spyOn(deviceBindingService, '_sleep').mockResolvedValue();
+  });
+
+  afterEach(() => {
+    // Cleanup all timers and async operations
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+    if (sleepSpy) {
+      sleepSpy.mockRestore();
+    }
+  });
+
+  afterAll(() => {
+    // Final cleanup for any remaining open handles
+    jest.restoreAllMocks();
   });
 
   describe('NCC Certification Validation', () => {
@@ -252,7 +270,7 @@ describe('DeviceBindingService - RED Phase Tests', () => {
         });
 
         await expect(deviceBindingService.transferDevice(transferData))
-          .rejects.toThrow('Unauthorized transfer attempt');
+          .rejects.toThrow('Unauthorized device transfer attempt');
       });
     });
   });
@@ -269,11 +287,11 @@ describe('DeviceBindingService - RED Phase Tests', () => {
           .rejects.toThrow(BLEConnectionError);
 
         expect(mockBLEManager.connect).toHaveBeenCalledTimes(maxRetries);
+        expect(sleepSpy).toHaveBeenCalledTimes(maxRetries - 1); // Sleep called between retries
       });
 
       it('should implement exponential backoff between retries', async () => {
         const deviceId = 'device-123';
-        const startTime = Date.now();
 
         mockBLEManager.connect
           .mockRejectedValueOnce(new BLEConnectionError('First attempt failed'))
@@ -282,12 +300,13 @@ describe('DeviceBindingService - RED Phase Tests', () => {
 
         const result = await deviceBindingService.connectToDevice(deviceId);
 
-        const endTime = Date.now();
-        const totalTime = endTime - startTime;
-
         expect(result.connected).toBe(true);
-        expect(totalTime).toBeGreaterThan(1500); // At least 1s + 2s backoff
         expect(mockBLEManager.connect).toHaveBeenCalledTimes(3);
+
+        // Verify exponential backoff sleep calls
+        expect(sleepSpy).toHaveBeenCalledTimes(2);
+        expect(sleepSpy).toHaveBeenNthCalledWith(1, 1000); // First retry: 1s
+        expect(sleepSpy).toHaveBeenNthCalledWith(2, 2000); // Second retry: 2s
       });
 
       it('should handle different BLE error types appropriately', async () => {
@@ -301,6 +320,7 @@ describe('DeviceBindingService - RED Phase Tests', () => {
 
         for (const { error, shouldRetry } of errorTypes) {
           jest.clearAllMocks();
+          sleepSpy.mockClear();
           mockBLEManager.connect.mockRejectedValue(error);
 
           await expect(deviceBindingService.connectToDevice(deviceId))
@@ -308,6 +328,10 @@ describe('DeviceBindingService - RED Phase Tests', () => {
 
           const expectedCalls = shouldRetry ? 3 : 1; // 3 retries for retryable errors
           expect(mockBLEManager.connect).toHaveBeenCalledTimes(expectedCalls);
+
+          // Verify sleep calls for retryable errors
+          const expectedSleepCalls = shouldRetry ? 2 : 0;
+          expect(sleepSpy).toHaveBeenCalledTimes(expectedSleepCalls);
         }
       });
     });
@@ -361,18 +385,37 @@ describe('DeviceBindingService - RED Phase Tests', () => {
       it('should require user consent before proceeding with binding', async () => {
         const consentData = {
           userId: 'user-123',
+          consentGiven: true,
           nccAcknowledged: true,
           privacyAccepted: true,
           dataProcessingConsent: true,
           timestamp: new Date()
         };
 
-        mockDeviceRepository.saveUserConsent.mockResolvedValue(consentData);
+        mockDeviceRepository.saveUserConsent.mockResolvedValue({
+          id: 'consent-123',
+          ...consentData
+        });
 
         const result = await deviceBindingService.recordUserConsent(consentData);
 
         expect(result.consentRecorded).toBe(true);
-        expect(mockDeviceRepository.saveUserConsent).toHaveBeenCalledWith(consentData);
+        expect(result.consentId).toBe('consent-123');
+        expect(mockDeviceRepository.saveUserConsent).toHaveBeenCalledWith(expect.objectContaining({
+          ...consentData,
+          timestamp: expect.any(Date)
+        }));
+      });
+
+      it('should reject consent without proper boolean consentGiven', async () => {
+        const invalidConsentData = {
+          userId: 'user-123',
+          // Missing consentGiven boolean
+          nccAcknowledged: true
+        };
+
+        await expect(deviceBindingService.recordUserConsent(invalidConsentData))
+          .rejects.toThrow('Valid consent data with consentGiven boolean is required');
       });
 
       it('should prevent device binding without proper consent', async () => {
@@ -383,6 +426,8 @@ describe('DeviceBindingService - RED Phase Tests', () => {
           deviceType: 'safety-tracker'
         };
 
+        mockDeviceRepository.findBySerialNumber.mockResolvedValue(null);
+        mockDeviceRepository.checkNCCRegistry.mockResolvedValue(true);
         mockDeviceRepository.getUserConsent.mockResolvedValue(null); // No consent recorded
 
         await expect(deviceBindingService.registerDevice(deviceData))
@@ -421,7 +466,7 @@ describe('DeviceBindingService - RED Phase Tests', () => {
             expect(result.status).toBe(to);
           } else {
             await expect(deviceBindingService.updateDeviceStatus(deviceId, to))
-              .rejects.toThrow('Invalid status transition');
+              .rejects.toThrow('Invalid device status transition');
           }
         }
       });

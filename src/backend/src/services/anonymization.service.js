@@ -80,7 +80,7 @@ class AnonymizationService {
       );
 
       // Generate anonymous ID
-      const anonymousId = this.crypto.randomUUID();
+      const anonymousId = this.crypto.randomUUID ? this.crypto.randomUUID() : crypto.randomUUID();
 
       // Create minimal volunteer hit with NO PII
       const volunteerHit = {
@@ -270,7 +270,7 @@ class AnonymizationService {
         deviceHash: await this.hashDevice(fullDeviceData.address),
         rssi: fullDeviceData.rssi,
         timestamp: await this.roundTimestampToInterval(fullDeviceData.timestamp),
-        anonymousId: this.crypto.randomUUID()
+        anonymousId: this.crypto.randomUUID ? this.crypto.randomUUID() : crypto.randomUUID()
       };
 
       if (fullDeviceData.location) {

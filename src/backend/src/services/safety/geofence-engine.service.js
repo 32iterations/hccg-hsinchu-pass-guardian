@@ -161,12 +161,18 @@ class GeofenceEngine {
    * @private
    */
   async processGeofence(userId, currentLocation, geofence, result) {
+    let distance;
     try {
-      const distance = this.locationService.calculateDistance(
+      distance = this.locationService.calculateDistance(
         currentLocation,
         geofence.center
       );
+    } catch (error) {
+      // Handle location calculation errors gracefully
+      throw new Error(`Location calculation failed: ${error.message}`);
+    }
 
+    try {
       const isInside = distance <= geofence.radius;
       const currentStatus = await this.geofenceRepository.getUserGeofenceStatus(userId, geofence.id);
       const isCurrentlyInside = currentStatus && currentStatus.status === GEOFENCE_STATUS.INSIDE;
@@ -207,13 +213,7 @@ class GeofenceEngine {
    * @private
    */
   async handleGeofenceEntry(userId, geofence, location, distance, result) {
-    // Check notification cooldown using constants
-    const cooldownActive = await this.isCooldownActive(userId, geofence.id, GEOFENCE_EVENTS.ENTRY);
-    if (cooldownActive) {
-      throw new CooldownActiveError(ERROR_MESSAGES.COOLDOWN_ACTIVE);
-    }
-
-    // Cancel any pending exit for this geofence
+    // Cancel any pending exit for this geofence FIRST
     const pendingExitKey = `${userId}-${geofence.id}`;
     if (this.pendingExits.has(pendingExitKey)) {
       clearTimeout(this.pendingExits.get(pendingExitKey).timeout);
@@ -230,6 +230,12 @@ class GeofenceEngine {
         geofenceId: geofence.id,
         reason: 'user_returned'
       });
+    }
+
+    // Check notification cooldown using constants
+    const cooldownActive = await this.isCooldownActive(userId, geofence.id, GEOFENCE_EVENTS.ENTRY);
+    if (cooldownActive) {
+      throw new CooldownActiveError(ERROR_MESSAGES.COOLDOWN_ACTIVE);
     }
 
     const entryEvent = {
@@ -518,17 +524,17 @@ class GeofenceEngine {
       return false;
     }
 
-    const lastNotification = await this.geofenceRepository.getLastNotification(userId, geofenceId, eventType);
-
-    if (!lastNotification || lastNotification.geofenceId !== geofenceId) {
-      return false;
-    }
-
     // Use centralized cooldown periods
     const cooldownPeriod = COOLDOWN_PERIODS[eventType] || this.NOTIFICATION_COOLDOWN;
 
-    // Emergency events never have cooldown
+    // Emergency events never have cooldown - check this FIRST
     if (cooldownPeriod === 0) {
+      return false;
+    }
+
+    const lastNotification = await this.geofenceRepository.getLastNotification(userId, geofenceId, eventType);
+
+    if (!lastNotification || lastNotification.geofenceId !== geofenceId) {
       return false;
     }
 
@@ -687,17 +693,8 @@ class GeofenceEngine {
     const results = await Promise.all(promises);
     const processingTime = Date.now() - startTime;
 
-    // Add batch processing metadata
-    return {
-      results,
-      batchMetadata: {
-        totalUsers: userLocations.length,
-        successCount: results.filter(r => r.success).length,
-        errorCount: results.filter(r => !r.success).length,
-        processingTimeMs: processingTime,
-        processedAt: new Date()
-      }
-    };
+    // Return just the results array for compatibility with tests
+    return results;
   }
 }
 

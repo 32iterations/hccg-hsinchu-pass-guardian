@@ -1,10 +1,13 @@
 const express = require('express');
+const { AuthMiddleware } = require('../middleware');
 
 // Import route modules
 const rbacRoutes = require('./rbac');
 const casesRoutes = require('./cases');
 const mydataRoutes = require('./mydata');
 const kpiRoutes = require('./kpi');
+
+const authMiddleware = new AuthMiddleware();
 
 const router = express.Router();
 
@@ -46,13 +49,38 @@ router.get(`${API_VERSION}/info`, (req, res) => {
 });
 
 // Test endpoints for middleware testing
+router.get(`${API_VERSION}/test/user-info`,
+  authMiddleware.authenticate(),
+  (req, res, next) => {
+  // This endpoint should be protected and return user info
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'Authentication required'
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      userId: req.user.userId,
+      roles: req.user.roles,
+      permissions: req.user.permissions
+    }
+  });
+});
+
 router.get(`${API_VERSION}/test/error`, (req, res, next) => {
-  throw new Error('Test error for middleware testing');
+  const error = new Error('Test error for middleware testing');
+  error.requestId = req.requestId;
+  throw error;
 });
 
 router.get(`${API_VERSION}/test/database-error`, (req, res, next) => {
   const error = new Error('Database connection failed');
   error.name = 'DatabaseError';
+  error.requestId = req.requestId;
   throw error;
 });
 

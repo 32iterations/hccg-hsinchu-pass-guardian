@@ -35,15 +35,26 @@ class ErrorMiddleware {
       const requestId = req.requestId || this.generateRequestId();
 
       // Log error with context
-      this.logger.error({
+      const errorContext = {
         error: error.message,
-        stack: error.stack,
         requestId,
         path: req.originalUrl,
         method: req.method,
         userId: req.user?.userId,
         timestamp: new Date().toISOString()
-      });
+      };
+
+      // Only include stack in non-production or when explicitly needed
+      if (process.env.NODE_ENV !== 'production') {
+        errorContext.stack = error.stack;
+      }
+
+      this.logger.error(errorContext);
+
+      // For test environment, also use console.error for test assertions
+      if (process.env.NODE_ENV === 'test') {
+        console.error(errorContext);
+      }
 
       // Default error response
       let statusCode = 500;
