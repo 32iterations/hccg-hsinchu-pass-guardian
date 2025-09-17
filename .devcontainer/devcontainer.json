@@ -1,0 +1,45 @@
+{
+  "name": "hsinchu-pass-guardian-safe",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/.policy,target=/policy,type=bind,readonly"
+  ],
+  "containerEnv": {
+    "DISABLE_AUTOUPDATER": "1",
+    "NODE_ENV": "development",
+    "WORKSPACE_FOLDER": "/workspace"
+  },
+  "remoteEnv": {
+    "PATH": "/workspace/node_modules/.bin:${containerEnv:PATH}"
+  },
+  "postCreateCommand": "bash /workspace/.devcontainer/init-firewall.sh && bash /workspace/.devcontainer/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "GitHub.copilot",
+        "GitHub.vscode-pull-request-github",
+        "ms-azuretools.vscode-docker",
+        "orta.vscode-jest"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
+      }
+    }
+  },
+  "forwardPorts": [3000, 8080, 9229],
+  "portsAttributes": {
+    "3000": {"label": "App", "onAutoForward": "notify"},
+    "8080": {"label": "API", "onAutoForward": "notify"},
+    "9229": {"label": "Debug", "onAutoForward": "silent"}
+  }
+}

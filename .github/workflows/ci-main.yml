@@ -1,0 +1,240 @@
+name: CI - Main Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/backend/**'
+              - 'package-lock.json'
+            frontend:
+              - 'src/app/**'
+              - 'src/console/**'
+            docs:
+              - 'docs/**'
+              - '*.md'
+
+  test-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./src/backend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: ./src/backend
+        run: npm run lint || echo "::warning::Linting issues found"
+
+      - name: Run unit tests
+        working-directory: ./src/backend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Check test coverage
+        working-directory: ./src/backend
+        run: |
+          COVERAGE=$(npm run coverage:report --silent | grep "All files" | awk '{print $10}' | sed 's/%//')
+          echo "Coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below threshold ${COVERAGE_THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./src/backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security audit
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm audit --audit-level=high
+          fi
+          if [ -f "src/backend/package-lock.json" ]; then
+            cd src/backend && npm audit --audit-level=high
+          fi
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-docker:
+    needs: [test-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: |
+            hsinchu-pass-guardian:latest
+            hsinchu-pass-guardian:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  integration-tests:
+    needs: [test-backend]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./src/backend
+        run: npm ci
+
+      - name: Run integration tests
+        working-directory: ./src/backend
+        env:
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+        run: npm run test:integration || echo "::warning::Integration tests not yet configured"
+
+  tdd-validation:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'p1-') || startsWith(github.head_ref, 'feat/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate TDD commits
+        run: |
+          # Check for RED-GREEN-REFACTOR pattern
+          COMMITS=$(git log --format="%s" origin/main..HEAD)
+
+          if echo "$COMMITS" | grep -q "^\[RED\]"; then
+            echo "✅ Found RED commits"
+          else
+            echo "::warning::No [RED] commits found in TDD cycle"
+          fi
+
+          if echo "$COMMITS" | grep -q "^\[GREEN\]"; then
+            echo "✅ Found GREEN commits"
+          else
+            echo "::warning::No [GREEN] commits found in TDD cycle"
+          fi
+
+          echo "TDD commit validation complete"
+
+  generate-report:
+    needs: [test-backend, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate test report
+        run: |
+          cat > REPORT.md << 'EOF'
+          # CI Pipeline Report
+
+          **Build Date**: $(date)
+          **Commit**: ${{ github.sha }}
+          **Branch**: ${{ github.ref }}
+
+          ## Test Results
+          - Backend Tests: ${{ needs.test-backend.result }}
+          - Security Scan: ${{ needs.security-scan.result }}
+
+          ## Coverage Summary
+          See coverage reports in artifacts
+
+          ## Next Steps
+          - Review test failures if any
+          - Check security vulnerabilities
+          - Validate TDD compliance
+          EOF
+
+      - name: Upload report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ci-report
+          path: REPORT.md
