@@ -50,7 +50,7 @@ jobs:
         run: npm run typecheck
 
       - name: Cache lint results
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .eslintcache
           key: eslint-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
