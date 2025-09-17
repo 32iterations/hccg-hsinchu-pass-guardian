@@ -278,7 +278,7 @@ describe('KPI API Endpoints', () => {
             expect.objectContaining({
               id: expect.any(String),
               type: expect.any(String),
-              severity: expect.oneOf(['low', 'medium', 'high', 'critical']),
+              severity: expect.stringMatching(/^(low|medium|high|critical)$/),
               message: expect.any(String),
               timestamp: expect.any(String),
               acknowledged: expect.any(Boolean),

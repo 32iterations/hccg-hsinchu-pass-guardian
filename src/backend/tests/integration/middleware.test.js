@@ -99,7 +99,7 @@ describe('API Middleware', () => {
         .set('Authorization', 'Bearer user-token')
         .expect(403);
 
-      expect(response.body.message).toContain('case access');
+      expect(response.body.message).toContain('Insufficient permissions');
     });
 
     it('should handle role hierarchy correctly', async () => {
@@ -115,7 +115,7 @@ describe('API Middleware', () => {
     it('should validate required fields in POST requests', async () => {
       const response = await request(app)
         .post('/api/v1/cases/create')
-        .set('Authorization', 'Bearer user-token')
+        .set('Authorization', 'Bearer admin-token')
         .send({})
         .expect(400);
 

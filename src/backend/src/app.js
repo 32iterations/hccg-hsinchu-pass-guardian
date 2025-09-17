@@ -3,12 +3,13 @@ const compression = require('compression');
 const morgan = require('morgan');
 require('dotenv').config();
 
-// Import middleware
+// Import shared middleware instances
 const {
-  SecurityMiddleware,
-  ErrorMiddleware,
-  ValidationMiddleware
-} = require('./middleware');
+  authMiddleware,
+  validationMiddleware,
+  errorMiddleware,
+  securityMiddleware
+} = require('./middleware/shared');
 
 // Import routes
 const routes = require('./routes');
@@ -16,9 +17,10 @@ const routes = require('./routes');
 class Application {
   constructor() {
     this.app = express();
-    this.securityMiddleware = new SecurityMiddleware();
-    this.errorMiddleware = new ErrorMiddleware();
-    this.validationMiddleware = new ValidationMiddleware();
+    this.authMiddleware = authMiddleware;
+    this.securityMiddleware = securityMiddleware;
+    this.errorMiddleware = errorMiddleware;
+    this.validationMiddleware = validationMiddleware;
 
     this.initializeMiddleware();
     this.initializeRoutes();

@@ -1,13 +1,14 @@
 const express = require('express');
-const { AuthMiddleware } = require('../middleware');
+const { authMiddleware } = require('../middleware/shared');
 
 // Import route modules
 const rbacRoutes = require('./rbac');
 const casesRoutes = require('./cases');
 const mydataRoutes = require('./mydata');
 const kpiRoutes = require('./kpi');
-
-const authMiddleware = new AuthMiddleware();
+const deviceBindingRoutes = require('./device-binding');
+const bleScannerRoutes = require('./ble-scanner');
+const mydataEnhancedRoutes = require('./mydata-enhanced');
 
 const router = express.Router();
 
@@ -19,6 +20,9 @@ router.use(`${API_VERSION}/rbac`, rbacRoutes);
 router.use(`${API_VERSION}/cases`, casesRoutes);
 router.use(`${API_VERSION}/mydata`, mydataRoutes);
 router.use(`${API_VERSION}/kpi`, kpiRoutes);
+router.use(`${API_VERSION}/devices`, deviceBindingRoutes);
+router.use(`${API_VERSION}/ble`, bleScannerRoutes);
+router.use(`${API_VERSION}/mydata-enhanced`, mydataEnhancedRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -42,7 +46,10 @@ router.get(`${API_VERSION}/info`, (req, res) => {
         rbac: `${API_VERSION}/rbac`,
         cases: `${API_VERSION}/cases`,
         mydata: `${API_VERSION}/mydata`,
-        kpi: `${API_VERSION}/kpi`
+        kpi: `${API_VERSION}/kpi`,
+        devices: `${API_VERSION}/devices`,
+        ble: `${API_VERSION}/ble`,
+        mydataEnhanced: `${API_VERSION}/mydata-enhanced`
       }
     }
   });

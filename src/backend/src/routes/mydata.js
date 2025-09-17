@@ -33,9 +33,11 @@ router.get('/authorize',
         });
       }
 
+      const scopesArray = typeof scopes === 'string' ? scopes.split(',') : scopes;
+
       const authData = await myDataAdapter.initiateAuthorization({
         userId,
-        scopes,
+        scopes: scopesArray,
         purpose,
         redirectUri,
         state
@@ -48,7 +50,7 @@ router.get('/authorize',
           sessionId: authData.sessionId,
           expiresAt: authData.expiresAt,
           state,
-          scopes
+          scopes: scopesArray
         }
       });
     } catch (error) {

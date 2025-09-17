@@ -43,8 +43,24 @@ export const useGuardian = (): UseGuardianReturn => {
       // Mock implementation - replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Mock data for testing
-      const mockBindings: Binding[] = [];
+      // Mock data for testing - return some bindings for VERIFIED users
+      const mockBindings: Binding[] = [
+        {
+          id: 'binding-1',
+          name: '王奶奶',
+          relationship: '祖母',
+          idNumber: 'A123456789',
+          createdAt: '2024-01-01T00:00:00Z',
+          status: 'active',
+          lastLocation: {
+            lat: 24.8,
+            lng: 120.9,
+            timestamp: '2024-01-01T12:00:00Z'
+          },
+          battery: 85,
+          isOnline: true
+        }
+      ];
       setBindings(mockBindings);
     } catch (err) {
       setError(err instanceof Error ? err.message : '載入綁定資料失敗');

@@ -22,20 +22,51 @@ if (typeof window !== 'undefined') {
     })),
   });
 
-  // Mock window.location only if it doesn't exist or isn't already mocked
-  if (!window.location || !window.location.mockClear) {
-    delete window.location;
-    window.location = {
-      href: 'http://localhost:3000',
-      origin: 'http://localhost:3000',
-      pathname: '/',
-      search: '',
-      hash: '',
-      assign: jest.fn(),
-      replace: jest.fn(),
-      reload: jest.fn()
-    };
-  }
+  // Override global location with a simple mock that just tracks changes
+  global.mockLocation = {
+    href: 'http://localhost:3000',
+    origin: 'http://localhost:3000',
+    protocol: 'http:',
+    host: 'localhost:3000',
+    hostname: 'localhost',
+    port: '3000',
+    pathname: '/',
+    search: '',
+    hash: '',
+    assign: jest.fn(),
+    replace: jest.fn(),
+    reload: jest.fn(),
+    toString: () => 'http://localhost:3000'
+  };
+
+  // Don't try to override window.location, just intercept its usage
+
+  // Mock history API
+  Object.defineProperty(window, 'history', {
+    value: {
+      pushState: jest.fn(),
+      replaceState: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      go: jest.fn(),
+      length: 1,
+      scrollRestoration: 'auto',
+      state: null
+    },
+    writable: true
+  });
+
+  // Mock URL constructor to work with our custom location
+  const OriginalURL = global.URL;
+  global.URL = class extends OriginalURL {
+    constructor(url, base) {
+      // If no base is provided and url is relative, use our mock location
+      if (!base && typeof url === 'string' && !url.includes('://')) {
+        base = mockLocation.href;
+      }
+      super(url, base || mockLocation.href);
+    }
+  };
 }
 
 // Global console warning suppression for known issues

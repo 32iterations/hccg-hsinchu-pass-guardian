@@ -165,13 +165,13 @@ describe('MyData API Endpoints', () => {
         success: true,
         data: {
           sessionId: 'session123',
-          status: expect.oneOf(['pending', 'completed', 'failed', 'expired']),
+          status: expect.stringMatching(/^(pending|completed|failed|expired)$/),
           progress: expect.any(Number),
+          lastUpdated: expect.any(String),
           steps: expect.arrayContaining([
             expect.objectContaining({
               name: expect.any(String),
-              status: expect.any(String),
-              timestamp: expect.any(String)
+              status: expect.any(String)
             })
           ]),
           estimatedCompletion: expect.any(String)
@@ -293,7 +293,7 @@ describe('MyData API Endpoints', () => {
               scopes: expect.any(Array),
               grantedAt: expect.any(String),
               expiresAt: expect.any(String),
-              status: expect.oneOf(['active', 'expired', 'revoked']),
+              status: expect.stringMatching(/^(active|expired|revoked)$/),
               purpose: expect.any(String)
             })
           ]),

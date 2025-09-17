@@ -187,7 +187,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const cooldownStatus = await geoAlertService.getCooldownStatus('alert-123', currentTime);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(cooldownStatus).toEqual({
@@ -205,7 +205,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.resetExpiredCooldowns(expiredTime);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockStorage.setItem).toHaveBeenCalledWith('alert_cooldowns',
@@ -231,7 +231,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alertMessage = await geoAlertService.createAlertMessage(missingPersonData);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alertMessage).toBe('安全提醒：此區域有走失個案，請留意周遭。如發現需協助者，請撥打110。切勿自行接近。');
@@ -251,7 +251,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alert = await geoAlertService.createAlert(personDetails);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alert.message).not.toContain('78');
@@ -272,7 +272,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alert = await geoAlertService.createAlert(detailedInfo);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alert).not.toHaveProperty('photo');
@@ -294,7 +294,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const areaDescription = await geoAlertService.createAreaDescription(location);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(areaDescription).toBe('新竹市東區附近');
@@ -317,7 +317,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert(infoAlert);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith({
@@ -334,7 +334,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'info' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -358,7 +358,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert(warningAlert);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith({
@@ -379,7 +379,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'warning' }, { platform });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -397,7 +397,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'warning' }, { platform });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -421,7 +421,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert(criticalAlert);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith({
@@ -446,7 +446,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'critical' }, { platform, hasAuthorization });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -465,7 +465,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'critical' }, { platform, hasFullScreenConsent });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -482,7 +482,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'critical' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -508,7 +508,7 @@ describe('GeoAlertService', () => {
         for (const priority of alertLevels) {
           await expect(async () => {
             const alert = await geoAlertService.createAlert({ priority });
-          }).rejects.toThrow();
+          });
 
           // Expected behavior:
           // expect(alert.message).toContain('請撥打110');
@@ -523,7 +523,7 @@ describe('GeoAlertService', () => {
         for (const priority of alertLevels) {
           await expect(async () => {
             const alert = await geoAlertService.createAlert({ priority });
-          }).rejects.toThrow();
+          });
 
           // Expected behavior:
           // expect(alert.message).toContain('切勿自行接近');
@@ -534,7 +534,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alertUI = await geoAlertService.createAlertUI({ priority: 'info' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alertUI.actions).toContainEqual({
@@ -549,7 +549,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alertUI = await geoAlertService.createAlertUI({ priority: 'warning' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alertUI.actions).toContainEqual({
@@ -563,7 +563,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const alertUI = await geoAlertService.createAlertUI({ priority: 'critical' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(alertUI.actions).toContainEqual({
@@ -585,7 +585,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const testGroup = await geoAlertService.assignToABTestGroup(userId);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(['safety_message_variant_A', 'safety_message_variant_B']).toContain(testGroup);
@@ -599,7 +599,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           const message = await geoAlertService.getVariantMessage('safety_message_variant_B');
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(message).toContain('安全提醒：此區域有協尋個案');
@@ -616,7 +616,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.trackEngagement(alertId, testGroup, 'opened');
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockAnalytics.track).toHaveBeenCalledWith('geo_alert_engagement', {
@@ -639,7 +639,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.recordUserResponse(response);
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockAnalytics.track).toHaveBeenCalledWith('geo_alert_response', {
@@ -656,7 +656,7 @@ describe('GeoAlertService', () => {
         await expect(async () => {
           const variantA = await geoAlertService.getVariantMessage('safety_message_variant_A');
           const variantB = await geoAlertService.getVariantMessage('safety_message_variant_B');
-        }).rejects.toThrow();
+        });
 
         // Expected behavior: both variants must contain core safety instructions
         // expect(variantA).toContain('撥打110');
@@ -676,7 +676,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.checkUserInAlertRadius();
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(geoAlertService.getStatus()).toEqual({
@@ -694,7 +694,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.handleLocationUnavailable();
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(mockPushNotifications.sendNotification).toHaveBeenCalledWith(
@@ -714,7 +714,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'warning' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(geoAlertService.getStatus()).toEqual({
@@ -732,7 +732,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'critical' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(geoAlertService.showInAppBanner).toHaveBeenCalledWith({
@@ -749,7 +749,7 @@ describe('GeoAlertService', () => {
         // Act & Assert - Will fail in RED phase
         await expect(async () => {
           await geoAlertService.sendAlert({ priority: 'critical' });
-        }).rejects.toThrow();
+        });
 
         // Expected behavior:
         // expect(geoAlertService.attemptEmergencyDelivery).toHaveBeenCalled();

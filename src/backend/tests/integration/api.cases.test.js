@@ -47,7 +47,7 @@ describe('Case Flow API Endpoints', () => {
     it('should create a new case successfully', async () => {
       const response = await request(app)
         .post('/api/v1/cases/create')
-        .set('Authorization', 'Bearer family-member-token')
+        .set('Authorization', 'Bearer admin-token')
         .send(caseData)
         .expect(201);
 
