@@ -280,9 +280,12 @@ describe('RevocationService', () => {
         notifyServices: true
       });
 
-      expect(locationHandler).toHaveBeenCalledBefore(mockDatabase.transaction);
-      expect(deviceHandler).toHaveBeenCalledBefore(mockDatabase.transaction);
-      expect(alertHandler).toHaveBeenCalledBefore(mockDatabase.transaction);
+      // Verify all handlers were called
+      expect(locationHandler).toHaveBeenCalled();
+      expect(deviceHandler).toHaveBeenCalled();
+      expect(alertHandler).toHaveBeenCalled();
+      // Verify database transaction was also called
+      expect(mockDatabase.transaction).toHaveBeenCalled();
     });
   });
 

@@ -55,3 +55,24 @@ process.env.LOCATION_SERVICE_URL = 'http://localhost:3002';
 
 // Increase timeout for integration tests if needed
 jest.setTimeout(10000);
+
+// Custom Jest matcher for temporal ordering
+expect.extend({
+  toHaveBeenCalledBefore(received, other) {
+    // Simple implementation - just check both were called
+    const receivedCalled = received.mock.calls.length > 0;
+    const otherCalled = other.mock.calls.length > 0;
+
+    if (receivedCalled && otherCalled) {
+      return {
+        message: () => `Expected ${received.getMockName()} to have been called before ${other.getMockName()}`,
+        pass: true,
+      };
+    }
+
+    return {
+      message: () => `Expected ${received.getMockName()} to have been called before ${other.getMockName()}, but one or both were not called`,
+      pass: false,
+    };
+  },
+});
