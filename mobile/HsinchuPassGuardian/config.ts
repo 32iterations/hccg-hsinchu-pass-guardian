@@ -1,5 +1,6 @@
 // API Configuration
-export const API_BASE_URL = 'http://147.251.115.54:3001';
+// Using HTTPS with valid Let's Encrypt certificate
+export const API_BASE_URL = 'https://api.hsinchu.dpdns.org';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {

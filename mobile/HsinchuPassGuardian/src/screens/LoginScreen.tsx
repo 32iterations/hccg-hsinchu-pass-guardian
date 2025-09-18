@@ -38,12 +38,8 @@ const LoginScreen = ({ navigation }: any) => {
         await AsyncStorage.setItem('userRole', userRole);
         await AsyncStorage.setItem('userData', JSON.stringify(apiResponse.user));
 
-        // Also try Firebase auth for push notifications
-        try {
-          await auth().signInWithEmailAndPassword(email, password);
-        } catch (firebaseError) {
-          console.log('Firebase auth failed, but backend auth succeeded');
-        }
+        // Skip Firebase auth for now - backend auth is sufficient
+        console.log('Backend auth succeeded, proceeding to main screen');
 
         navigation.replace('Main');
       } else {

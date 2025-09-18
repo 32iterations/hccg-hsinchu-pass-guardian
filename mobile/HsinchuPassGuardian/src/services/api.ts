@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../../config';
 
 // Backend API configuration
-const API_URL = 'http://localhost:3000'; // Using localhost since backend is running locally
+const API_URL = API_BASE_URL; // Using config.ts for centralized API URL
 
 // API Service class
 class ApiService {

@@ -279,25 +279,37 @@ const MapScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    Alert.prompt(
+    // Android doesn't have Alert.prompt, use a simple alert instead
+    Alert.alert(
       '建立地理圍欄',
-      '請輸入圍欄名稱',
-      async (name) => {
-        if (name && selectedPatient) {
-          const result = await ApiService.createGeofence({
-            patient_id: selectedPatient.id,
-            name,
-            center_lat: currentLocation.latitude,
-            center_lng: currentLocation.longitude,
-            radius: 100, // Default 100 meters
-          });
+      '將在目前位置建立100公尺的安全圍欄',
+      [
+        {
+          text: '取消',
+          style: 'cancel'
+        },
+        {
+          text: '確定',
+          onPress: async () => {
+            if (selectedPatient) {
+              const result = await ApiService.createGeofence({
+                patient_id: selectedPatient.id,
+                name: `安全區域 ${new Date().toLocaleDateString()}`,
+                center_lat: currentLocation.latitude,
+                center_lng: currentLocation.longitude,
+                radius: 100, // Default 100 meters
+              });
 
-          if (result.success) {
-            loadPatientData(); // Reload geofences
-            Alert.alert('成功', '地理圍欄已建立');
+              if (result.success) {
+                loadPatientData(); // Reload geofences
+                Alert.alert('成功', '地理圍欄已建立');
+              }
+            } else {
+              Alert.alert('提示', '請先選擇要監護的對象');
+            }
           }
         }
-      }
+      ]
     );
   };
 
