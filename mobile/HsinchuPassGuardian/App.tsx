@@ -11,6 +11,10 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MainScreen from './src/screens/MainScreen';
 import BeaconScanScreen from './src/screens/BeaconScanScreen';
 import MapScreen from './src/screens/MapScreen';
+import PatientsScreen from './src/screens/PatientsScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
+import GeofenceScreen from './src/screens/GeofenceScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -146,38 +150,7 @@ function App(): React.JSX.Element {
   );
 }
 
-// Placeholder screens (these would be created as separate files in production)
-const PatientsScreen = () => {
-  return (
-    <View style={styles.placeholderContainer}>
-      <ActivityIndicator size="large" color="#4A90E2" />
-    </View>
-  );
-};
-
-const AlertsScreen = () => {
-  return (
-    <View style={styles.placeholderContainer}>
-      <ActivityIndicator size="large" color="#4A90E2" />
-    </View>
-  );
-};
-
-const GeofenceScreen = () => {
-  return (
-    <View style={styles.placeholderContainer}>
-      <ActivityIndicator size="large" color="#4A90E2" />
-    </View>
-  );
-};
-
-const SettingsScreen = () => {
-  return (
-    <View style={styles.placeholderContainer}>
-      <ActivityIndicator size="large" color="#4A90E2" />
-    </View>
-  );
-};
+// Placeholder screens have been moved to separate files
 
 const NotificationsScreen = () => {
   return (
