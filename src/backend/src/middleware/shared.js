@@ -1,18 +1,21 @@
-// Shared middleware instances to ensure test tokens are available across routes
-const { AuthMiddleware } = require('./auth');
-const { ValidationMiddleware } = require('./validation');
-const { ErrorMiddleware } = require('./error');
-const { SecurityMiddleware } = require('./security');
+const { AuthMiddleware } = require("./auth");
+const { ValidationMiddleware } = require("./validation");
+const { SecurityMiddleware } = require("./security");
+const { ErrorMiddleware } = require("./error");
 
 // Create shared instances
 const authMiddleware = new AuthMiddleware();
 const validationMiddleware = new ValidationMiddleware();
-const errorMiddleware = new ErrorMiddleware();
 const securityMiddleware = new SecurityMiddleware();
+const errorMiddleware = new ErrorMiddleware();
 
 module.exports = {
   authMiddleware,
   validationMiddleware,
+  securityMiddleware,
   errorMiddleware,
-  securityMiddleware
+  AuthMiddleware,
+  ValidationMiddleware,
+  SecurityMiddleware,
+  ErrorMiddleware
 };

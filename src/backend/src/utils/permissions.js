@@ -1,59 +1,93 @@
 /**
- * Permissions utility module
- * Provides permission checking functions for BLE scanning and other operations
+ * Permissions Management Utilities
+ *
+ * Handles permission requests and status checking for mobile platforms.
  */
 
-const PERMISSIONS = {
-  BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
-  BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
-  ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
-  ACCESS_COARSE_LOCATION: 'android.permission.ACCESS_COARSE_LOCATION'
-};
-
-const RESULTS = {
-  GRANTED: 'granted',
-  DENIED: 'denied',
-  BLOCKED: 'blocked'
-};
-
-/**
- * Mock permission checker for testing and server environments
- */
-class PermissionChecker {
+class PermissionsManager {
   constructor() {
-    this.RESULTS = RESULTS;
+    this.PERMISSIONS = {
+      BLUETOOTH_SCAN: "android.permission.BLUETOOTH_SCAN",
+      BLUETOOTH_CONNECT: "android.permission.BLUETOOTH_CONNECT",
+      BLUETOOTH_ADVERTISE: "android.permission.BLUETOOTH_ADVERTISE",
+      ACCESS_FINE_LOCATION: "android.permission.ACCESS_FINE_LOCATION",
+      ACCESS_COARSE_LOCATION: "android.permission.ACCESS_COARSE_LOCATION"
+    };
+
+    this.RESULTS = {
+      GRANTED: "granted",
+      DENIED: "denied",
+      BLOCKED: "blocked",
+      NEVER_ASK_AGAIN: "never_ask_again"
+    };
   }
 
+  /**
+   * Check permission status
+   */
   async check(permission) {
-    // In server environment, always return granted for simulation
-    if (process.env.NODE_ENV === 'test') {
-      return RESULTS.GRANTED;
+    if (process.env.NODE_ENV === "test") {
+      return this.RESULTS.GRANTED;
     }
 
-    // In real app, this would call native permission APIs
-    return RESULTS.GRANTED;
+    // Mock implementation
+    return this.RESULTS.DENIED;
   }
 
+  /**
+   * Request permissions
+   */
   async request(permissions) {
-    const result = {};
-
-    if (Array.isArray(permissions)) {
-      permissions.forEach(permission => {
-        result[permission] = RESULTS.GRANTED;
-      });
-    } else {
-      result[permissions] = RESULTS.GRANTED;
+    if (process.env.NODE_ENV === "test") {
+      const results = {};
+      for (const permission of permissions) {
+        results[permission] = this.RESULTS.GRANTED;
+      }
+      return results;
     }
 
-    return result;
+    // Mock implementation
+    const results = {};
+    for (const permission of permissions) {
+      results[permission] = this.RESULTS.DENIED;
+    }
+    return results;
+  }
+
+  /**
+   * Request multiple permissions
+   */
+  async requestMultiple(permissions) {
+    return await this.request(permissions);
+  }
+
+  /**
+   * Check if permission is granted
+   */
+  async isGranted(permission) {
+    const status = await this.check(permission);
+    return status === this.RESULTS.GRANTED;
+  }
+
+  /**
+   * Get required Bluetooth permissions for Android 12+
+   */
+  getBluetoothPermissions() {
+    return [
+      this.PERMISSIONS.BLUETOOTH_SCAN,
+      this.PERMISSIONS.BLUETOOTH_CONNECT
+    ];
+  }
+
+  /**
+   * Get location permissions
+   */
+  getLocationPermissions() {
+    return [
+      this.PERMISSIONS.ACCESS_FINE_LOCATION,
+      this.PERMISSIONS.ACCESS_COARSE_LOCATION
+    ];
   }
 }
 
-module.exports = {
-  PERMISSIONS,
-  RESULTS,
-  PermissionChecker,
-  // Export default instance
-  check: (permission) => new PermissionChecker().check(permission),
-  request: (permissions) => new PermissionChecker().request(permissions)
-};
+module.exports = { PermissionsManager };

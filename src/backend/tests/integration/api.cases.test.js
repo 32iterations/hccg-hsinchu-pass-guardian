@@ -40,7 +40,7 @@ describe('Case Flow API Endpoints', () => {
         name: '陳老先生',
         age: 78,
         description: '身高約165cm，穿深色衣服',
-        lastSeen: '2023-10-15T14:30:00Z'
+        lastSeen: '2023-10-15T14:30:00.000Z'
       }
     };
 
@@ -54,13 +54,21 @@ describe('Case Flow API Endpoints', () => {
       expect(response.body).toEqual({
         success: true,
         message: 'Case created successfully',
-        data: {
+        data: expect.objectContaining({
           id: expect.any(String),
-          ...caseData,
+          title: caseData.title,
+          description: caseData.description,
+          priority: caseData.priority,
+          location: expect.objectContaining(caseData.location),
+          contactInfo: caseData.contactInfo,
+          missingPerson: caseData.missingPerson,
           status: 'active',
           createdAt: expect.any(String),
-          createdBy: expect.any(String)
-        }
+          updatedAt: expect.any(String),
+          createdBy: expect.any(String),
+          alertConfig: expect.any(Object),
+          metadata: expect.any(Object)
+        })
       });
     });
 
@@ -71,7 +79,7 @@ describe('Case Flow API Endpoints', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.errors).toContain('Title is required');
+      expect(response.body.details.some(detail => detail.message === 'Title is required')).toBe(true);
     });
 
     it('should validate location coordinates', async () => {
@@ -271,7 +279,8 @@ describe('Case Flow API Endpoints', () => {
         .post('/api/v1/cases/case123/assign')
         .set('Authorization', 'Bearer case-manager-token')
         .send({
-          assigneeId: 'unavailable-volunteer'
+          assigneeId: 'unavailable-volunteer',
+          assigneeType: 'volunteer'
         })
         .expect(409);
     });

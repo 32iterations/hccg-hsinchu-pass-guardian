@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.27% </span>
+                <span class="strong">93.05% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>65/72</span>
+                <span class='fraction'>67/72</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">87.75% </span>
+                <span class="strong">89.36% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>43/49</span>
+                <span class='fraction'>42/47</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.7% </span>
+                <span class="strong">92.64% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>61/68</span>
+                <span class='fraction'>63/68</span>
             </div>
         
             
@@ -240,7 +240,10 @@
 <a name='L175'></a><a href='#L175'>175</a>
 <a name='L176'></a><a href='#L176'>176</a>
 <a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -357,12 +360,15 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -377,23 +383,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -511,13 +517,13 @@ class DeviceBindingService {
       this.connectionHistory.set(device.serialNumber, []);
     }
 &nbsp;
-    // Add device_bound event
+    // Add device binding event to history
     this.connectionHistory.get(device.serialNumber).push({
       event: 'device_bound',
       timestamp: new Date().toISOString()
     });
 &nbsp;
-    // Add connection event if BLE was attempted
+    // Add connection event if BLE address is provided
     if (device.bleAddress &amp;&amp; connectionAttempts &gt; 0) {
       this.connectionHistory.get(device.serialNumber).push({
         event: connected ? 'connected' : 'connection_failed',
@@ -538,8 +544,11 @@ class DeviceBindingService {
         // Call mock function for testing
         this.bleConnect(serialNumber, attempt);
 &nbsp;
-        // Simulate connection attempt
-        if (Math.random() &gt; 0.5 || attempt === maxRetries - 1) {
+        // Use Math.random to simulate failure - if &lt; 0.5, connection fails
+        // This allows the tests to force failures by mocking Math.random
+        const connectionSuccess = Math.random() &gt; 0.5;
+&nbsp;
+        if (connectionSuccess) {
           this.retryCount = attempt + 1;
 &nbsp;
           // Track connection event
@@ -568,9 +577,9 @@ class DeviceBindingService {
 &nbsp;
         if (attempt &lt; maxRetries - 1) {
           await new Promise(resolve =&gt; setTimeout(resolve, retryDelays[attempt]));
-        } else <span class="missing-if-branch" title="else path not taken" >E</span>{
-<span class="cstat-no" title="statement not covered" >          this.bleConnect(serialNumber, maxRetries); </span>// Final call
-<span class="cstat-no" title="statement not covered" >          throw new Error(`Failed after ${maxRetries} attempts`);</span>
+        } else {
+          // Final attempt failed
+          throw new Error(`Failed after ${maxRetries} attempts`);
         }
       }
     }
@@ -601,7 +610,7 @@ module.exports = DeviceBindingService;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-18T03:46:00.686Z
+                at 2025-09-18T11:05:40.933Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

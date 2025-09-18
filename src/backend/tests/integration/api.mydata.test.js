@@ -297,6 +297,12 @@ describe('MyData API Endpoints', () => {
               purpose: expect.any(String)
             })
           ]),
+          pagination: expect.objectContaining({
+            limit: expect.any(Number),
+            page: expect.any(Number),
+            total: expect.any(Number),
+            totalPages: expect.any(Number)
+          }),
           totalCount: expect.any(Number),
           activeCount: expect.any(Number)
         }

@@ -42,9 +42,10 @@ class Application {
 
     // Request parsing and validation
     this.app.use(this.securityMiddleware.requestSizeLimit());
-    this.app.use(this.securityMiddleware.validateContentType());
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    // Apply content-type validation only to specific routes that need it
+    this.app.use('/api/v1', this.securityMiddleware.validateContentType());
 
     // Compression
     this.app.use(compression());

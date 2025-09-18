@@ -13,6 +13,7 @@ class ValidationMiddleware {
       });
 
       if (error) {
+        // Standardize response format for all validation errors
         const details = error.details.map(detail => ({
           field: detail.path.join('.'),
           message: detail.message.replace(/"/g, '')
@@ -24,6 +25,7 @@ class ValidationMiddleware {
           message: 'Request validation failed',
           details
         });
+
       }
 
       // Replace original data with validated/sanitized data
@@ -106,14 +108,25 @@ const schemas = {
 
   // Case schemas
   createCase: Joi.object({
-    title: Joi.string().min(1).max(200).required(),
-    description: Joi.string().min(1).max(2000).required(),
+    title: Joi.string().min(1).max(200).required().messages({
+      'string.base': 'title must be a string',
+      'any.required': 'Title is required'
+    }),
+    description: Joi.string().min(1).max(2000).required().messages({
+      'any.required': 'Description is required'
+    }),
     priority: Joi.string().valid('low', 'medium', 'high', 'critical').default('medium'),
     location: Joi.object({
-      lat: Joi.number().min(-90).max(90).required(),
-      lng: Joi.number().min(-180).max(180).required(),
+      lat: Joi.number().min(-90).max(90).required().messages({
+        'number.base': 'location.lat must be a number'
+      }),
+      lng: Joi.number().min(-180).max(180).required().messages({
+        'number.base': 'location.lng must be a number'
+      }),
       address: Joi.string().max(500)
-    }).required(),
+    }).required().messages({
+      'any.required': 'Location is required'
+    }),
     contactInfo: Joi.object({
       name: Joi.string().max(100).required(),
       phone: Joi.string().pattern(/^[0-9+\-\s()]+$/).required(),
@@ -148,8 +161,13 @@ const schemas = {
     radius: Joi.number().integer().min(0).max(50000).default(5000),
     lat: Joi.number().min(-90).max(90),
     lng: Joi.number().min(-180).max(180),
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(20)
+    page: Joi.number().integer().min(1).default(1).messages({
+      'number.base': 'page must be a number'
+    }),
+    limit: Joi.number().integer().min(1).max(100).default(20).messages({
+      'number.base': 'limit must be a number',
+      'number.min': 'limit must be positive'
+    })
   }),
 
   // MyData schemas

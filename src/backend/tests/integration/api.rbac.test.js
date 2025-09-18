@@ -39,10 +39,15 @@ describe('RBAC API Endpoints', () => {
     });
 
     it('should return 403 when user lacks permission to view roles', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/v1/rbac/roles')
         .set('Authorization', 'Bearer limited-permission-token')
         .expect(403);
+
+      expect(response.body).toEqual(expect.objectContaining({
+        success: false,
+        error: expect.any(String)
+      }));
     });
   });
 
@@ -59,7 +64,12 @@ describe('RBAC API Endpoints', () => {
         .send(assignmentData);
 
       if (response.status !== 200) {
-        console.log('Error response:', response.status, response.body);
+        console.log('Error response:', {
+          status: response.status,
+          statusType: typeof response.status,
+          body: typeof response.body === 'function' ? 'Function' : response.body,
+          bodyType: typeof response.body
+        });
       }
 
       expect(response.status).toBe(200);

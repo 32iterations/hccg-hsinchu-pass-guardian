@@ -1,42 +1,52 @@
-const winston = require('winston');
+const crypto = require('crypto');
 
 class ErrorMiddleware {
   constructor() {
-    this.logger = winston.createLogger({
-      level: 'error',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json()
-      ),
-      transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'logs/error.log' })
-      ]
-    });
+    this.errorCodes = {
+      ValidationError: 400,
+      UnauthorizedError: 401,
+      ForbiddenError: 403,
+      NotFoundError: 404,
+      ConflictError: 409,
+      RateLimitError: 429,
+      InternalServerError: 500
+    };
+  }
+
+  // Request ID middleware
+  requestId() {
+    return (req, res, next) => {
+      req.requestId = crypto.randomUUID();
+      res.set('X-Request-ID', req.requestId);
+      next();
+    };
   }
 
   // 404 handler for undefined routes
   notFound() {
     return (req, res, next) => {
-      res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: 'The requested resource was not found',
-        path: req.originalUrl
-      });
+      const error = new Error(`The requested resource was not found`);
+      error.status = 404;
+      error.code = 'NOT_FOUND';
+      error.path = req.originalUrl;
+      next(error);
     };
   }
 
   // Global error handler
   errorHandler() {
-    return (error, req, res, next) => {
-      // Generate unique request ID for tracking
-      const requestId = req.requestId || this.generateRequestId();
+    return (err, req, res, next) => {
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const requestId = req.requestId || crypto.randomUUID();
 
-      // Log error with context
-      const errorContext = {
-        error: error.message,
+      // Set default error properties
+      const statusCode = err.status || err.statusCode || 500;
+      const errorCode = err.code || 'INTERNAL_SERVER_ERROR';
+
+      // Log the error
+      const logData = {
+        error: err.message,
+        stack: err.stack,
         requestId,
         path: req.originalUrl,
         method: req.method,
@@ -44,97 +54,117 @@ class ErrorMiddleware {
         timestamp: new Date().toISOString()
       };
 
-      // Only include stack in non-production or when explicitly needed
-      if (process.env.NODE_ENV !== 'production') {
-        errorContext.stack = error.stack;
+      if (statusCode >= 500) {
+        console.error(logData);
+      } else {
+        console.warn('Client Error:', logData);
       }
 
-      this.logger.error(errorContext);
-
-      // For test environment, also use console.error for test assertions
-      if (process.env.NODE_ENV === 'test') {
-        console.error(errorContext);
-      }
-
-      // Default error response
-      let statusCode = 500;
-      let message = 'An unexpected error occurred';
-      let errorType = 'Internal Server Error';
-
-      // Handle specific error types
-      if (error.name === 'ValidationError') {
-        statusCode = 400;
-        message = 'Validation failed';
-        errorType = 'Validation Error';
-      } else if (error.name === 'UnauthorizedError' || error.message.includes('Unauthorized')) {
-        statusCode = 401;
-        message = 'Authentication required';
-        errorType = 'Unauthorized';
-      } else if (error.name === 'ForbiddenError' || error.message.includes('Forbidden')) {
-        statusCode = 403;
-        message = 'Access forbidden';
-        errorType = 'Forbidden';
-      } else if (error.name === 'NotFoundError' || error.message.includes('not found')) {
-        statusCode = 404;
-        message = 'Resource not found';
-        errorType = 'Not Found';
-      } else if (error.name === 'ConflictError' || error.message.includes('already exists')) {
-        statusCode = 409;
-        message = 'Resource conflict';
-        errorType = 'Conflict';
-      } else if (error.name === 'TooManyRequestsError') {
-        statusCode = 429;
-        message = 'Too many requests, please try again later';
-        errorType = 'Rate Limit Exceeded';
-      }
-
-      // Prepare error response
-      const errorResponse = {
+      // Prepare response
+      const response = {
         success: false,
-        error: errorType,
-        message,
-        requestId
+        error: this.getErrorMessage(statusCode),
+        message: isDevelopment ? (err.message || 'An unexpected error occurred') :
+                 (statusCode >= 500 ? 'An unexpected error occurred' : (err.message || 'An unexpected error occurred'))
       };
 
-      // Include stack trace and additional details in development
-      if (process.env.NODE_ENV !== 'production') {
-        errorResponse.stack = error.stack;
-        errorResponse.details = error.details || error.message;
+      // Only include requestId in non-test environments or for server errors
+      if (process.env.NODE_ENV !== 'test' || statusCode >= 500) {
+        response.requestId = requestId;
+      }
+
+      // Add path for 404 errors
+      if (statusCode === 404) {
+        response.path = req.originalUrl;
+      }
+
+      // Add validation details for 400 errors
+      if (statusCode === 400 && err.details) {
+        response.details = err.details;
+      }
+
+      // Add required permissions for 403 errors
+      if (statusCode === 403 && err.required) {
+        response.required = err.required;
       }
 
       // Add retry information for rate limiting
       if (statusCode === 429) {
-        errorResponse.retryAfter = error.retryAfter || 60;
-        res.set('Retry-After', errorResponse.retryAfter);
+        response.retryAfter = err.retryAfter || 60;
+        res.set('Retry-After', response.retryAfter);
       }
 
-      res.status(statusCode).json(errorResponse);
+      // Include stack trace in development - but not for test environment
+      if (isDevelopment && statusCode >= 500 && process.env.NODE_ENV !== 'test') {
+        response.stack = err.stack;
+      }
+
+      // Send error response
+      res.status(statusCode).json(response);
     };
   }
 
-  // Request ID middleware
-  generateRequestId() {
-    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  getErrorMessage(statusCode) {
+    const messages = {
+      400: 'Bad Request',
+      401: 'Unauthorized',
+      403: 'Forbidden',
+      404: 'Not Found',
+      409: 'Conflict',
+      410: 'Gone',
+      429: 'Rate Limit Exceeded',
+      500: 'Internal Server Error',
+      502: 'Bad Gateway',
+      503: 'Service Unavailable'
+    };
+
+    return messages[statusCode] || 'Unknown Error';
   }
 
-  requestId() {
-    return (req, res, next) => {
-      req.requestId = this.generateRequestId();
-      res.set('X-Request-ID', req.requestId);
-      next();
-    };
+  // Custom error creators
+  createValidationError(message, details = []) {
+    const error = new Error(message);
+    error.status = 400;
+    error.code = 'VALIDATION_ERROR';
+    error.details = details;
+    return error;
   }
 
-  // Rate limiting error handler
-  rateLimitHandler() {
-    return (req, res, next) => {
-      res.status(429).json({
-        success: false,
-        error: 'Rate Limit Exceeded',
-        message: 'Too many requests, please try again later',
-        retryAfter: 60
-      });
-    };
+  createUnauthorizedError(message = 'Authentication required') {
+    const error = new Error(message);
+    error.status = 401;
+    error.code = 'UNAUTHORIZED';
+    return error;
+  }
+
+  createForbiddenError(message = 'Insufficient permissions', required = []) {
+    const error = new Error(message);
+    error.status = 403;
+    error.code = 'FORBIDDEN';
+    error.required = required;
+    return error;
+  }
+
+  createNotFoundError(message = 'Resource not found') {
+    const error = new Error(message);
+    error.status = 404;
+    error.code = 'NOT_FOUND';
+    return error;
+  }
+
+  createConflictError(message = 'Resource conflict') {
+    const error = new Error(message);
+    error.status = 409;
+    error.code = 'CONFLICT';
+    return error;
+  }
+
+  createRateLimitError(message = 'Rate limit exceeded', retryAfter = 60) {
+    const error = new Error(message);
+    error.status = 429;
+    error.code = 'RATE_LIMIT_EXCEEDED';
+    error.retryAfter = retryAfter;
+    return error;
   }
 }
 

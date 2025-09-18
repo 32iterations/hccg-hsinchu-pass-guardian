@@ -59,6 +59,11 @@ export const FamilyTab: React.FC<FamilyTabProps> = ({ role, user }) => {
     );
   }
 
+  // For VERIFIED users with bindings or ADMIN users, show the features grid
+  if (role === UserRole.VERIFIED && bindings && bindings.length > 0) {
+    // Show features grid
+  }
+
   const features = [
     {
       id: 'location_tracking',
@@ -90,35 +95,42 @@ export const FamilyTab: React.FC<FamilyTabProps> = ({ role, user }) => {
     }
   ];
 
+  // Show the features for users with bindings or admin
+  const shouldShowFeatures = (role === UserRole.VERIFIED && bindings && bindings.length > 0) || role === UserRole.ADMIN;
+
   return (
     <div className="family-tab">
-      {bindings && bindings.length > 0 && (
-        <div className="bindings-selector">
-          <label htmlFor="binding-select">選擇受照護者：</label>
-          <select
-            id="binding-select"
-            value={selectedBinding || ''}
-            onChange={(e) => setSelectedBinding(e.target.value)}
-            className="binding-dropdown"
-          >
-            {bindings.map((binding) => (
-              <option key={binding.id} value={binding.id}>
-                {binding.name} ({binding.relationship})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {shouldShowFeatures && (
+        <>
+          {bindings && bindings.length > 0 && (
+            <div className="bindings-selector">
+              <label htmlFor="binding-select">選擇受照護者：</label>
+              <select
+                id="binding-select"
+                value={selectedBinding || ''}
+                onChange={(e) => setSelectedBinding(e.target.value)}
+                className="binding-dropdown"
+              >
+                {bindings.map((binding) => (
+                  <option key={binding.id} value={binding.id}>
+                    {binding.name} ({binding.relationship})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-      <div className="features-grid">
-        {features.map((feature) => (
-          <FeatureCard
-            key={feature.id}
-            {...feature}
-            disabled={!feature.enabled}
-          />
-        ))}
-      </div>
+          <div className="features-grid">
+            {features.map((feature) => (
+              <FeatureCard
+                key={feature.id}
+                {...feature}
+                disabled={!feature.enabled}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {role === UserRole.ADMIN && (
         <div className="admin-section">

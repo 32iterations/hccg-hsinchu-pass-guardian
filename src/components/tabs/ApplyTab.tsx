@@ -21,7 +21,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({ role, user }) => {
     }
   }, [role, user?.id]);
 
-  if (role === UserRole.MEMBER && !application) {
+  if (role === UserRole.MEMBER) {
     return (
       <div className="apply-tab">
         <EmptyState

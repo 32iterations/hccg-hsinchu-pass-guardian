@@ -35,13 +35,17 @@ class JWTTestHelper {
       userId: 'admin-user-456',
       roles: ['admin', 'case_manager'],
       permissions: [
-        'read:rbac',
-        'write:rbac',
-        'read:cases',
-        'write:cases',
-        'read:audit',
-        'admin:all'
-      ]
+        'read_sensitive_data',
+        'view_roles',
+        'read_cases',
+        'update_cases',
+        'create_cases',
+        'assign_cases',
+        'view_detailed_kpis',
+        'export_data',
+        'admin_all'
+      ],
+      clearanceLevel: 'confidential'
     });
   }
 
@@ -75,7 +79,37 @@ class JWTTestHelper {
       'case-manager-token': this.generateCaseManagerToken(),
       'valid-token': this.generateUserToken(),
       'expired-token': this.generateExpiredToken(),
-      'invalid-token': 'clearly-invalid-token'
+      'invalid-token': 'clearly-invalid-token',
+      'family-member-token': this.generateToken({
+        userId: 'family123',
+        roles: ['family_member'],
+        permissions: ['read_own_cases', 'view_basic_info'],
+        clearanceLevel: 'family'
+      }),
+      'unauthorized-user-token': this.generateToken({
+        userId: 'unauthorized-999',
+        roles: ['external_auditor'],
+        permissions: ['read_audit_data'],
+        clearanceLevel: 'audit_only'
+      }),
+      'volunteer-token': this.generateToken({
+        userId: 'volunteer-001',
+        roles: ['volunteer'],
+        permissions: ['update_case_status', 'read_basic_data'],
+        clearanceLevel: 'restricted'
+      }),
+      '承辦-user-token': this.generateToken({
+        userId: 'case-worker-001',
+        roles: ['case_worker'],
+        permissions: ['read_sensitive_data', 'create_cases', 'assign_cases'],
+        clearanceLevel: 'confidential'
+      }),
+      'restricted-user-token': this.generateToken({
+        userId: 'social-worker-002',
+        roles: ['social_worker'],
+        permissions: ['read_basic_data'],
+        clearanceLevel: 'restricted'
+      })
     };
   }
 }

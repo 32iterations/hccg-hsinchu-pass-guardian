@@ -92,13 +92,13 @@ class DeviceBindingService {
       this.connectionHistory.set(device.serialNumber, []);
     }
 
-    // Add device_bound event
+    // Add device binding event to history
     this.connectionHistory.get(device.serialNumber).push({
       event: 'device_bound',
       timestamp: new Date().toISOString()
     });
 
-    // Add connection event if BLE was attempted
+    // Add connection event if BLE address is provided
     if (device.bleAddress && connectionAttempts > 0) {
       this.connectionHistory.get(device.serialNumber).push({
         event: connected ? 'connected' : 'connection_failed',
@@ -119,8 +119,11 @@ class DeviceBindingService {
         // Call mock function for testing
         this.bleConnect(serialNumber, attempt);
 
-        // Simulate connection attempt
-        if (Math.random() > 0.5 || attempt === maxRetries - 1) {
+        // Use Math.random to simulate failure - if < 0.5, connection fails
+        // This allows the tests to force failures by mocking Math.random
+        const connectionSuccess = Math.random() > 0.5;
+
+        if (connectionSuccess) {
           this.retryCount = attempt + 1;
 
           // Track connection event
@@ -150,7 +153,7 @@ class DeviceBindingService {
         if (attempt < maxRetries - 1) {
           await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
         } else {
-          this.bleConnect(serialNumber, maxRetries); // Final call
+          // Final attempt failed
           throw new Error(`Failed after ${maxRetries} attempts`);
         }
       }

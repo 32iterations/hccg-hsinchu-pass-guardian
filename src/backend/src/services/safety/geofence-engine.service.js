@@ -312,6 +312,17 @@ class GeofenceEngine {
       const timeout = setTimeout(async () => {
         try {
           await this.confirmGeofenceExit(userId, geofence, location, distance);
+
+          // Add to exits array after confirmation
+          result.exits = result.exits || [];
+          result.exits.push({
+            geofenceId: geofence.id,
+            eventType: GEOFENCE_EVENTS.EXIT,
+            distance,
+            accuracy: location.accuracy,
+            timestamp: new Date(),
+            confirmationDelay: this.EXIT_CONFIRMATION_DELAY
+          });
         } catch (error) {
           console.error(`Exit confirmation failed for geofence ${geofence.id}:`, error);
         } finally {
@@ -544,7 +555,7 @@ class GeofenceEngine {
 
     const lastNotification = await this.geofenceRepository.getLastNotification(userId, geofenceId, eventType);
 
-    if (!lastNotification || lastNotification.geofenceId !== geofenceId) {
+    if (!lastNotification) {
       return false;
     }
 

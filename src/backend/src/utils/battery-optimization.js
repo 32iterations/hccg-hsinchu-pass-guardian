@@ -1,53 +1,55 @@
 /**
- * Battery optimization utility module
- * Provides battery optimization management for Android devices
+ * Battery Optimization Utilities for Android
+ *
+ * Provides utilities to request battery optimization exemptions
+ * to ensure background BLE scanning continues to work properly.
  */
 
-/**
- * Mock battery optimization manager for testing and server environments
- */
-class BatteryOptimizationManager {
+class BatteryOptimization {
   constructor() {
-    this.isIgnored = true; // Default to optimized for testing
+    this.isAndroid = process.env.PLATFORM === "android";
   }
 
+  /**
+   * Check if app is ignoring battery optimizations
+   */
   async isIgnoringBatteryOptimizations() {
-    // In server environment, simulate battery optimization status
-    if (process.env.NODE_ENV === 'test') {
-      return true;
-    }
+    if (!this.isAndroid) return true;
 
-    // In real app, this would check actual battery optimization settings
-    return this.isIgnored;
+    // Mock implementation for testing
+    return process.env.NODE_ENV === "test" ? true : false;
   }
 
+  /**
+   * Request to ignore battery optimizations
+   */
   async requestIgnoreBatteryOptimizations() {
-    // In server environment, simulate successful request
-    if (process.env.NODE_ENV === 'test') {
-      this.isIgnored = true;
-      return true;
-    }
+    if (!this.isAndroid) return true;
 
-    // In real app, this would show battery optimization dialog
-    this.isIgnored = true;
-    return true;
+    // Mock implementation for testing
+    return process.env.NODE_ENV === "test" ? true : false;
   }
 
-  async openBatteryOptimizationSettings() {
-    // In server environment, simulate opening settings
-    if (process.env.NODE_ENV === 'test') {
-      return true;
-    }
+  /**
+   * Show battery optimization settings
+   */
+  async showBatteryOptimizationSettings() {
+    if (!this.isAndroid) return;
 
-    // In real app, this would open device settings
-    return true;
+    // Mock implementation - would open system settings
+    console.log("Opening battery optimization settings");
+  }
+
+  /**
+   * Get battery optimization status
+   */
+  async getBatteryOptimizationStatus() {
+    return {
+      isIgnoring: await this.isIgnoringBatteryOptimizations(),
+      canRequest: this.isAndroid,
+      reason: this.isAndroid ? "Background BLE scanning requires battery optimization exemption" : "Not applicable on this platform"
+    };
   }
 }
 
-module.exports = {
-  BatteryOptimizationManager,
-  // Export default instance
-  isIgnoringBatteryOptimizations: () => new BatteryOptimizationManager().isIgnoringBatteryOptimizations(),
-  requestIgnoreBatteryOptimizations: () => new BatteryOptimizationManager().requestIgnoreBatteryOptimizations(),
-  openBatteryOptimizationSettings: () => new BatteryOptimizationManager().openBatteryOptimizationSettings()
-};
+module.exports = { BatteryOptimization };

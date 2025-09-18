@@ -59,34 +59,37 @@ export const VolunteerTab: React.FC<VolunteerTabProps> = ({ role, user }) => {
     );
   }
 
-  if (tasks.length === 0) {
+  // For VERIFIED and ADMIN users who are registered, show the task interface
+  if ((role === UserRole.VERIFIED || role === UserRole.ADMIN) && isRegistered) {
+
+    if (tasks.length === 0) {
+      return (
+        <EmptyState
+          icon="task-completed"
+          title="目前沒有新任務"
+          description="感謝您的熱心參與！有新任務時我們會立即通知您"
+          settingsHint="可在設定中調整接收任務的時段與區域"
+          secondaryAction={{
+            text: '查看歷史任務',
+            onClick: () => navigate('/guardian/volunteer/history')
+          }}
+          notificationStatus={{
+            enabled: true,
+            text: '任務通知已開啟'
+          }}
+        />
+      );
+    }
+
+    const filteredTasks = tasks.filter(task => {
+      if (filter === 'all') return true;
+      if (filter === 'available') return task.status === 'pending';
+      if (filter === 'assigned') return task.assignedTo === user?.id;
+      return true;
+    });
+
     return (
-      <EmptyState
-        icon="task-completed"
-        title="目前沒有新任務"
-        description="感謝您的熱心參與！有新任務時我們會立即通知您"
-        settingsHint="可在設定中調整接收任務的時段與區域"
-        secondaryAction={{
-          text: '查看歷史任務',
-          onClick: () => navigate('/guardian/volunteer/history')
-        }}
-        notificationStatus={{
-          enabled: true,
-          text: '任務通知已開啟'
-        }}
-      />
-    );
-  }
-
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'all') return true;
-    if (filter === 'available') return task.status === 'pending';
-    if (filter === 'assigned') return task.assignedTo === user?.id;
-    return true;
-  });
-
-  return (
-    <div className="volunteer-tab">
+      <div className="volunteer-tab">
       <div className="volunteer-stats">
         <div className="stat-card">
           <span className="stat-value">12</span>
@@ -159,17 +162,21 @@ export const VolunteerTab: React.FC<VolunteerTabProps> = ({ role, user }) => {
             </button>
           </div>
         </div>
-      )}
+        )}
 
-      <div className="quick-actions">
-        <button
-          className="fab"
-          onClick={() => navigate('/guardian/volunteer/schedule')}
-          aria-label="查看排班"
-        >
-          <span className="icon-calendar" />
-        </button>
+        <div className="quick-actions">
+          <button
+            className="fab"
+            onClick={() => navigate('/guardian/volunteer/schedule')}
+            aria-label="查看排班"
+          >
+            <span className="icon-calendar" />
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // This return is for other cases
+  return null;
 };

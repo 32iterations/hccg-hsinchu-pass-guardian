@@ -32,14 +32,48 @@ describe('P3 MyData Production Validation', () => {
     };
 
     myDataAdapter = new MyDataAdapter(realApiConfig);
-    revocationService = new RevocationService({
-      immediateProcessing: true,
-      auditTrail: true
-    });
+
+    // Initialize services with proper dependencies
+    const mockStorage = {
+      data: new Map(),
+      setItem: async function(key, value) {
+        this.data.set(key, JSON.stringify(value));
+      },
+      getItem: async function(key) {
+        const value = this.data.get(key);
+        return value ? JSON.parse(value) : null;
+      },
+      removeItem: async function(key) {
+        this.data.delete(key);
+      }
+    };
+
+    const mockAuditService = {
+      logDataRevocation: async () => {},
+      logDeletionError: async () => {},
+      logDataCleanup: async () => {},
+      logPolicyChange: async () => {},
+      logJobStart: async () => {},
+      logBatchProgress: async () => {},
+      logJobComplete: async () => {},
+      logJobError: async () => {},
+      logManualCleanup: async () => {}
+    };
+
     retentionService = new RetentionService({
+      storage: mockStorage,
+      auditService: mockAuditService,
       defaultTTL: 2592000000, // 30 days in ms
       gracePeriod: 86400000,  // 24 hours
       auditEnabled: true
+    });
+
+    revocationService = new RevocationService({
+      storage: mockStorage,
+      auditService: mockAuditService,
+      retentionService: retentionService,
+      immediateProcessing: true,
+      auditTrail: true
     });
   });
 
@@ -230,7 +264,7 @@ describe('P3 MyData Production Validation', () => {
         type: 'location_data'
       };
 
-      const shortTTL = 5000; // 5 seconds
+      const shortTTL = 1000; // 1 second for faster tests
 
       // Act
       await retentionService.storeWithTTL(shortTTLData, shortTTL);
@@ -239,8 +273,8 @@ describe('P3 MyData Production Validation', () => {
       let dataExists = await retentionService.dataExists(shortTTLData.dataId);
       expect(dataExists).toBe(true);
 
-      // Wait for TTL expiration
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait 6 seconds
+      // Wait for TTL expiration with shorter wait time
+      await new Promise(resolve => setTimeout(resolve, 1200)); // Wait 1.2 seconds
 
       // Verify data is automatically deleted
       dataExists = await retentionService.dataExists(shortTTLData.dataId);
@@ -252,7 +286,7 @@ describe('P3 MyData Production Validation', () => {
         dataId: shortTTLData.dataId,
         cleanupReason: 'ttl_expired',
         cleanupTimestamp: expect.any(String),
-        originalTTL: shortTTL,
+        originalTTL: 1000,
         actualDuration: expect.any(Number)
       }));
     });
@@ -518,7 +552,7 @@ describe('P3 MyData Production Validation', () => {
       // Step 1: Authorization request
       const authRequest = await request(app)
         .get('/api/v1/mydata/authorize')
-        .set('Authorization', 'Bearer user-token')
+        .set('Authorization', 'Bearer oauth-test-user-token')
         .query({
           userId: 'oauth-test-user',
           scopes: 'location_tracking,emergency_contact',
@@ -551,12 +585,10 @@ describe('P3 MyData Production Validation', () => {
       authFlowSteps.push({ step: 'authorization_callback', success: true, data: callbackRequest.body });
 
       // Step 4: Token exchange (internal)
-      const tokenExchange = await myDataAdapter.exchangeCodeForToken({
-        code: 'AUTH_CODE_OAUTH2_FLOW_123',
-        clientId: realApiConfig.clientId,
-        clientSecret: realApiConfig.clientSecret,
-        redirectUri: realApiConfig.redirectUri
-      });
+      const tokenExchange = await myDataAdapter.exchangeCodeForToken(
+        'AUTH_CODE_OAUTH2_FLOW_123',
+        authRequest.body.data.sessionId
+      );
 
       authFlowSteps.push({ step: 'token_exchange', success: tokenExchange.success, data: tokenExchange });
 

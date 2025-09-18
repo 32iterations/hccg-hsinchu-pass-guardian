@@ -17,6 +17,13 @@ describe('DeviceBindingService - RED Phase Tests', () => {
   let sleepSpy;
 
   beforeEach(() => {
+    // Setup fake timers for async operations
+    jest.useFakeTimers({
+      legacyFakeTimers: false,
+      advanceTimers: true,
+      doNotFake: ['nextTick', 'setImmediate']
+    });
+
     // Clear all mocks first
     jest.clearAllMocks();
 
@@ -53,11 +60,18 @@ describe('DeviceBindingService - RED Phase Tests', () => {
     );
 
     // Mock the _sleep method to avoid real timeouts in tests
-    sleepSpy = jest.spyOn(deviceBindingService, '_sleep').mockResolvedValue();
+    sleepSpy = jest.spyOn(deviceBindingService, '_sleep').mockImplementation(async (ms) => {
+      jest.advanceTimersByTime(ms);
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+      return Promise.resolve();
+    });
   });
 
   afterEach(() => {
     // Cleanup all timers and async operations
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
     jest.clearAllTimers();
     jest.clearAllMocks();
     if (sleepSpy) {
@@ -286,6 +300,10 @@ describe('DeviceBindingService - RED Phase Tests', () => {
         await expect(deviceBindingService.connectToDevice(deviceId, { maxRetries }))
           .rejects.toThrow(BLEConnectionError);
 
+        // Allow all timer callbacks to complete
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+
         expect(mockBLEManager.connect).toHaveBeenCalledTimes(maxRetries);
         expect(sleepSpy).toHaveBeenCalledTimes(maxRetries - 1); // Sleep called between retries
       });
@@ -299,6 +317,10 @@ describe('DeviceBindingService - RED Phase Tests', () => {
           .mockResolvedValueOnce({ connected: true, deviceId });
 
         const result = await deviceBindingService.connectToDevice(deviceId);
+
+        // Allow all timer callbacks to complete
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
 
         expect(result.connected).toBe(true);
         expect(mockBLEManager.connect).toHaveBeenCalledTimes(3);
@@ -325,6 +347,10 @@ describe('DeviceBindingService - RED Phase Tests', () => {
 
           await expect(deviceBindingService.connectToDevice(deviceId))
             .rejects.toThrow(BLEConnectionError);
+
+          // Allow all timer callbacks to complete
+          jest.runOnlyPendingTimers();
+          await Promise.resolve();
 
           const expectedCalls = shouldRetry ? 3 : 1; // 3 retries for retryable errors
           expect(mockBLEManager.connect).toHaveBeenCalledTimes(expectedCalls);

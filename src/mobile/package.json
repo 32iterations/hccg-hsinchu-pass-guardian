@@ -20,7 +20,14 @@
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
-      "react-native": "<rootDir>/tests/__mocks__/react-native.js"
+      "react-native$": "<rootDir>/tests/__mocks__/react-native.js",
+      "react-native-keychain": "<rootDir>/tests/__mocks__/react-native-keychain.js",
+      "react-native-ble-manager": "<rootDir>/tests/__mocks__/react-native-ble-manager.js",
+      "react-native-permissions": "<rootDir>/tests/__mocks__/react-native-permissions.js",
+      "react-native-device-info": "<rootDir>/tests/__mocks__/react-native-device-info.js",
+      "@react-native-async-storage/async-storage": "<rootDir>/tests/__mocks__/react-native-async-storage.js",
+      "@react-native-community/geolocation": "<rootDir>/tests/__mocks__/@react-native-community__geolocation.js",
+      "react-native-push-notification": "<rootDir>/tests/__mocks__/react-native-push-notification.js"
     },
     "testPathIgnorePatterns": [
       "/node_modules/"

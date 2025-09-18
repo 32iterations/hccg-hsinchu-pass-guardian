@@ -2,7 +2,14 @@ export enum UserRole {
   GUEST = 'guest',
   MEMBER = 'member',
   VERIFIED = 'verified',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  // Console RBAC roles
+  CASE_WORKER = 'case_worker',
+  SOCIAL_WORKER = 'social_worker',
+  VOLUNTEER_COORDINATOR = 'volunteer_coordinator',
+  EXTERNAL_AUDITOR = 'external_auditor',
+  FAMILY_MEMBER = 'family_member',
+  CASE_MANAGER = 'case_manager'
 }
 
 export type GuardianTab = 'family' | 'volunteer' | 'apply';
@@ -12,6 +19,9 @@ export interface User {
   email: string;
   name?: string;
   role: UserRole;
+  roles?: UserRole[];
+  permissions?: string[];
+  clearanceLevel?: 'public' | 'restricted' | 'confidential' | 'audit_only';
   verificationStatus?: {
     isVerified: boolean;
     verifiedAt?: string;
@@ -140,6 +150,63 @@ export interface EmptyStateConfig {
   saveDraft?: {
     text: string;
   };
+}
+
+// Console RBAC types
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
+}
+
+export interface RolePermissions {
+  role: UserRole;
+  permissions: string[];
+  clearanceLevel: 'public' | 'restricted' | 'confidential' | 'audit_only';
+}
+
+export interface FieldAccessControl {
+  field: string;
+  accessLevel: 'public' | 'restricted' | 'confidential' | 'audit_only';
+  allowedRoles: UserRole[];
+  reason?: string;
+}
+
+export interface WorkflowState {
+  current: string;
+  allowed: string[];
+  transitions: Record<string, string[]>;
+}
+
+export interface AuditEntry {
+  id: string;
+  userId: string;
+  action: string;
+  resource?: string;
+  resourceId?: string;
+  timestamp: string;
+  result: 'success' | 'failure' | 'denied';
+  watermark?: string;
+  previousHash?: string;
+}
+
+export interface CaseData {
+  id: string;
+  title: string;
+  status: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  sensitivityLevel: 'public' | 'restricted' | 'confidential';
+  assignedWorker?: string;
+  createdBy: string;
+  personalData?: Record<string, any>;
+  locationData?: Array<{
+    lat: number;
+    lng: number;
+    timestamp: string;
+  }>;
+  workflow?: WorkflowState;
   downloadSection?: {
     title: string;
     files: Array<{

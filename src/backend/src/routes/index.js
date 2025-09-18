@@ -4,10 +4,13 @@ const { authMiddleware } = require('../middleware/shared');
 // Import route modules
 const rbacRoutes = require('./rbac');
 const casesRoutes = require('./cases');
+const casesAdditionalRoutes = require('./cases-additional');
 const mydataRoutes = require('./mydata');
 const kpiRoutes = require('./kpi');
+const kpiEnhancedRoutes = require('./kpi-enhanced');
 const deviceBindingRoutes = require('./device-binding');
 const bleScannerRoutes = require('./ble-scanner');
+const p4RbacRoutes = require('./p4-rbac-endpoints');
 // const mydataEnhancedRoutes = require('./mydata-enhanced'); // Commented out until file exists
 
 const router = express.Router();
@@ -18,10 +21,13 @@ const API_VERSION = '/api/v1';
 // Mount route modules
 router.use(`${API_VERSION}/rbac`, rbacRoutes);
 router.use(`${API_VERSION}/cases`, casesRoutes);
+router.use(`${API_VERSION}/cases`, casesAdditionalRoutes); // Additional case endpoints
 router.use(`${API_VERSION}/mydata`, mydataRoutes);
 router.use(`${API_VERSION}/kpi`, kpiRoutes);
+router.use(`${API_VERSION}/kpi`, kpiEnhancedRoutes); // Enhanced KPI endpoints
 router.use(`${API_VERSION}/devices`, deviceBindingRoutes);
 router.use(`${API_VERSION}/ble`, bleScannerRoutes);
+router.use(`${API_VERSION}`, p4RbacRoutes); // P4 RBAC validation endpoints
 // router.use(`${API_VERSION}/mydata-enhanced`, mydataEnhancedRoutes); // Commented out until file exists
 
 // Health check endpoint
@@ -78,13 +84,15 @@ router.get(`${API_VERSION}/test/user-info`,
   });
 });
 
-router.get(`${API_VERSION}/test/error`, (req, res, next) => {
+router.get(`${API_VERSION}/test/error`, authMiddleware.authenticate(), (req, res, next) => {
+  // Mock user is already available from auth middleware
   const error = new Error('Test error for middleware testing');
   error.requestId = req.requestId;
   throw error;
 });
 
-router.get(`${API_VERSION}/test/database-error`, (req, res, next) => {
+router.get(`${API_VERSION}/test/database-error`, authMiddleware.authenticate(), (req, res, next) => {
+  // Mock user is already available from auth middleware
   const error = new Error('Database connection failed');
   error.name = 'DatabaseError';
   error.requestId = req.requestId;

@@ -8,8 +8,11 @@
  * - BLE background scanning capabilities under real conditions
  */
 
+// Import BLE service and dependencies
 const { BLEBackgroundService } = require('../../src/mobile/src/services/BLEBackgroundService');
-const Platform = require('react-native').Platform;
+
+// Import React Native mocks
+const { Platform } = require('react-native');
 const BleManager = require('react-native-ble-manager');
 const {
   PERMISSIONS,
@@ -19,6 +22,9 @@ const {
   requestMultiple
 } = require('react-native-permissions');
 const DeviceInfo = require('react-native-device-info');
+
+// Mock global BleManager for tests
+global.BleManager = BleManager;
 
 describe('P2 志工BLE Production Validation', () => {
   let bleService;
@@ -171,22 +177,20 @@ describe('P2 志工BLE Production Validation', () => {
         rssi: -75,
         timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:(00|05|10|15|20|25|30|35|40|45|50|55):00\.000Z$/), // 5-min rounded
         anonymousVolunteerId: expect.stringMatching(/^[a-f0-9-]{36}$/),
-
-        // MUST NOT contain any location data
-        gridSquare: null,
-        latitude: undefined,
-        longitude: undefined,
-        location: undefined,
-        gpsCoordinates: undefined,
-        approximateLocation: undefined,
-
-        // MUST NOT contain any PII
-        originalMacAddress: undefined,
-        deviceName: undefined,
-        localName: undefined,
-        advertising: undefined,
-        services: undefined
+        gridSquare: null
       }));
+
+      // Verify NO PII fields are present
+      const piiFields = [
+        'id', 'name', 'localName', 'advertising', 'services', 'characteristics',
+        'originalMacAddress', 'deviceName', 'manufacturerData', 'serviceData',
+        'personalInformation', 'identifiableData', 'rawDevice', 'latitude',
+        'longitude', 'location', 'gpsCoordinates', 'approximateLocation'
+      ];
+
+      for (const field of piiFields) {
+        expect(volunteerHit).not.toHaveProperty(field);
+      }
 
       // Verify strict anonymization
       expect(Object.keys(volunteerHit)).not.toContain('id');
@@ -475,9 +479,9 @@ describe('P2 志工BLE Production Validation', () => {
       const dailySalt = await bleService.getDailySalt(); // Should rotate daily
 
       // Act
-      const hash1 = await bleService.createDeviceHash(testDevice.id, dailySalt);
-      const hash2 = await bleService.createDeviceHash(testDevice.id, dailySalt);
-      const hash3 = await bleService.createDeviceHash(testDevice.id, 'different-salt');
+      const hash1 = bleService.createDeviceHash(testDevice.id, dailySalt);
+      const hash2 = bleService.createDeviceHash(testDevice.id, dailySalt);
+      const hash3 = bleService.createDeviceHash(testDevice.id, 'different-salt');
 
       // Assert
       expect(hash1).toBe(hash2); // Same device, same salt = same hash
@@ -598,9 +602,11 @@ describe('P2 志工BLE Production Validation', () => {
       ];
 
       for (const scenario of batteryScenarios) {
-        // Mock battery state
+        // Mock battery state - both global and imported DeviceInfo
         DeviceInfo.getBatteryLevel.mockResolvedValue(scenario.level);
         DeviceInfo.isCharging.mockResolvedValue(scenario.charging);
+        global.DeviceInfo.getBatteryLevel.mockResolvedValue(scenario.level);
+        global.DeviceInfo.isCharging.mockResolvedValue(scenario.charging);
 
         // Act
         await bleService.optimizeScanningForBattery();
