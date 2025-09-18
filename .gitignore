@@ -1,70 +1,100 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# AI Development Tools
-# Exclude runtime configurations
-.claude/
-.claude-flow/
-.mcp.json
-claude-flow.config.json
-claude-flow
-claude-flow.bat
-claude-flow.ps1
-CLAUDE.md
-.policy/CLAUDE.md
-ACCEPTANCE_CHECKLIST.md
+# Testing & Coverage
+coverage/
+*.lcov
+.nyc_output/
 
-# Swarm coordination runtime files
-.swarm/
-.hive-mind/
+# Production builds
+build/
+dist/
+*.tsbuildinfo
 
-# Memory and session data (runtime)
-memory/claude-flow-data.json
-memory/sessions/*
-!memory/sessions/README.md
-memory/agents/*
-!memory/agents/README.md
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Coordination runtime data
-coordination/memory_bank/*
-coordination/subtasks/*
-coordination/orchestration/*
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
 
-# Database files (runtime)
-*.db
-*.db-journal
-*.db-wal
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Firebase credentials (IMPORTANT - Never commit these!)
+config/firebase-admin.json
+google-services.json
+GoogleService-Info.plist
+*.serviceAccountKey.json
+firebase-debug.log
+.firebase/
+
+# Mobile builds
+mobile/HsinchuPassGuardian/android/app/build/
+mobile/HsinchuPassGuardian/android/build/
+mobile/HsinchuPassGuardian/android/.gradle/
+mobile/HsinchuPassGuardian/android/local.properties
+mobile/HsinchuPassGuardian/ios/build/
+mobile/HsinchuPassGuardian/ios/Pods/
+mobile/HsinchuPassGuardian/apk-output/
+mobile/HsinchuPassGuardian/build-logs/
+*.apk
+*.aab
+*.ipa
+*.keystore
+!debug.keystore
+
+# React Native
+.expo/
+.expo-shared/
+*.jsbundle
+.metro-health-check*
+.bundle/
+
+# Logs
+logs/
+*.log
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Backend specific
+backend/logs/
+backend/uploads/
+backend/*.log
+backend/.env
+
+# Database
 *.sqlite
-*.sqlite-journal
-*.sqlite-wal
-
-# AI prompt files (runtime)
-hive-mind-prompt-*.txt
-
-# Additional Claude Code artifacts
-.claude-code/
-claude-*.log
-*-claude-*.tmp
-
-# Claude Flow generated files
-.claude/settings.local.json
-.mcp.json
-claude-flow.config.json
-.swarm/
-.hive-mind/
-memory/claude-flow-data.json
-memory/sessions/*
-!memory/sessions/README.md
-memory/agents/*
-!memory/agents/README.md
-coordination/memory_bank/*
-coordination/subtasks/*
-coordination/orchestration/*
+*.sqlite3
 *.db
-*.db-journal
-*.db-wal
-*.sqlite
-*.sqlite-journal
-*.sqlite-wal
-claude-flow
-claude-flow.bat
-claude-flow.ps1
-hive-mind-prompt-*.txt
+
+# Package lock files (optional - you may want to keep these)
+# package-lock.json
+# yarn.lock
+
+# Misc
+.cache/
+.parcel-cache/
+.next/
+out/
