@@ -1,6 +1,6 @@
 
-# Claude Code & AI Development Tools (preserving academic reproducibility)
-# Exclude runtime configurations but keep reproducible configs
+# AI Development Tools
+# Exclude runtime configurations
 .claude/
 .claude-flow/
 .mcp.json
@@ -8,6 +8,9 @@ claude-flow.config.json
 claude-flow
 claude-flow.bat
 claude-flow.ps1
+CLAUDE.md
+.policy/CLAUDE.md
+ACCEPTANCE_CHECKLIST.md
 
 # Swarm coordination runtime files
 .swarm/
