@@ -1,15 +1,14 @@
 // API Configuration
-export const API_BASE_URL = 'http://147.251.115.54:3000';
+export const API_BASE_URL = 'http://147.251.115.54:3001';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {
-  // Add your Firebase configuration here
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyDR82O3a-BWOSkJXHBMUMSzquYoz62pBVc',
+  authDomain: 'hccg-hsinchu-pass-guardian.firebaseapp.com',
+  projectId: 'hccg-hsinchu-pass-guardian',
+  storageBucket: 'hccg-hsinchu-pass-guardian.firebasestorage.app',
+  messagingSenderId: '484527168113',
+  appId: '1:484527168113:ios:ee813420b0623bc5a119d0',
 };
 
 // Geofencing Configuration

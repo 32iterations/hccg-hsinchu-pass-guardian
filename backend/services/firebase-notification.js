@@ -1,27 +1,28 @@
 const admin = require('firebase-admin');
+const path = require('path');
 
 // Initialize Firebase Admin SDK
-// In production, use service account credentials
 let firebaseInitialized = false;
 
 function initializeFirebase() {
   if (firebaseInitialized) return;
 
   try {
-    // For production, load service account from environment or file
-    // const serviceAccount = require('./path-to-service-account.json');
+    // Load service account credentials
+    const serviceAccountPath = path.join(__dirname, '../config/firebase-service-account.json');
+    const serviceAccount = require(serviceAccountPath);
 
-    // Initialize with mock config for testing
-    // In production, uncomment and configure properly:
-    // admin.initializeApp({
-    //   credential: admin.credential.cert(serviceAccount),
-    //   projectId: 'hsinchu-pass-guardian',
-    // });
+    // Initialize Firebase Admin SDK
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: 'hccg-hsinchu-pass-guardian',
+    });
 
-    console.log('Firebase Admin SDK initialized (mock mode)');
+    console.log('🔥 Firebase Admin SDK initialized successfully');
     firebaseInitialized = true;
   } catch (error) {
-    console.error('Failed to initialize Firebase:', error);
+    console.error('❌ Failed to initialize Firebase:', error);
+    console.log('📝 Running in mock mode - notifications will be logged only');
   }
 }
 
@@ -86,16 +87,19 @@ async function sendNotification(token, notification) {
       },
     };
 
-    // In production, uncomment to actually send:
-    // const response = await admin.messaging().send(message);
-    // console.log('Successfully sent message:', response);
-
-    // Mock response for testing
-    console.log('Mock notification sent:', {
-      to: token.substring(0, 10) + '...',
-      title: notification.title,
-      body: notification.body,
-    });
+    if (firebaseInitialized && admin.apps.length > 0) {
+      // Actually send the notification
+      const response = await admin.messaging().send(message);
+      console.log('✅ Successfully sent notification:', response);
+      return true;
+    } else {
+      // Mock response for testing when Firebase not available
+      console.log('📱 Mock notification sent:', {
+        to: token.substring(0, 10) + '...',
+        title: notification.title,
+        body: notification.body,
+      });
+    }
 
     return true;
   } catch (error) {
@@ -179,16 +183,19 @@ async function sendMulticast(tokens, notification) {
       tokens: tokens,
     };
 
-    // In production, uncomment:
-    // const response = await admin.messaging().sendMulticast(message);
-    // return {
-    //   success: response.successCount,
-    //   failed: response.failureCount,
-    // };
-
-    // Mock response
-    console.log(`Mock multicast sent to ${tokens.length} recipients`);
-    return { success: tokens.length, failed: 0 };
+    if (firebaseInitialized && admin.apps.length > 0) {
+      // Actually send multicast notification
+      const response = await admin.messaging().sendMulticast(message);
+      console.log(`✅ Multicast sent: ${response.successCount} success, ${response.failureCount} failed`);
+      return {
+        success: response.successCount,
+        failed: response.failureCount,
+      };
+    } else {
+      // Mock response
+      console.log(`📱 Mock multicast sent to ${tokens.length} recipients`);
+      return { success: tokens.length, failed: 0 };
+    }
   } catch (error) {
     console.error('Error sending multicast:', error);
     return { success: 0, failed: tokens.length };
