@@ -9,12 +9,16 @@ import {
   StatusBar,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import ApiService from '../services/api';
 import BLEService from '../services/BLEService';
+
+const { width } = Dimensions.get('window');
 
 const MainScreen = ({ navigation }: any) => {
   const [userName, setUserName] = useState('使用者');
@@ -142,7 +146,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '📡',
       description: '掃描附近的守護裝置',
       screen: 'BeaconScan',
-      color: '#4A90E2',
+      gradient: ['#667eea', '#764ba2'],
     },
     {
       id: 'map',
@@ -150,7 +154,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🗺️',
       description: '查看患者位置與軌跡',
       screen: 'Map',
-      color: '#4CAF50',
+      gradient: ['#f093fb', '#f5576c'],
     },
     {
       id: 'patients',
@@ -158,7 +162,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '👥',
       description: '管理守護對象資料',
       screen: 'Patients',
-      color: '#FF9800',
+      gradient: ['#fa709a', '#fee140'],
     },
     {
       id: 'alerts',
@@ -166,7 +170,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🚨',
       description: '查看歷史警報訊息',
       screen: 'Alerts',
-      color: '#F44336',
+      gradient: ['#30cfd0', '#330867'],
     },
     {
       id: 'geofence',
@@ -174,7 +178,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🎯',
       description: '設定安全區域',
       screen: 'Geofence',
-      color: '#9C27B0',
+      gradient: ['#a8edea', '#fed6e3'],
     },
     {
       id: 'settings',
@@ -182,7 +186,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '⚙️',
       description: '個人資料與偏好設定',
       screen: 'Settings',
-      color: '#607D8B',
+      gradient: ['#d299c2', '#fef9d7'],
     },
   ];
 
@@ -193,95 +197,172 @@ const MainScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
+      <StatusBar barStyle="light-content" backgroundColor="#667eea" />
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.header}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}>
+
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.greeting}>您好，{userName}</Text>
+            <Text style={styles.greeting}>您好，{userName} 👋</Text>
             <Text style={styles.role}>
-              {userRole === 'family' ? '家屬' : '志工'}
+              {userRole === 'family' ? '👨‍👩‍👧‍👦 家屬' : '🤝 志工'}
             </Text>
           </View>
+
           <View style={styles.headerRight}>
             <TouchableOpacity
               style={styles.notificationButton}
               onPress={() => navigation.navigate('Notifications')}>
-              <Text style={styles.notificationIcon}>🔔</Text>
-              {notificationCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>
-                    {notificationCount}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.glassButton}>
+                <Text style={styles.notificationIcon}>🔔</Text>
+                {notificationCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {notificationCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={handleLogout}>
-              <Text style={styles.logoutText}>登出</Text>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
+                style={styles.logoutGradient}>
+                <Text style={styles.logoutText}>登出</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Status Bar */}
-        <View style={styles.statusBar}>
-          <View style={styles.statusItem}>
-            <Text style={styles.statusLabel}>藍牙狀態</Text>
-            <Text style={styles.statusValue}>
-              {bleStatus === 'PoweredOn' ? '已開啟' : '未開啟'}
-            </Text>
+        {/* Modern Status Cards */}
+        <View style={styles.statusContainer}>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusIcon}>📶</Text>
+            <View>
+              <Text style={styles.statusLabel}>藍牙狀態</Text>
+              <Text style={styles.statusValue}>
+                {bleStatus === 'PoweredOn' ? '✅ 已開啟' : '❌ 未開啟'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.statusItem}>
-            <Text style={styles.statusLabel}>連線狀態</Text>
-            <Text style={styles.statusValue}>正常</Text>
+
+          <View style={styles.statusCard}>
+            <Text style={styles.statusIcon}>🌐</Text>
+            <View>
+              <Text style={styles.statusLabel}>連線狀態</Text>
+              <Text style={styles.statusValue}>✅ 正常</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
-      {/* Menu Grid */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Modern Menu Grid with Glass Cards */}
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+
         <View style={styles.menuGrid}>
           {filteredMenuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.menuItem}
+              style={styles.menuItemWrapper}
               onPress={() => navigation.navigate(item.screen)}
-              activeOpacity={0.8}>
-              <View
-                style={[styles.menuIconContainer, { backgroundColor: item.color }]}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-              </View>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuDescription}>{item.description}</Text>
+              activeOpacity={0.9}>
+              <LinearGradient
+                colors={item.gradient}
+                style={styles.menuItem}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}>
+                <View style={styles.menuContent}>
+                  <View style={styles.menuIconContainer}>
+                    <Text style={styles.menuIcon}>{item.icon}</Text>
+                  </View>
+                  <Text style={styles.menuTitle}>{item.title}</Text>
+                  <Text style={styles.menuDescription}>{item.description}</Text>
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsTitle}>今日統計</Text>
+        {/* Modern Stats Dashboard */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.9)']}
+          style={styles.statsContainer}>
+          <Text style={styles.statsTitle}>📊 今日統計</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              style={styles.statItem}>
               <Text style={styles.statValue}>3</Text>
               <Text style={styles.statLabel}>守護對象</Text>
-            </View>
-            <View style={styles.statItem}>
+            </LinearGradient>
+
+            <LinearGradient
+              colors={['#f093fb', '#f5576c']}
+              style={styles.statItem}>
               <Text style={styles.statValue}>15</Text>
               <Text style={styles.statLabel}>位置更新</Text>
-            </View>
-            <View style={styles.statItem}>
+            </LinearGradient>
+
+            <LinearGradient
+              colors={['#30cfd0', '#330867']}
+              style={styles.statItem}>
               <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>警報事件</Text>
-            </View>
+            </LinearGradient>
           </View>
+        </LinearGradient>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <Text style={styles.quickActionsTitle}>⚡ 快速操作</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity style={styles.quickActionButton}>
+              <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={styles.quickActionGradient}>
+                <Text style={styles.quickActionIcon}>🆘</Text>
+                <Text style={styles.quickActionText}>緊急求救</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionButton}>
+              <LinearGradient
+                colors={['#f093fb', '#f5576c']}
+                style={styles.quickActionGradient}>
+                <Text style={styles.quickActionIcon}>📍</Text>
+                <Text style={styles.quickActionText}>分享位置</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickActionButton}>
+              <LinearGradient
+                colors={['#30cfd0', '#330867']}
+                style={styles.quickActionGradient}>
+                <Text style={styles.quickActionIcon}>📞</Text>
+                <Text style={styles.quickActionText}>聯絡家屬</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </ScrollView>
 
       {isLoading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#667eea" />
+            <Text style={styles.loadingText}>處理中...</Text>
+          </View>
         </View>
       )}
     </View>
@@ -291,56 +372,66 @@ const MainScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    backgroundColor: '#4A90E2',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 20,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFF',
+    marginBottom: 4,
   },
   role: {
-    fontSize: 14,
-    color: '#E3F2FD',
-    marginTop: 2,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
   notificationButton: {
     position: 'relative',
-    marginRight: 15,
+  },
+  glassButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 15,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   notificationIcon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   notificationBadge: {
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#F44336',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    backgroundColor: '#ff4757',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
   notificationBadgeText: {
     color: '#FFF',
@@ -348,114 +439,179 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 20,
+    overflow: 'hidden',
+  },
+  logoutGradient: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   logoutText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
-  statusBar: {
+  statusContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 10,
-    padding: 10,
+    paddingHorizontal: 20,
+    gap: 15,
   },
-  statusItem: {
+  statusCard: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 15,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    gap: 10,
+  },
+  statusIcon: {
+    fontSize: 24,
   },
   statusLabel: {
     fontSize: 12,
-    color: '#E3F2FD',
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 2,
   },
   statusValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
-    marginTop: 2,
   },
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 20,
+  },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 10,
-    justifyContent: 'space-between',
+    padding: 15,
+    gap: 15,
+  },
+  menuItemWrapper: {
+    width: (width - 45) / 2,
+    height: 160,
   },
   menuItem: {
-    width: '48%',
-    backgroundColor: '#FFF',
-    borderRadius: 15,
+    flex: 1,
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
-    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  menuContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuIconContainer: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
   },
   menuIcon: {
-    fontSize: 30,
+    fontSize: 32,
   },
   menuTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 4,
   },
   menuDescription: {
     fontSize: 12,
-    color: '#999',
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
   },
   statsContainer: {
-    backgroundColor: '#FFF',
-    margin: 20,
-    marginTop: 5,
+    margin: 15,
+    borderRadius: 25,
     padding: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(102, 126, 234, 0.1)',
   },
   statsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    color: '#1a1a2e',
+    marginBottom: 20,
   },
   statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    gap: 10,
   },
   statItem: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 20,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#4A90E2',
+    color: '#FFF',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 5,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  quickActions: {
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  quickActionsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginBottom: 15,
+  },
+  quickActionButton: {
+    marginRight: 10,
+  },
+  quickActionGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 15,
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  quickActionIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  quickActionText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -466,6 +622,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#667eea',
+    fontWeight: '600',
   },
 });
 

@@ -8,9 +8,13 @@ import {
   Switch,
   Alert,
   TextInput,
+  Dimensions,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../services/api';
+
+const { width } = Dimensions.get('window');
 
 const SettingsScreen = ({ navigation }: any) => {
   const [userData, setUserData] = useState<any>({});
@@ -100,15 +104,32 @@ const SettingsScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
+      {/* 高質感漸層標題欄 */}
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.header}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}>
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <View style={styles.backButtonContainer}>
+            <Text style={styles.backButton}>←</Text>
+          </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>系統設定</Text>
-        <View style={{ width: 40 }} />
-      </View>
+        <View style={styles.titleContainer}>
+          <View style={styles.titleIconContainer}>
+            <Text style={styles.titleIcon}>⚙️</Text>
+          </View>
+          <Text style={styles.headerTitle}>系統設定</Text>
+        </View>
+        <View style={{ width: 50 }} />
+      </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      {/* 內容區域帶微妙陰影 */}
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -244,11 +265,12 @@ const SettingsScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>登出</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>登出</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -256,28 +278,92 @@ const SettingsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#6366F1',
-    paddingTop: 40,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 25,
+    paddingHorizontal: 25,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 8,
+    position: 'relative',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  backButtonContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   backButton: {
+    fontSize: 22,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  titleIcon: {
+    fontSize: 18,
+  },
+  headerTitle: {
     fontSize: 24,
-    color: '#FFF',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: '#fafbfc',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 5,
   },
   content: {
     flex: 1,
+    paddingTop: 20,
   },
   section: {
     marginTop: 20,

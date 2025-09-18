@@ -9,8 +9,12 @@ import {
   Alert,
   TextInput,
   Modal,
+  Dimensions,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import ApiService from '../services/api';
+
+const { width } = Dimensions.get('window');
 
 interface Patient {
   id: string;
@@ -84,71 +88,132 @@ const PatientsScreen = ({ navigation }: any) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'safe': return '#4CAF50';
-      case 'warning': return '#FFC107';
-      case 'danger': return '#F44336';
-      default: return '#999';
+      case 'safe': return ['#10b981', '#34d399'];
+      case 'warning': return ['#f59e0b', '#fbbf24'];
+      case 'danger': return ['#ef4444', '#f87171'];
+      default: return ['#6b7280', '#9ca3af'];
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'safe': return '安全';
-      case 'warning': return '注意';
-      case 'danger': return '危險';
-      default: return '未知';
+      case 'safe': return '✅ 安全';
+      case 'warning': return '⚠️ 注意';
+      case 'danger': return '🚨 危險';
+      default: return '❓ 未知';
     }
   };
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>載入中...</Text>
-      </View>
+      <LinearGradient colors={['#fa709a', '#fee140']} style={styles.loadingContainer}>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#fa709a" />
+          <Text style={styles.loadingText}>載入中...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#fa709a', '#fee140']}
+        style={styles.header}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
+          <View style={styles.backButtonContainer}>
+            <Text style={styles.backButton}>←</Text>
+          </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>患者管理</Text>
+        <Text style={styles.headerTitle}>👥 患者管理</Text>
         <TouchableOpacity onPress={() => setIsModalVisible(true)}>
-          <Text style={styles.addButton}>+</Text>
+          <View style={styles.addButtonContainer}>
+            <Text style={styles.addButton}>+</Text>
+          </View>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {patients.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>尚無患者資料</Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => setIsModalVisible(true)}>
-              <Text style={styles.emptyButtonText}>新增患者</Text>
-            </TouchableOpacity>
+            <LinearGradient
+              colors={['rgba(250, 112, 154, 0.1)', 'rgba(254, 225, 64, 0.1)']}
+              style={styles.emptyCard}>
+              <Text style={styles.emptyIcon}>👥</Text>
+              <Text style={styles.emptyText}>尚無患者資料</Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(true)}>
+                <LinearGradient
+                  colors={['#fa709a', '#fee140']}
+                  style={styles.emptyButton}>
+                  <Text style={styles.emptyButtonText}>新增患者</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
         ) : (
           patients.map(patient => (
             <TouchableOpacity
               key={patient.id}
-              style={styles.patientCard}
-              onPress={() => navigation.navigate('Map', { patientId: patient.id })}>
-              <View style={styles.patientHeader}>
-                <Text style={styles.patientName}>{patient.name}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(patient.status) }]}>
-                  <Text style={styles.statusText}>{getStatusText(patient.status)}</Text>
+              onPress={() => navigation.navigate('Map', { patientId: patient.id })}
+              activeOpacity={0.9}>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.9)']}
+                style={styles.patientCard}>
+                <View style={styles.patientHeader}>
+                  <View>
+                    <Text style={styles.patientName}>{patient.name}</Text>
+                    <Text style={styles.patientAge}>🎂 {patient.age} 歲</Text>
+                  </View>
+                  <LinearGradient
+                    colors={getStatusColor(patient.status)}
+                    style={styles.statusBadge}>
+                    <Text style={styles.statusText}>{getStatusText(patient.status)}</Text>
+                  </LinearGradient>
                 </View>
-              </View>
-              <Text style={styles.patientInfo}>年齡: {patient.age} 歲</Text>
-              <Text style={styles.patientInfo}>地址: {patient.address}</Text>
-              <Text style={styles.patientInfo}>緊急聯絡: {patient.emergency_contact}</Text>
-              {patient.beacon_id && (
-                <Text style={styles.patientInfo}>信標: {patient.beacon_id}</Text>
-              )}
+
+                <View style={styles.patientDetails}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailIcon}>🏠</Text>
+                    <Text style={styles.detailText}>{patient.address || '未設定地址'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailIcon}>📞</Text>
+                    <Text style={styles.detailText}>{patient.emergency_contact}</Text>
+                  </View>
+                  {patient.beacon_id && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailIcon}>📡</Text>
+                      <Text style={styles.detailText}>信標: {patient.beacon_id}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity style={styles.actionButtonWrapper}>
+                    <LinearGradient
+                      colors={['#667eea', '#764ba2']}
+                      style={styles.actionButton}>
+                      <Text style={styles.actionButtonText}>📍 定位</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButtonWrapper}>
+                    <LinearGradient
+                      colors={['#f093fb', '#f5576c']}
+                      style={styles.actionButton}>
+                      <Text style={styles.actionButtonText}>📞 通話</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButtonWrapper}>
+                    <LinearGradient
+                      colors={['#30cfd0', '#330867']}
+                      style={styles.actionButton}>
+                      <Text style={styles.actionButtonText}>📝 編輯</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
           ))
         )}
@@ -160,60 +225,92 @@ const PatientsScreen = ({ navigation }: any) => {
         visible={isModalVisible}
         onRequestClose={() => setIsModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>新增患者</Text>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.98)', 'rgba(255,255,255,0.95)']}
+            style={styles.modalContent}>
+            <LinearGradient
+              colors={['#fa709a', '#fee140']}
+              style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>✨ 新增患者</Text>
+            </LinearGradient>
 
-            <TextInput
-              style={styles.input}
-              placeholder="姓名 *"
-              value={newPatient.name}
-              onChangeText={(text) => setNewPatient({...newPatient, name: text})}
-            />
+            <View style={styles.modalForm}>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>👤</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="姓名 *"
+                  value={newPatient.name}
+                  onChangeText={(text) => setNewPatient({...newPatient, name: text})}
+                  placeholderTextColor="rgba(0,0,0,0.4)"
+                />
+              </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="年齡 *"
-              value={newPatient.age}
-              onChangeText={(text) => setNewPatient({...newPatient, age: text})}
-              keyboardType="numeric"
-            />
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>🎂</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="年齡 *"
+                  value={newPatient.age}
+                  onChangeText={(text) => setNewPatient({...newPatient, age: text})}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(0,0,0,0.4)"
+                />
+              </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="地址"
-              value={newPatient.address}
-              onChangeText={(text) => setNewPatient({...newPatient, address: text})}
-            />
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>🏠</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="地址"
+                  value={newPatient.address}
+                  onChangeText={(text) => setNewPatient({...newPatient, address: text})}
+                  placeholderTextColor="rgba(0,0,0,0.4)"
+                />
+              </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="緊急聯絡電話 *"
-              value={newPatient.emergency_contact}
-              onChangeText={(text) => setNewPatient({...newPatient, emergency_contact: text})}
-              keyboardType="phone-pad"
-            />
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>📞</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="緊急聯絡電話 *"
+                  value={newPatient.emergency_contact}
+                  onChangeText={(text) => setNewPatient({...newPatient, emergency_contact: text})}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="rgba(0,0,0,0.4)"
+                />
+              </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="信標ID (選填)"
-              value={newPatient.beacon_id}
-              onChangeText={(text) => setNewPatient({...newPatient, beacon_id: text})}
-            />
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>📡</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="信標ID (選填)"
+                  value={newPatient.beacon_id}
+                  onChangeText={(text) => setNewPatient({...newPatient, beacon_id: text})}
+                  placeholderTextColor="rgba(0,0,0,0.4)"
+                />
+              </View>
+            </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setIsModalVisible(false)}>
-                <Text style={styles.buttonText}>取消</Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <LinearGradient
+                  colors={['#6b7280', '#9ca3af']}
+                  style={styles.button}>
+                  <Text style={styles.buttonText}>取消</Text>
+                </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.button, styles.confirmButton]}
-                onPress={addPatient}>
-                <Text style={styles.buttonText}>確定</Text>
+              <TouchableOpacity onPress={addPatient}>
+                <LinearGradient
+                  colors={['#fa709a', '#fee140']}
+                  style={styles.button}>
+                  <Text style={styles.buttonText}>確定</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-          </View>
+          </LinearGradient>
         </View>
       </Modal>
     </View>
@@ -223,29 +320,54 @@ const PatientsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#4A90E2',
     paddingTop: 40,
-    paddingBottom: 15,
+    paddingBottom: 20,
     paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#fa709a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FFF',
+  },
+  backButtonContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 15,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   backButton: {
     fontSize: 24,
     color: '#FFF',
   },
+  addButtonContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 15,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   addButton: {
-    fontSize: 28,
+    fontSize: 24,
     color: '#FFF',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
@@ -255,71 +377,152 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+  },
+  loadingCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#fa709a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#fa709a',
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 60,
   },
-  emptyText: {
-    fontSize: 18,
-    color: '#999',
+  emptyCard: {
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 112, 154, 0.2)',
+    width: width - 30,
+  },
+  emptyIcon: {
+    fontSize: 80,
     marginBottom: 20,
   },
+  emptyText: {
+    fontSize: 20,
+    color: '#fa709a',
+    marginBottom: 30,
+    fontWeight: '600',
+  },
   emptyButton: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 15,
+    shadowColor: '#fa709a',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   emptyButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   patientCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderRadius: 25,
+    padding: 20,
+    marginBottom: 15,
+    shadowColor: '#fa709a',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 112, 154, 0.1)',
   },
   patientHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   patientName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 4,
+  },
+  patientAge: {
+    fontSize: 15,
+    color: '#fa709a',
+    fontWeight: '600',
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
     borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   statusText: {
     color: '#FFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  patientInfo: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
+  patientDetails: {
+    marginBottom: 15,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detailIcon: {
+    fontSize: 18,
+    marginRight: 12,
+    width: 24,
+  },
+  detailText: {
+    fontSize: 15,
+    color: '#4a5568',
+    flex: 1,
+    fontWeight: '500',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(250, 112, 154, 0.1)',
+    gap: 10,
+  },
+  actionButtonWrapper: {
+    flex: 1,
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  actionButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    color: '#FFF',
+    fontWeight: '700',
   },
   modalContainer: {
     flex: 1,
@@ -328,46 +531,71 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
+    width: width - 40,
+    borderRadius: 25,
+    overflow: 'hidden',
+    shadowColor: '#fa709a',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  modalHeader: {
     padding: 20,
-    width: '85%',
+    alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
+    color: '#FFF',
+  },
+  modalForm: {
+    padding: 20,
+    paddingTop: 10,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(250, 112, 154, 0.05)',
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 112, 154, 0.1)',
+  },
+  inputIcon: {
+    fontSize: 20,
+    marginRight: 12,
+    width: 24,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
+    flex: 1,
+    paddingVertical: 15,
     fontSize: 16,
+    color: '#1a1a2e',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 20,
+    padding: 20,
+    gap: 15,
   },
   button: {
     paddingHorizontal: 30,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  cancelButton: {
-    backgroundColor: '#999',
-  },
-  confirmButton: {
-    backgroundColor: '#4A90E2',
+    paddingVertical: 15,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    minWidth: 100,
+    alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 
