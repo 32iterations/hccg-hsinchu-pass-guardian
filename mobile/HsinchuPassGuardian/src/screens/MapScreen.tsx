@@ -325,7 +325,7 @@ const MapScreen = ({ navigation, route }: any) => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#667eea" />
         <Text style={styles.loadingText}>載入地圖中...</Text>
       </View>
     );
@@ -353,7 +353,7 @@ const MapScreen = ({ navigation, route }: any) => {
             coordinate={currentLocation}
             title="我的位置"
             description="目前位置"
-            pinColor="#4A90E2"
+            pinColor="#667eea"
           />
         )}
 
@@ -375,8 +375,8 @@ const MapScreen = ({ navigation, route }: any) => {
             key={fence.id}
             center={fence.center}
             radius={fence.radius}
-            fillColor="rgba(74, 144, 226, 0.2)"
-            strokeColor="rgba(74, 144, 226, 0.5)"
+            fillColor="rgba(102, 126, 234, 0.2)"
+            strokeColor="rgba(102, 126, 234, 0.5)"
             strokeWidth={2}
           />
         ))}
@@ -385,7 +385,7 @@ const MapScreen = ({ navigation, route }: any) => {
         {locationHistory.length > 1 && (
           <Polyline
             coordinates={locationHistory}
-            strokeColor="#FF6B6B"
+            strokeColor="#667eea"
             strokeWidth={3}
           />
         )}
@@ -461,20 +461,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   controlButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#667eea',
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderRadius: 5,
     marginBottom: 10,
   },
   activeButton: {
-    backgroundColor: '#F44336',
+    backgroundColor: '#764ba2',
   },
   controlButtonText: {
     color: '#FFF',
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

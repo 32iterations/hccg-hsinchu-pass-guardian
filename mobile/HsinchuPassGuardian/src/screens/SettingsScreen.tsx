@@ -202,8 +202,8 @@ const SettingsScreen = ({ navigation }: any) => {
                   setNotifications(value);
                   saveSettings();
                 }}
-                trackColor={{ false: '#CBD5E0', true: '#818CF8' }}
-                thumbColor={notifications ? '#6366F1' : '#F3F4F6'}
+                trackColor={{ false: '#CBD5E0', true: '#667eea' }}
+                thumbColor={notifications ? '#667eea' : '#F3F4F6'}
               />
             </View>
 
@@ -218,8 +218,8 @@ const SettingsScreen = ({ navigation }: any) => {
                   setLocationTracking(value);
                   saveSettings();
                 }}
-                trackColor={{ false: '#CBD5E0', true: '#818CF8' }}
-                thumbColor={locationTracking ? '#6366F1' : '#F3F4F6'}
+                trackColor={{ false: '#CBD5E0', true: '#667eea' }}
+                thumbColor={locationTracking ? '#667eea' : '#F3F4F6'}
               />
             </View>
 
@@ -234,8 +234,8 @@ const SettingsScreen = ({ navigation }: any) => {
                   setAutoSOS(value);
                   saveSettings();
                 }}
-                trackColor={{ false: '#CBD5E0', true: '#818CF8' }}
-                thumbColor={autoSOS ? '#6366F1' : '#F3F4F6'}
+                trackColor={{ false: '#CBD5E0', true: '#667eea' }}
+                thumbColor={autoSOS ? '#667eea' : '#F3F4F6'}
               />
             </View>
           </View>
@@ -260,7 +260,7 @@ const SettingsScreen = ({ navigation }: any) => {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionButton}>
-            <Text style={styles.optionText}>版本資訊 v1.0.7</Text>
+            <Text style={styles.optionText}>版本資訊 v1.2.0</Text>
             <Text style={styles.optionArrow}>→</Text>
           </TouchableOpacity>
         </View>
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     fontSize: 14,
-    color: '#6366F1',
+    color: '#667eea',
     fontWeight: '600',
   },
   profileCard: {
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   saveButton: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#667eea',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',

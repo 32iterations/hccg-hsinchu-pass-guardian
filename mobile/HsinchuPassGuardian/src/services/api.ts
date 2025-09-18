@@ -261,6 +261,129 @@ class ApiService {
     }
   }
 
+  async markAlertRead(alertId: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/alerts/${alertId}/read`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || '標記警報失敗' };
+      }
+    } catch (error) {
+      console.error('Mark alert read error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  // Profile management endpoints
+  async updateProfile(name: string, phone: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/profile`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ name, phone }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, user: data.user };
+      } else {
+        return { success: false, error: data.error || '更新資料失敗' };
+      }
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  // Emergency endpoints
+  async sendEmergencyAlert() {
+    try {
+      const response = await fetch(`${API_URL}/api/emergency/sos`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          source: 'manual'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || '緊急求救發送失敗' };
+      }
+    } catch (error) {
+      console.error('Send emergency alert error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  async shareCurrentLocation() {
+    try {
+      // Get current location first
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      const response = await fetch(`${API_URL}/api/location/share`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          latitude,
+          longitude,
+          timestamp: new Date().toISOString()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || '分享位置失敗' };
+      }
+    } catch (error) {
+      console.error('Share location error:', error);
+      return { success: false, error: '無法取得位置或網路連線錯誤' };
+    }
+  }
+
+  async getEmergencyContacts() {
+    try {
+      const response = await fetch(`${API_URL}/api/emergency/contacts`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, contacts: data.contacts };
+      } else {
+        return { success: false, error: data.error || '無法取得緊急聯絡人' };
+      }
+    } catch (error) {
+      console.error('Get emergency contacts error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
   // Push notification endpoints
   async updateFCMToken(fcmToken: string) {
     try {

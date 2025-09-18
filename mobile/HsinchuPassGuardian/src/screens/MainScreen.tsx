@@ -113,6 +113,94 @@ const MainScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleEmergencyCall = async () => {
+    Alert.alert(
+      '緊急求救',
+      '確定要發送緊急求救訊號嗎？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '確定',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              const result = await ApiService.sendEmergencyAlert();
+              if (result.success) {
+                Alert.alert('成功', '緊急求救訊號已發送！');
+              } else {
+                Alert.alert('錯誤', '發送失敗，請重試');
+              }
+            } catch (error) {
+              Alert.alert('錯誤', '發送緊急求救失敗');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleShareLocation = async () => {
+    setIsLoading(true);
+    try {
+      const result = await ApiService.shareCurrentLocation();
+      if (result.success) {
+        Alert.alert('成功', '位置已分享給所有聯絡人');
+      } else {
+        Alert.alert('錯誤', '分享位置失敗');
+      }
+    } catch (error) {
+      Alert.alert('錯誤', '分享位置失敗');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleContactFamily = async () => {
+    try {
+      const result = await ApiService.getEmergencyContacts();
+      if (result.success && result.contacts?.length > 0) {
+        const contactOptions = result.contacts.map((contact: any, index: number) => ({
+          text: `${contact.name} (${contact.phone})`,
+          onPress: () => {
+            Alert.alert(
+              '聯絡確認',
+              `確定要撥打給 ${contact.name}？`,
+              [
+                { text: '取消', style: 'cancel' },
+                {
+                  text: '撥打',
+                  onPress: () => {
+                    // 使用 Linking 來撥打電話
+                    const phoneUrl = `tel:${contact.phone}`;
+                    require('react-native').Linking.openURL(phoneUrl).catch(() => {
+                      Alert.alert('錯誤', '無法撥打電話');
+                    });
+                  },
+                },
+              ]
+            );
+          },
+        }));
+
+        Alert.alert(
+          '選擇聯絡人',
+          '請選擇要聯絡的家屬：',
+          [
+            ...contactOptions,
+            { text: '取消', style: 'cancel' }
+          ]
+        );
+      } else {
+        Alert.alert('提示', '尚未設定緊急聯絡人');
+      }
+    } catch (error) {
+      Alert.alert('錯誤', '獲取聯絡人失敗');
+    }
+  };
+
   const handleLogout = async () => {
     Alert.alert(
       '登出確認',
@@ -154,7 +242,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🗺️',
       description: '查看患者位置與軌跡',
       screen: 'Map',
-      gradient: ['#f093fb', '#f5576c'],
+      gradient: ['#667eea', '#764ba2'],
     },
     {
       id: 'patients',
@@ -162,7 +250,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '👥',
       description: '管理守護對象資料',
       screen: 'Patients',
-      gradient: ['#fa709a', '#fee140'],
+      gradient: ['#667eea', '#764ba2'],
     },
     {
       id: 'alerts',
@@ -170,7 +258,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🚨',
       description: '查看歷史警報訊息',
       screen: 'Alerts',
-      gradient: ['#30cfd0', '#330867'],
+      gradient: ['#667eea', '#764ba2'],
     },
     {
       id: 'geofence',
@@ -178,7 +266,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '🎯',
       description: '設定安全區域',
       screen: 'Geofence',
-      gradient: ['#a8edea', '#fed6e3'],
+      gradient: ['#667eea', '#764ba2'],
     },
     {
       id: 'settings',
@@ -186,7 +274,7 @@ const MainScreen = ({ navigation }: any) => {
       icon: '⚙️',
       description: '個人資料與偏好設定',
       screen: 'Settings',
-      gradient: ['#d299c2', '#fef9d7'],
+      gradient: ['#667eea', '#764ba2'],
     },
   ];
 
@@ -308,14 +396,14 @@ const MainScreen = ({ navigation }: any) => {
             </LinearGradient>
 
             <LinearGradient
-              colors={['#f093fb', '#f5576c']}
+              colors={['#667eea', '#764ba2']}
               style={styles.statItem}>
               <Text style={styles.statValue}>15</Text>
               <Text style={styles.statLabel}>位置更新</Text>
             </LinearGradient>
 
             <LinearGradient
-              colors={['#30cfd0', '#330867']}
+              colors={['#667eea', '#764ba2']}
               style={styles.statItem}>
               <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>警報事件</Text>
@@ -327,7 +415,10 @@ const MainScreen = ({ navigation }: any) => {
         <View style={styles.quickActions}>
           <Text style={styles.quickActionsTitle}>⚡ 快速操作</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <TouchableOpacity style={styles.quickActionButton}>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              onPress={handleEmergencyCall}
+              activeOpacity={0.8}>
               <LinearGradient
                 colors={['#667eea', '#764ba2']}
                 style={styles.quickActionGradient}>
@@ -336,18 +427,24 @@ const MainScreen = ({ navigation }: any) => {
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickActionButton}>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              onPress={handleShareLocation}
+              activeOpacity={0.8}>
               <LinearGradient
-                colors={['#f093fb', '#f5576c']}
+                colors={['#667eea', '#764ba2']}
                 style={styles.quickActionGradient}>
                 <Text style={styles.quickActionIcon}>📍</Text>
                 <Text style={styles.quickActionText}>分享位置</Text>
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickActionButton}>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              onPress={handleContactFamily}
+              activeOpacity={0.8}>
               <LinearGradient
-                colors={['#30cfd0', '#330867']}
+                colors={['#667eea', '#764ba2']}
                 style={styles.quickActionGradient}>
                 <Text style={styles.quickActionIcon}>📞</Text>
                 <Text style={styles.quickActionText}>聯絡家屬</Text>

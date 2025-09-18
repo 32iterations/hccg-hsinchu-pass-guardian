@@ -106,9 +106,9 @@ const PatientsScreen = ({ navigation }: any) => {
 
   if (isLoading) {
     return (
-      <LinearGradient colors={['#fa709a', '#fee140']} style={styles.loadingContainer}>
+      <LinearGradient colors={['#667eea', '#764ba2']} style={styles.loadingContainer}>
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#fa709a" />
+          <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>載入中...</Text>
         </View>
       </LinearGradient>
@@ -118,7 +118,7 @@ const PatientsScreen = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#fa709a', '#fee140']}
+        colors={['#667eea', '#764ba2']}
         style={styles.header}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}>
@@ -139,13 +139,13 @@ const PatientsScreen = ({ navigation }: any) => {
         {patients.length === 0 ? (
           <View style={styles.emptyState}>
             <LinearGradient
-              colors={['rgba(250, 112, 154, 0.1)', 'rgba(254, 225, 64, 0.1)']}
+              colors={['rgba(102, 126, 234, 0.1)', 'rgba(118, 75, 162, 0.1)']}
               style={styles.emptyCard}>
               <Text style={styles.emptyIcon}>👥</Text>
               <Text style={styles.emptyText}>尚無患者資料</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(true)}>
                 <LinearGradient
-                  colors={['#fa709a', '#fee140']}
+                  colors={['#667eea', '#764ba2']}
                   style={styles.emptyButton}>
                   <Text style={styles.emptyButtonText}>新增患者</Text>
                 </LinearGradient>
@@ -200,14 +200,14 @@ const PatientsScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionButtonWrapper}>
                     <LinearGradient
-                      colors={['#f093fb', '#f5576c']}
+                      colors={['#667eea', '#764ba2']}
                       style={styles.actionButton}>
                       <Text style={styles.actionButtonText}>📞 通話</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionButtonWrapper}>
                     <LinearGradient
-                      colors={['#30cfd0', '#330867']}
+                      colors={['#667eea', '#764ba2']}
                       style={styles.actionButton}>
                       <Text style={styles.actionButtonText}>📝 編輯</Text>
                     </LinearGradient>
@@ -229,7 +229,7 @@ const PatientsScreen = ({ navigation }: any) => {
             colors={['rgba(255,255,255,0.98)', 'rgba(255,255,255,0.95)']}
             style={styles.modalContent}>
             <LinearGradient
-              colors={['#fa709a', '#fee140']}
+              colors={['#667eea', '#764ba2']}
               style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ 新增患者</Text>
             </LinearGradient>
@@ -304,7 +304,7 @@ const PatientsScreen = ({ navigation }: any) => {
 
               <TouchableOpacity onPress={addPatient}>
                 <LinearGradient
-                  colors={['#fa709a', '#fee140']}
+                  colors={['#667eea', '#764ba2']}
                   style={styles.button}>
                   <Text style={styles.buttonText}>確定</Text>
                 </LinearGradient>
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    shadowColor: '#fa709a',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
-    shadowColor: '#fa709a',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#fa709a',
+    color: '#667eea',
     fontWeight: '600',
   },
   emptyState: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     padding: 40,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: 'rgba(250, 112, 154, 0.2)',
+    borderColor: 'rgba(102, 126, 234, 0.2)',
     width: width - 30,
   },
   emptyIcon: {
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    color: '#fa709a',
+    color: '#667eea',
     marginBottom: 30,
     fontWeight: '600',
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 15,
-    shadowColor: '#fa709a',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -438,13 +438,13 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     padding: 20,
     marginBottom: 15,
-    shadowColor: '#fa709a',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: 'rgba(250, 112, 154, 0.1)',
+    borderColor: 'rgba(102, 126, 234, 0.1)',
   },
   patientHeader: {
     flexDirection: 'row',
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   patientAge: {
     fontSize: 15,
-    color: '#fa709a',
+    color: '#667eea',
     fontWeight: '600',
   },
   statusBadge: {
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 15,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(250, 112, 154, 0.1)',
+    borderTopColor: 'rgba(102, 126, 234, 0.1)',
     gap: 10,
   },
   actionButtonWrapper: {
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     width: width - 40,
     borderRadius: 25,
     overflow: 'hidden',
-    shadowColor: '#fa709a',
+    shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.3,
     shadowRadius: 30,
@@ -556,12 +556,12 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(250, 112, 154, 0.05)',
+    backgroundColor: 'rgba(102, 126, 234, 0.05)',
     borderRadius: 15,
     paddingHorizontal: 15,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: 'rgba(250, 112, 154, 0.1)',
+    borderColor: 'rgba(102, 126, 234, 0.1)',
   },
   inputIcon: {
     fontSize: 20,
