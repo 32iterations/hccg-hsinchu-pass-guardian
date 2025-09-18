@@ -7,15 +7,45 @@ const { GeofenceEngine } = require('../../src/services/safety/geofence-engine.se
 
 describe('GeofenceEngine', () => {
   let geofenceEngine;
-  let mockLocationProvider;
+  let mockGeofenceRepository;
+  let mockLocationService;
+  let mockNotificationService;
+  let mockEventEmitter;
 
   beforeEach(() => {
-    mockLocationProvider = {
+    // Mock all required dependencies
+    mockGeofenceRepository = {
+      findAll: jest.fn().mockResolvedValue([]),
+      findById: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn()
+    };
+
+    mockLocationService = {
       getCurrentLocation: jest.fn(),
       startMonitoring: jest.fn(),
-      stopMonitoring: jest.fn()
+      stopMonitoring: jest.fn(),
+      calculateDistance: jest.fn()
     };
-    geofenceEngine = new GeofenceEngine(mockLocationProvider);
+
+    mockNotificationService = {
+      send: jest.fn().mockResolvedValue(true),
+      sendBatch: jest.fn().mockResolvedValue(true)
+    };
+
+    mockEventEmitter = {
+      emit: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn()
+    };
+
+    geofenceEngine = new GeofenceEngine(
+      mockGeofenceRepository,
+      mockLocationService,
+      mockNotificationService,
+      mockEventEmitter
+    );
   });
 
   afterEach(() => {

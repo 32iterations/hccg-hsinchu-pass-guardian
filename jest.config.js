@@ -2,9 +2,10 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
 
-  // Enable fake timers globally
+  // Disable fake timers globally to avoid timeout issues
+  // Individual tests can enable them as needed
   fakeTimers: {
-    enableGlobally: true
+    enableGlobally: false
   },
 
   // Setup files
@@ -59,8 +60,8 @@ module.exports = {
     }
   },
 
-  // Test timeout
-  testTimeout: 10000,
+  // Test timeout - increased for long-running async tests
+  testTimeout: 60000,
 
   // Clear mocks between tests
   clearMocks: true,

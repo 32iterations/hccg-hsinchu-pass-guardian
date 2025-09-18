@@ -128,6 +128,8 @@ describe('DeviceBindingService', () => {
     });
 
     test('should fail gracefully after 3 connection attempts', async () => {
+      jest.useFakeTimers();
+
       const device = {
         serialNumber: 'BLE-002',
         manufacturer: 'TestCorp',
@@ -141,10 +143,17 @@ describe('DeviceBindingService', () => {
       const originalRandom = Math.random;
       Math.random = () => 0.1; // Always fail
 
-      await expect(deviceBinding.connectDevice('BLE-002'))
-        .rejects.toThrow('Failed after 3 attempts');
+      const connectPromise = deviceBinding.connectDevice('BLE-002');
+
+      // Advance timers for each retry
+      await jest.advanceTimersByTimeAsync(1000); // First retry
+      await jest.advanceTimersByTimeAsync(2000); // Second retry
+      await jest.advanceTimersByTimeAsync(4000); // Third retry
+
+      await expect(connectPromise).rejects.toThrow('Failed after 3 attempts');
 
       Math.random = originalRandom;
+      jest.useRealTimers();
     });
 
     test('should implement exponential backoff for retries', async () => {
