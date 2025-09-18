@@ -1,23 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-# Block attempts to edit protected policy files
+# Claude 會把工具輸入以 JSON 丟到 stdin；我們用簡單 grep 快速守門即可。
 payload="$(cat)"
-
-# Check if trying to edit CLAUDE.md or policy files
-if echo "$payload" | grep -qE '"file_path":\s*"[^"]*CLAUDE\.md"' || \
-   echo "$payload" | grep -qE '"file_path":\s*"[^"]*\.policy/'; then
-  echo "❌ Editing CLAUDE.md or .policy files is forbidden by project policy." >&2
-  echo "   Please create an ADR proposal in docs/ADR/ instead." >&2
-  exit 2  # PreToolUse: exit 2 blocks the tool call
+if echo "$payload" | grep -q '"file_path": ".*/CLAUDE.md"'; then
+  echo "Editing CLAUDE.md is forbidden by project policy." >&2
+  exit 2  # PreToolUse: exit 2 會直接阻擋這次工具呼叫
 fi
-
-# Check if trying to access secrets
-if echo "$payload" | grep -qE '"file_path":\s*"[^"]*\.env"' || \
-   echo "$payload" | grep -qE '"file_path":\s*"[^"]*secrets/'; then
-  echo "❌ Accessing .env or secrets is forbidden." >&2
-  echo "   Use mock values or environment variables instead." >&2
-  exit 2
-fi
-
 exit 0

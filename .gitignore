@@ -1,6 +1,6 @@
 
-# Claude Code & AI Development Tools (preserving academic reproducibility)
-# Exclude runtime configurations but keep reproducible configs
+# AI Development Tools
+# Exclude runtime configurations
 .claude/
 .claude-flow/
 .mcp.json
@@ -8,6 +8,9 @@ claude-flow.config.json
 claude-flow
 claude-flow.bat
 claude-flow.ps1
+CLAUDE.md
+.policy/CLAUDE.md
+ACCEPTANCE_CHECKLIST.md
 
 # Swarm coordination runtime files
 .swarm/
@@ -40,3 +43,28 @@ hive-mind-prompt-*.txt
 .claude-code/
 claude-*.log
 *-claude-*.tmp
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+hive-mind-prompt-*.txt

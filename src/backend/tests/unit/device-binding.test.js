@@ -3,7 +3,7 @@
  * P1 Family MVP - TDD RED Phase
  */
 
-const DeviceBindingService = require('../../services/safety/device/DeviceBindingService');
+const DeviceBindingService = require('../../src/services/safety/device-binding-simple.service');
 
 describe('DeviceBindingService', () => {
   let deviceBinding;

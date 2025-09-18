@@ -3,7 +3,7 @@
  * P1 Family MVP - TDD RED Phase
  */
 
-const GeofenceEngine = require('../../services/safety/geofence/GeofenceEngine');
+const { GeofenceEngine } = require('../../src/services/safety/geofence-engine.service');
 
 describe('GeofenceEngine', () => {
   let geofenceEngine;
