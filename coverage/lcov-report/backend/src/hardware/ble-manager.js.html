@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.74% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/154</span>
+                <span class='fraction'>0/154</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.56% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/64</span>
+                <span class='fraction'>0/64</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.85% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/35</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.93% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/151</span>
+                <span class='fraction'>0/151</span>
             </div>
         
             
@@ -473,29 +473,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -868,38 +868,38 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">/**
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Production BLE Manager
  * Handles cross-platform Bluetooth Low Energy device management
  * with iOS state restoration and Android 12+ permission compliance
  */
 &nbsp;
-const { BLEConnectionError } = require('../services/safety/errors');
-const crypto = require('crypto');
+const { BLEConnectionError } = <span class="cstat-no" title="statement not covered" >require('../services/safety/errors');</span>
+const crypto = <span class="cstat-no" title="statement not covered" >require('crypto');</span>
 &nbsp;
 class BLEManager {
-  constructor(dependencies = {}) {
-    this.permissions = dependencies.permissions;
-    this.batteryOptimization = dependencies.batteryOptimization;
-    this.isConnected = false;
-    this.centralManager = null;
-    this.peripheralManager = null;
-    this.connectedDevices = new Map();
-    this.scanState = {
+<span class="fstat-no" title="function not covered" >  co</span>nstructor(dependencies = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+<span class="cstat-no" title="statement not covered" >    this.permissions = dependencies.permissions;</span>
+<span class="cstat-no" title="statement not covered" >    this.batteryOptimization = dependencies.batteryOptimization;</span>
+<span class="cstat-no" title="statement not covered" >    this.isConnected = false;</span>
+<span class="cstat-no" title="statement not covered" >    this.centralManager = null;</span>
+<span class="cstat-no" title="statement not covered" >    this.peripheralManager = null;</span>
+<span class="cstat-no" title="statement not covered" >    this.connectedDevices = new Map();</span>
+<span class="cstat-no" title="statement not covered" >    this.scanState = {</span>
       isScanning: false,
       parameters: {},
       restoreIdentifier: 'HsinchuPassBLEManager'
     };
-    this.deviceCallbacks = new Map();
-    this.retryConfig = {
+<span class="cstat-no" title="statement not covered" >    this.deviceCallbacks = new Map();</span>
+<span class="cstat-no" title="statement not covered" >    this.retryConfig = {</span>
       maxRetries: 3,
       backoffMs: 1000,
       maxBackoffMs: 10000
     };
-    this.connectionMetrics = {
+<span class="cstat-no" title="statement not covered" >    this.connectionMetrics = {</span>
       totalConnections: 0,
       failedConnections: 0,
       averageConnectionTime: 0,
@@ -1272,17 +1272,17 @@ class BLEManager {
 }
 &nbsp;
 // Create a singleton instance for testing
-const bleManagerInstance = new BLEManager();
+const bleManagerInstance = <span class="cstat-no" title="statement not covered" >new BLEManager();</span>
 &nbsp;
-module.exports = bleManagerInstance;
-module.exports.BLEManager = BLEManager;</pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >module.exports = bleManagerInstance;</span>
+<span class="cstat-no" title="statement not covered" >module.exports.BLEManager = BLEManager;</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-18T03:04:42.056Z
+                at 2025-09-18T03:30:30.496Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
