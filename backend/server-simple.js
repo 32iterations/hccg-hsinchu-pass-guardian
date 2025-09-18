@@ -7,14 +7,13 @@ require('dotenv').config();
 
 const app = express();
 
+// Import database service and routes
+const db = require('./services/database');
+const geofenceRoutes = require('./routes/geofence');
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-
-// In-memory storage (for testing without database)
-const users = [];
-const patients = [];
-const locations = [];
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hsinchu-guardian-secret-2025';
 
@@ -36,7 +35,7 @@ app.post('/api/auth/register', async (req, res) => {
 
   try {
     // Check if user exists
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = await db.getUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: '此電子郵件已被註冊' });
     }
@@ -45,17 +44,15 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = {
-      id: users.length + 1,
+    const userData = {
       email,
       password_hash: hashedPassword,
       name,
       role,
-      phone,
-      created_at: new Date()
+      phone
     };
 
-    users.push(user);
+    const user = await db.createUser(userData);
 
     const token = jwt.sign(
       { id: user.id, email, role },
@@ -84,7 +81,7 @@ app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = users.find(u => u.email === email);
+    const user = await db.getUserByEmail(email);
 
     if (!user) {
       return res.status(401).json({ error: '帳號或密碼錯誤' });
@@ -139,103 +136,167 @@ const authenticateToken = (req, res, next) => {
 // ==================== PATIENT ENDPOINTS ====================
 
 // Add patient
-app.post('/api/patients', authenticateToken, (req, res) => {
+app.post('/api/patients', authenticateToken, async (req, res) => {
   const { name, age, address, emergency_contact, beacon_id } = req.body;
 
-  const patient = {
-    id: patients.length + 1,
-    name,
-    age,
-    address,
-    guardian_id: req.user.id,
-    emergency_contact,
-    beacon_id,
-    created_at: new Date()
-  };
+  try {
+    const patientData = {
+      name,
+      age,
+      address,
+      guardian_id: req.user.id,
+      emergency_contact,
+      beacon_id
+    };
 
-  patients.push(patient);
+    const patient = await db.createPatient(patientData);
 
-  res.json({
-    success: true,
-    patient
-  });
+    res.json({
+      success: true,
+      patient
+    });
+  } catch (error) {
+    console.error('Create patient error:', error);
+    res.status(500).json({ error: '創建患者失敗' });
+  }
 });
 
 // Get patients
-app.get('/api/patients', authenticateToken, (req, res) => {
-  const userPatients = patients.filter(p => p.guardian_id === req.user.id);
+app.get('/api/patients', authenticateToken, async (req, res) => {
+  try {
+    const userPatients = await db.getPatientsByGuardianId(req.user.id);
 
-  res.json({
-    success: true,
-    patients: userPatients
-  });
+    res.json({
+      success: true,
+      patients: userPatients
+    });
+  } catch (error) {
+    console.error('Get patients error:', error);
+    res.status(500).json({ error: '獲取患者列表失敗' });
+  }
 });
 
 // ==================== LOCATION ENDPOINTS ====================
 
 // Update location
-app.post('/api/locations', authenticateToken, (req, res) => {
+app.post('/api/locations', authenticateToken, async (req, res) => {
   const { patient_id, latitude, longitude, accuracy, battery_level } = req.body;
 
-  const location = {
-    id: locations.length + 1,
-    patient_id,
-    latitude,
-    longitude,
-    accuracy,
-    battery_level,
-    timestamp: new Date()
-  };
+  try {
+    const locationData = {
+      patient_id,
+      latitude,
+      longitude,
+      accuracy,
+      battery_level
+    };
 
-  locations.push(location);
+    const location = await db.createLocation(locationData);
 
-  res.json({
-    success: true,
-    location
-  });
+    res.json({
+      success: true,
+      location
+    });
+  } catch (error) {
+    console.error('Create location error:', error);
+    res.status(500).json({ error: '創建位置記錄失敗' });
+  }
 });
 
 // Get location history
-app.get('/api/locations/:patientId/history', authenticateToken, (req, res) => {
+app.get('/api/locations/:patientId/history', authenticateToken, async (req, res) => {
   const { patientId } = req.params;
-  const patientLocations = locations
-    .filter(l => l.patient_id === parseInt(patientId))
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 100);
 
-  res.json({
-    success: true,
-    locations: patientLocations
-  });
+  try {
+    const patientLocations = await db.getLocationHistory(parseInt(patientId), 100);
+
+    res.json({
+      success: true,
+      locations: patientLocations
+    });
+  } catch (error) {
+    console.error('Get location history error:', error);
+    res.status(500).json({ error: '獲取位置歷史失敗' });
+  }
 });
 
 // ==================== TEST DATA ====================
 
-// Create test user
+// Create test user (NO AUTH REQUIRED)
 app.post('/api/test/create-user', async (req, res) => {
-  const hashedPassword = await bcrypt.hash('test123', 10);
-
-  const testUser = {
-    id: users.length + 1,
-    email: 'test@hsinchu.gov.tw',
-    password_hash: hashedPassword,
-    name: '測試用戶',
-    role: 'family',
-    phone: '0912345678',
-    created_at: new Date()
-  };
-
-  users.push(testUser);
-
-  res.json({
-    success: true,
-    message: '測試用戶已創建',
-    credentials: {
-      email: 'test@hsinchu.gov.tw',
-      password: 'test123'
+  try {
+    // Check if test user already exists
+    const existingUser = await db.getUserByEmail('test@hsinchu.gov.tw');
+    if (existingUser) {
+      return res.json({
+        success: true,
+        message: '測試用戶已存在',
+        credentials: {
+          email: 'test@hsinchu.gov.tw',
+          password: 'test123'
+        }
+      });
     }
-  });
+
+    const hashedPassword = await bcrypt.hash('test123', 10);
+
+    const testUserData = {
+      email: 'test@hsinchu.gov.tw',
+      password_hash: hashedPassword,
+      name: '測試用戶',
+      role: 'family',
+      phone: '0912345678'
+    };
+
+    await db.createUser(testUserData);
+
+    res.json({
+      success: true,
+      message: '測試用戶已創建',
+      credentials: {
+        email: 'test@hsinchu.gov.tw',
+        password: 'test123'
+      }
+    });
+  } catch (error) {
+    console.error('Create test user error:', error);
+    res.status(500).json({ error: '創建測試用戶失敗' });
+  }
 });
+
+// ==================== PUSH NOTIFICATION ====================
+const notificationService = require('./services/firebase-notification');
+
+// Register FCM token
+app.post('/api/notifications/register', authenticateToken, async (req, res) => {
+  const { fcm_token } = req.body;
+
+  if (!fcm_token) {
+    return res.status(400).json({ error: 'FCM token required' });
+  }
+
+  try {
+    // Update FCM token in database
+    await db.updateUserFCMToken(req.user.id, fcm_token);
+
+    // Also register with notification service if available
+    if (notificationService && notificationService.registerToken) {
+      await notificationService.registerToken(req.user.id, fcm_token);
+    }
+
+    res.json({
+      success: true,
+      message: 'FCM token registered successfully'
+    });
+  } catch (error) {
+    console.error('FCM registration error:', error);
+    res.status(500).json({ error: 'Failed to register FCM token' });
+  }
+});
+
+// ==================== GEOFENCE ROUTES ====================
+// Apply authentication middleware and mount geofence routes
+app.use('/api', authenticateToken, geofenceRoutes);
 
 // ==================== SERVER START ====================
 
@@ -262,7 +323,7 @@ app.listen(PORT, '0.0.0.0', () => {
        - GET  /api/locations/:id/history - 位置歷史
 
     🔧 環境: ${process.env.NODE_ENV || 'development'}
-    💾 資料儲存: 記憶體（重啟會清空）
+    💾 資料儲存: PostgreSQL 資料庫
   `);
 });
 

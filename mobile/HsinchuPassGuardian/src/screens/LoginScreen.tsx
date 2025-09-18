@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
+import ApiService from '../services/api';
 
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
@@ -28,21 +29,45 @@ const LoginScreen = ({ navigation }: any) => {
 
     setIsLoading(true);
     try {
-      const userCredential = await auth().signInWithEmailAndPassword(email, password);
-      await AsyncStorage.setItem('userToken', userCredential.user.uid);
-      await AsyncStorage.setItem('userRole', userRole);
+      // Try backend API first
+      const apiResponse = await ApiService.login(email, password, userRole);
 
-      navigation.replace('Main');
-    } catch (error: any) {
-      let message = '登入失敗，請稍後再試';
-      if (error.code === 'auth/user-not-found') {
-        message = '找不到此使用者';
-      } else if (error.code === 'auth/wrong-password') {
-        message = '密碼錯誤';
-      } else if (error.code === 'auth/invalid-email') {
-        message = '電子郵件格式錯誤';
+      if (apiResponse.success) {
+        // Store user data
+        await AsyncStorage.setItem('userToken', apiResponse.token!);
+        await AsyncStorage.setItem('userRole', userRole);
+        await AsyncStorage.setItem('userData', JSON.stringify(apiResponse.user));
+
+        // Also try Firebase auth for push notifications
+        try {
+          await auth().signInWithEmailAndPassword(email, password);
+        } catch (firebaseError) {
+          console.log('Firebase auth failed, but backend auth succeeded');
+        }
+
+        navigation.replace('Main');
+      } else {
+        // If backend fails, try Firebase auth as fallback
+        try {
+          const userCredential = await auth().signInWithEmailAndPassword(email, password);
+          await AsyncStorage.setItem('userToken', userCredential.user.uid);
+          await AsyncStorage.setItem('userRole', userRole);
+          navigation.replace('Main');
+        } catch (firebaseError: any) {
+          let message = apiResponse.error || '登入失敗，請稍後再試';
+          if (firebaseError.code === 'auth/user-not-found') {
+            message = '找不到此使用者';
+          } else if (firebaseError.code === 'auth/wrong-password') {
+            message = '密碼錯誤';
+          } else if (firebaseError.code === 'auth/invalid-email') {
+            message = '電子郵件格式錯誤';
+          }
+          Alert.alert('登入失敗', message);
+        }
       }
-      Alert.alert('登入失敗', message);
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('登入失敗', '網路連線錯誤，請稍後再試');
     } finally {
       setIsLoading(false);
     }

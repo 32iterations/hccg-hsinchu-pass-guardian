@@ -47,5 +47,51 @@ services:
       timeout: 3s
       retries: 5
 
+  # 後端 API 服務 (含管理介面)
+  backend:
+    build: .
+    container_name: hccg-backend
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PUBLIC_IP: ${PUBLIC_IP:-147.251.115.54}
+      JWT_SECRET: ${JWT_SECRET:-hsinchu-guardian-secret-2025}
+      ADMIN_PORT: 3001
+      PORT: 3000
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app/backend
+      - ./admin:/app/admin
+      - /app/node_modules
+      - /app/backend/node_modules
+    restart: unless-stopped
+    networks:
+      - hccg-network
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: hccg-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./admin:/usr/share/nginx/html/admin:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - hccg-network
+
 volumes:
   postgres_data:
+
+networks:
+  hccg-network:
+    driver: bridge
