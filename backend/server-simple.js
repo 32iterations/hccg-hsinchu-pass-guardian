@@ -302,7 +302,7 @@ app.post('/api/notifications/register', authenticateToken, async (req, res) => {
 
 // Send emergency alert/SOS
 app.post('/api/emergency/sos', authenticateToken, async (req, res) => {
-  const { timestamp, source = 'manual' } = req.body;
+  const { timestamp, source = 'manual', latitude, longitude, accuracy } = req.body;
 
   try {
     // Create emergency record
@@ -310,7 +310,12 @@ app.post('/api/emergency/sos', authenticateToken, async (req, res) => {
       user_id: req.user.id,
       type: 'sos',
       status: 'active',
-      location: null, // Will be updated if location is provided
+      location: (latitude && longitude) ? {
+        latitude,
+        longitude,
+        accuracy: accuracy || 0,
+        timestamp: new Date().toISOString()
+      } : null,
       timestamp: timestamp || new Date().toISOString(),
       source
     };
@@ -319,9 +324,14 @@ app.post('/api/emergency/sos', authenticateToken, async (req, res) => {
     // 1. Store emergency alert in database
     // 2. Send push notifications to emergency contacts
     // 3. Alert monitoring services
+    // 4. Forward location to emergency services
     // For now, we'll simulate success
 
-    console.log(`🚨 緊急求救信號 - 用戶 ${req.user.id} 於 ${emergencyData.timestamp} 發送求救信號`);
+    const locationInfo = emergencyData.location
+      ? ` 位置: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (精度: ${accuracy}米)`
+      : ' (無位置資訊)';
+
+    console.log(`🚨 緊急求救信號 - 用戶 ${req.user.id} 於 ${emergencyData.timestamp} 發送求救信號${locationInfo}`);
 
     // Simulate database storage and notification sending
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -339,7 +349,8 @@ app.post('/api/emergency/sos', authenticateToken, async (req, res) => {
       success: true,
       message: '緊急求救信號已發送',
       emergency_id: `sos_${Date.now()}`,
-      timestamp: emergencyData.timestamp
+      timestamp: emergencyData.timestamp,
+      location: emergencyData.location
     });
   } catch (error) {
     console.error('Emergency SOS error:', error);

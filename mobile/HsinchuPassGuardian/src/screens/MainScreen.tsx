@@ -121,24 +121,33 @@ const MainScreen = ({ navigation }: any) => {
 
   const handleEmergencyCall = async () => {
     Alert.alert(
-      '緊急求救',
-      '確定要發送緊急求救訊號嗎？',
+      '🆘 緊急求救',
+      '確定要發送緊急求救訊號嗎？\n\n系統將同時發送您的位置資訊給緊急聯絡人。',
       [
         { text: '取消', style: 'cancel' },
         {
-          text: '確定',
+          text: '立即求救',
           style: 'destructive',
           onPress: async () => {
             setIsLoading(true);
             try {
               const result = await ApiService.sendEmergencyAlert();
               if (result.success) {
-                Alert.alert('成功', '緊急求救訊號已發送！');
+                const locationText = result.location
+                  ? `\n\n📍 求救位置:\n緯度: ${result.location.latitude.toFixed(6)}\n經度: ${result.location.longitude.toFixed(6)}`
+                  : '\n\n位置資訊已包含在求救信號中';
+
+                Alert.alert(
+                  '🆘 求救信號已發送',
+                  `緊急求救訊號已成功發送給所有緊急聯絡人！${locationText}\n\n來自新竹通行守護者`,
+                  [{ text: '確定' }]
+                );
               } else {
-                Alert.alert('錯誤', '發送失敗，請重試');
+                Alert.alert('發送失敗', result.error || '發送失敗，請重試或聯繫救援單位');
               }
             } catch (error) {
-              Alert.alert('錯誤', '發送緊急求救失敗');
+              console.error('Emergency alert error:', error);
+              Alert.alert('發送失敗', '發送緊急求救失敗，請直接撥打110或119');
             } finally {
               setIsLoading(false);
             }
@@ -153,12 +162,21 @@ const MainScreen = ({ navigation }: any) => {
     try {
       const result = await ApiService.shareCurrentLocation();
       if (result.success) {
-        Alert.alert('成功', '位置已分享給所有聯絡人');
+        const locationText = result.location
+          ? `緯度: ${result.location.latitude.toFixed(6)}\n經度: ${result.location.longitude.toFixed(6)}`
+          : '位置已成功獲取';
+
+        Alert.alert(
+          '📍 位置分享成功',
+          `位置已分享給所有聯絡人\n\n${locationText}\n\n來自新竹通行守護者`,
+          [{ text: '確定' }]
+        );
       } else {
-        Alert.alert('錯誤', '分享位置失敗');
+        Alert.alert('錯誤', result.error || '分享位置失敗');
       }
     } catch (error) {
-      Alert.alert('錯誤', '分享位置失敗');
+      console.error('Share location error:', error);
+      Alert.alert('錯誤', '分享位置失敗，請稍後重試');
     } finally {
       setIsLoading(false);
     }

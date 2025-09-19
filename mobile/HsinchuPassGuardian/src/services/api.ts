@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config';
+import LocationService from './LocationService';
 
 // Backend API configuration
 const API_URL = API_BASE_URL; // Using config.ts for centralized API URL
@@ -389,19 +390,37 @@ class ApiService {
   // Emergency endpoints
   async sendEmergencyAlert() {
     try {
+      // 獲取當前位置以包含在緊急求救中
+      const location = await LocationService.getLocationWithFallback();
+
+      const requestBody: any = {
+        timestamp: new Date().toISOString(),
+        source: 'manual'
+      };
+
+      // 如果成功獲取位置，添加到求救信息中
+      if (location) {
+        requestBody.latitude = location.latitude;
+        requestBody.longitude = location.longitude;
+        requestBody.accuracy = location.accuracy || 0;
+      }
+
       const response = await fetch(`${API_URL}/api/emergency/sos`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          source: 'manual'
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        return { success: true };
+        return {
+          success: true,
+          location: location ? {
+            latitude: location.latitude,
+            longitude: location.longitude
+          } : null
+        };
       } else {
         return { success: false, error: data.error || '緊急求救發送失敗' };
       }
@@ -413,37 +432,41 @@ class ApiService {
 
   async shareCurrentLocation() {
     try {
-      // Get current location first
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
-        });
-      });
+      // 使用LocationService獲取當前位置
+      const location = await LocationService.getLocationWithFallback();
 
-      const { latitude, longitude } = position.coords;
+      if (!location) {
+        return { success: false, error: '無法取得位置資訊' };
+      }
 
       const response = await fetch(`${API_URL}/api/location/share`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
-          latitude,
-          longitude,
-          timestamp: new Date().toISOString()
+          latitude: location.latitude,
+          longitude: location.longitude,
+          timestamp: new Date().toISOString(),
+          message: '我在這裡 - 來自新竹通行守護者',
+          accuracy: location.accuracy || 0
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        return { success: true };
+        return {
+          success: true,
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude
+          }
+        };
       } else {
         return { success: false, error: data.error || '分享位置失敗' };
       }
     } catch (error) {
       console.error('Share location error:', error);
-      return { success: false, error: '無法取得位置或網路連線錯誤' };
+      return { success: false, error: '網路連線錯誤' };
     }
   }
 
