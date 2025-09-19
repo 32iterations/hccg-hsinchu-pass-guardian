@@ -22,6 +22,7 @@ import MapView, {
 import Geolocation from 'react-native-geolocation-service';
 import ApiService from '../services/api';
 import SimulationPanel from '../../components/SimulationPanel';
+import SimulatedMapView from '../../components/SimulatedMapView';
 
 interface Location {
   latitude: number;
@@ -70,6 +71,8 @@ const MapScreen = ({ navigation, route }: any) => {
   const [showSimulationPanel, setShowSimulationPanel] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationPath, setSimulationPath] = useState<Location[]>([]);
+  const [useSimulatedMap, setUseSimulatedMap] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -86,6 +89,18 @@ const MapScreen = ({ navigation, route }: any) => {
       loadPatientData();
     }
   }, [isMapReady]);
+
+  // 檢查地圖載入超時
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isMapReady && !useSimulatedMap) {
+        console.log('Map loading timeout, switching to simulated map');
+        setUseSimulatedMap(true);
+      }
+    }, 8000); // 8秒超時
+
+    return () => clearTimeout(timeout);
+  }, [isMapReady, useSimulatedMap]);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -365,6 +380,28 @@ const MapScreen = ({ navigation, route }: any) => {
     );
   };
 
+  // 地圖錯誤處理
+  const handleMapError = (error: any) => {
+    console.error('Map loading error:', error);
+    setMapLoadError(true);
+    setUseSimulatedMap(true);
+    Alert.alert(
+      '地圖載入提示',
+      'Google Maps 暫時無法使用，已切換至模擬地圖模式。所有功能仍可正常使用。',
+      [{ text: '確定' }]
+    );
+  };
+
+  // 切換地圖類型
+  const toggleMapType = () => {
+    setUseSimulatedMap(!useSimulatedMap);
+    Alert.alert(
+      '地圖模式',
+      useSimulatedMap ? '切換至 Google Maps' : '切換至模擬地圖',
+      [{ text: '確定' }]
+    );
+  };
+
   const getMarkerColor = (status: string) => {
     switch (status) {
       case 'safe': return '#4CAF50';
@@ -386,29 +423,48 @@ const MapScreen = ({ navigation, route }: any) => {
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-        initialRegion={currentLocation ? {
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        } : DEFAULT_REGION}
-        region={currentRegion}
-        onMapReady={() => {
-          console.log('Map is ready');
-          setIsMapReady(true);
-        }}
-        onRegionChangeComplete={(region) => {
-          setCurrentRegion(region);
-        }}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        showsCompass={true}
-        showsScale={true}
-      >
+      {/* 地圖視圖 - 支援 Google Maps 和模擬地圖 */}
+      {useSimulatedMap ? (
+        <SimulatedMapView
+          region={currentRegion}
+          onRegionChange={setCurrentRegion}
+          onRegionChangeComplete={(region) => {
+            setCurrentRegion(region);
+          }}
+          onMapReady={() => {
+            console.log('Simulated map ready');
+            setIsMapReady(true);
+          }}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          style={styles.map}
+        />
+      ) : (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={currentLocation ? {
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          } : DEFAULT_REGION}
+          region={currentRegion}
+          onMapReady={() => {
+            console.log('Map is ready');
+            setIsMapReady(true);
+            setMapLoadError(false);
+          }}
+          onError={handleMapError}
+          onRegionChangeComplete={(region) => {
+            setCurrentRegion(region);
+          }}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          showsCompass={true}
+          showsScale={true}
+        >
         {/* Current location marker */}
         {currentLocation && (
           <Marker
@@ -471,7 +527,18 @@ const MapScreen = ({ navigation, route }: any) => {
             lineDashPattern={[10, 5]}
           />
         )}
-      </MapView>
+        </MapView>
+      )}
+
+      {/* 地圖切換按鈕 */}
+      <TouchableOpacity
+        style={styles.mapToggleButton}
+        onPress={toggleMapType}
+      >
+        <Text style={styles.mapToggleText}>
+          {useSimulatedMap ? '🗺️ 模擬地圖' : '🌍 Google Maps'}
+        </Text>
+      </TouchableOpacity>
 
       {/* Control panel */}
       <View style={styles.controlPanel}>
@@ -499,6 +566,14 @@ const MapScreen = ({ navigation, route }: any) => {
           style={[styles.controlButton, styles.simulationButton]}
           onPress={() => setShowSimulationPanel(!showSimulationPanel)}>
           <Text style={styles.controlButtonText}>模擬</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.controlButton, styles.mapSwitchButton]}
+          onPress={toggleMapType}>
+          <Text style={styles.controlButtonText}>
+            {useSimulatedMap ? '實景地圖' : '模擬地圖'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -661,6 +736,28 @@ const styles = StyleSheet.create({
   },
   simulationButton: {
     backgroundColor: '#FF6B6B',
+  },
+  mapSwitchButton: {
+    backgroundColor: '#2196F3',
+  },
+  mapToggleButton: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  mapToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
   },
   modalOverlay: {
     flex: 1,

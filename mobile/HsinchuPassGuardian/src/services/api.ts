@@ -240,7 +240,7 @@ class ApiService {
       const response = await fetch(`${API_URL}/api/simulation/start`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({ scenarioId, patientId, speed }),
+        body: JSON.stringify({ scenarioId, speed }),
       });
 
       const data = await response.json();
