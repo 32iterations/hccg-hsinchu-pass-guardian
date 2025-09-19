@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const notificationService = require('../services/firebase-notification');
+const db = require('../services/database');
 
-// In-memory storage for geofences
-const geofences = [];
+// In-memory storage for temporary data
 const sosAlerts = [];
 const geofenceStatus = new Map(); // Track patient status in geofences
 
@@ -68,15 +68,25 @@ router.post('/geofences', (req, res) => {
 });
 
 // Get all geofences for a user
-router.get('/geofences', (req, res) => {
-  const userGeofences = geofences.filter(g =>
-    g.guardian_id === req.user.id && g.active
-  );
+router.get('/geofences', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT g.*, p.name as patient_name
+       FROM geofences g
+       JOIN patients p ON g.patient_id = p.id
+       WHERE p.guardian_id = $1 AND g.is_active = true
+       ORDER BY g.created_at DESC`,
+      [req.user.id]
+    );
 
-  res.json({
-    success: true,
-    geofences: userGeofences
-  });
+    res.json({
+      success: true,
+      geofences: result.rows
+    });
+  } catch (error) {
+    console.error('Get geofences error:', error);
+    res.status(500).json({ error: '獲取地理圍欄失敗' });
+  }
 });
 
 // Get geofences for a specific patient

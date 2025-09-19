@@ -429,6 +429,78 @@ app.get('/api/emergency/contacts', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== ALERTS ENDPOINTS ====================
+
+// Get alerts for current user
+app.get('/api/alerts', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT a.*, p.name as patient_name
+       FROM alerts a
+       JOIN patients p ON a.patient_id = p.id
+       WHERE p.guardian_id = $1
+       ORDER BY a.created_at DESC
+       LIMIT 50`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      alerts: result.rows
+    });
+  } catch (error) {
+    console.error('Get alerts error:', error);
+    res.status(500).json({ error: '獲取警報記錄失敗' });
+  }
+});
+
+// Mark alert as resolved
+app.put('/api/alerts/:alertId/resolve', authenticateToken, async (req, res) => {
+  try {
+    const { alertId } = req.params;
+
+    await db.query(
+      'UPDATE alerts SET is_resolved = true WHERE id = $1',
+      [alertId]
+    );
+
+    res.json({
+      success: true,
+      message: '警報已標記為已解決'
+    });
+  } catch (error) {
+    console.error('Resolve alert error:', error);
+    res.status(500).json({ error: '處理警報失敗' });
+  }
+});
+
+// Get alert details
+app.get('/api/alerts/:alertId', authenticateToken, async (req, res) => {
+  try {
+    const { alertId } = req.params;
+
+    const result = await db.query(
+      `SELECT a.*, p.name as patient_name
+       FROM alerts a
+       JOIN patients p ON a.patient_id = p.id
+       WHERE a.id = $1 AND p.guardian_id = $2`,
+      [alertId, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '警報不存在' });
+    }
+
+    res.json({
+      success: true,
+      alert: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Get alert details error:', error);
+    res.status(500).json({ error: '獲取警報詳情失敗' });
+  }
+});
+
 // ==================== GEOFENCE ROUTES ====================
 // Apply authentication middleware and mount geofence routes
 app.use('/api', authenticateToken, geofenceRoutes);
