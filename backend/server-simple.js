@@ -13,6 +13,7 @@ const geofenceRoutes = require('./routes/geofence');
 const notificationRoutes = require('./routes/notifications');
 const emergencyRoutes = require('./routes/emergency');
 const shareLocationRoutes = require('./routes/share-location');
+const simulationRoutes = require('./routes/simulation');
 
 // Middleware
 app.use(cors());
@@ -510,6 +511,7 @@ app.use('/api', authenticateToken, geofenceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/emergency', emergencyRoutes);
 app.use('/api/share-location', shareLocationRoutes);
+app.use('/api/simulation', authenticateToken, simulationRoutes);
 
 // ==================== SERVER START ====================
 
