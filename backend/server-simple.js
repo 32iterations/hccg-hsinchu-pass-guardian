@@ -10,6 +10,9 @@ const app = express();
 // Import database service and routes
 const db = require('./services/database');
 const geofenceRoutes = require('./routes/geofence');
+const notificationRoutes = require('./routes/notifications');
+const emergencyRoutes = require('./routes/emergency');
+const shareLocationRoutes = require('./routes/share-location');
 
 // Middleware
 app.use(cors());
@@ -501,9 +504,12 @@ app.get('/api/alerts/:alertId', authenticateToken, async (req, res) => {
   }
 });
 
-// ==================== GEOFENCE ROUTES ====================
-// Apply authentication middleware and mount geofence routes
+// ==================== MOUNT ROUTES ====================
+// Apply authentication middleware and mount routes
 app.use('/api', authenticateToken, geofenceRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/emergency', emergencyRoutes);
+app.use('/api/share-location', shareLocationRoutes);
 
 // ==================== SERVER START ====================
 

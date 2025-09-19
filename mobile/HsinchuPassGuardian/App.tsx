@@ -2,7 +2,13 @@ import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  requestPermission,
+  getToken,
+  setBackgroundMessageHandler,
+  AuthorizationStatus,
+} from '@react-native-firebase/messaging';
 import {ActivityIndicator, View, StyleSheet} from 'react-native';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -49,27 +55,62 @@ function App(): React.JSX.Element {
 
   const initializeFirebase = async () => {
     try {
-      // Request permission
-      const authStatus = await messaging().requestPermission();
+      const messaging = getMessaging();
+
+      // Request permission using modular API
+      const authStatus = await requestPermission(messaging);
       const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        // Get FCM token
-        const token = await messaging().getToken();
+        // Get FCM token using modular API
+        const token = await getToken(messaging);
         console.log('FCM Token:', token);
 
         // Save token for later use
         await AsyncStorage.setItem('fcmToken', token);
+
+        // Update FCM token to server with proper error handling
+        updateFCMTokenToServer(token);
       }
 
-      // Handle background messages
-      messaging().setBackgroundMessageHandler(async remoteMessage => {
+      // Handle background messages using modular API
+      setBackgroundMessageHandler(messaging, async remoteMessage => {
         console.log('Background message:', remoteMessage);
       });
     } catch (error) {
       console.error('Firebase initialization error:', error);
+    }
+  };
+
+  const updateFCMTokenToServer = async (token: string) => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (!authToken) return;
+
+      const response = await fetch('http://147.251.115.54:3000/api/users/update-fcm-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ fcmToken: token }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('FCM token updated successfully:', data);
+      } else {
+        console.warn('Server returned non-JSON response for FCM token update');
+      }
+    } catch (error) {
+      console.error('Update FCM token error:', error);
     }
   };
 

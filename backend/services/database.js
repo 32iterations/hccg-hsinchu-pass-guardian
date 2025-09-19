@@ -37,6 +37,231 @@ class Database {
     await this.pool.end();
   }
 
+  // Notification operations
+  async getUserNotifications(userId, options = {}) {
+    const { limit = 20, offset = 0, unreadOnly = false } = options;
+    const query = `
+      SELECT * FROM notifications
+      WHERE user_id = $1 ${unreadOnly ? 'AND is_read = false' : ''}
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await this.query(query, [userId, limit, offset]);
+    return result.rows;
+  }
+
+  async getUnreadNotificationCount(userId) {
+    const query = 'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false';
+    const result = await this.query(query, [userId]);
+    return parseInt(result.rows[0].count);
+  }
+
+  async getNotificationById(id) {
+    const query = 'SELECT * FROM notifications WHERE id = $1';
+    const result = await this.query(query, [id]);
+    return result.rows[0];
+  }
+
+  async markNotificationAsRead(id) {
+    const query = 'UPDATE notifications SET is_read = true, read_at = NOW() WHERE id = $1';
+    await this.query(query, [id]);
+  }
+
+  async markAllNotificationsAsRead(userId) {
+    const query = 'UPDATE notifications SET is_read = true, read_at = NOW() WHERE user_id = $1 AND is_read = false';
+    await this.query(query, [userId]);
+  }
+
+  async deleteNotification(id) {
+    const query = 'DELETE FROM notifications WHERE id = $1';
+    await this.query(query, [id]);
+  }
+
+  async createNotification(data) {
+    const { user_id, type, title, message, data: metadata, is_read = false } = data;
+    const query = `
+      INSERT INTO notifications (user_id, type, title, message, data, is_read, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING *
+    `;
+    const result = await this.query(query, [user_id, type, title, message, metadata, is_read]);
+    return result.rows[0];
+  }
+
+  // Emergency operations
+  async createEmergencyAlert(data) {
+    const { user_id, patient_id, type, severity, message, location, battery_level, status, triggered_at } = data;
+    const query = `
+      INSERT INTO emergency_alerts
+      (user_id, patient_id, type, severity, message, location, battery_level, status, triggered_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+    const result = await this.query(query, [
+      user_id, patient_id, type, severity, message,
+      JSON.stringify(location), battery_level, status, triggered_at
+    ]);
+    return result.rows[0];
+  }
+
+  async getEmergencyAlertById(id) {
+    const query = 'SELECT * FROM emergency_alerts WHERE id = $1';
+    const result = await this.query(query, [id]);
+    return result.rows[0];
+  }
+
+  async updateEmergencyAlert(id, updates) {
+    const fields = Object.keys(updates);
+    const values = Object.values(updates);
+    const setClause = fields.map((field, i) => `${field} = $${i + 2}`).join(', ');
+    const query = `UPDATE emergency_alerts SET ${setClause} WHERE id = $1`;
+    await this.query(query, [id, ...values]);
+  }
+
+  async getUserEmergencyAlerts(userId, options = {}) {
+    const { limit = 20, offset = 0 } = options;
+    const query = `
+      SELECT * FROM emergency_alerts
+      WHERE user_id = $1
+      ORDER BY triggered_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await this.query(query, [userId, limit, offset]);
+    return result.rows;
+  }
+
+  async getPatientEmergencyContacts(patientId) {
+    const query = 'SELECT * FROM emergency_contacts WHERE patient_id = $1';
+    const result = await this.query(query, [patientId]);
+    return result.rows;
+  }
+
+  async getUserEmergencyContacts(userId) {
+    const query = 'SELECT * FROM emergency_contacts WHERE user_id = $1';
+    const result = await this.query(query, [userId]);
+    return result.rows;
+  }
+
+  async addEmergencyContact(data) {
+    const { user_id, name, phone, email, relationship } = data;
+    const query = `
+      INSERT INTO emergency_contacts (user_id, name, phone, email, relationship, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING *
+    `;
+    const result = await this.query(query, [user_id, name, phone, email, relationship]);
+    return result.rows[0];
+  }
+
+  async getEmergencyContactById(id) {
+    const query = 'SELECT * FROM emergency_contacts WHERE id = $1';
+    const result = await this.query(query, [id]);
+    return result.rows[0];
+  }
+
+  async deleteEmergencyContact(id) {
+    const query = 'DELETE FROM emergency_contacts WHERE id = $1';
+    await this.query(query, [id]);
+  }
+
+  // Location sharing operations
+  async createLocationShareSession(data) {
+    const { user_id, patient_id, share_code, share_url, expires_at, is_active, allow_tracking, message, created_at } = data;
+    const query = `
+      INSERT INTO location_share_sessions
+      (user_id, patient_id, share_code, share_url, expires_at, is_active, allow_tracking, message, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+    const result = await this.query(query, [
+      user_id, patient_id, share_code, share_url, expires_at,
+      is_active, allow_tracking, message, created_at
+    ]);
+    return result.rows[0];
+  }
+
+  async getLocationShareSessionByCode(shareCode) {
+    const query = 'SELECT * FROM location_share_sessions WHERE share_code = $1';
+    const result = await this.query(query, [shareCode]);
+    return result.rows[0];
+  }
+
+  async getLocationShareSessionById(id) {
+    const query = 'SELECT * FROM location_share_sessions WHERE id = $1';
+    const result = await this.query(query, [id]);
+    return result.rows[0];
+  }
+
+  async updateLocationShareSession(id, updates) {
+    const fields = Object.keys(updates);
+    const values = Object.values(updates);
+    const setClause = fields.map((field, i) => `${field} = $${i + 2}`).join(', ');
+    const query = `UPDATE location_share_sessions SET ${setClause} WHERE id = $1`;
+    await this.query(query, [id, ...values]);
+  }
+
+  async getUserActiveShareSessions(userId) {
+    const query = `
+      SELECT * FROM location_share_sessions
+      WHERE user_id = $1 AND is_active = true AND expires_at > NOW()
+      ORDER BY created_at DESC
+    `;
+    const result = await this.query(query, [userId]);
+    return result.rows;
+  }
+
+  async getUserShareHistory(userId, options = {}) {
+    const { limit = 20, offset = 0 } = options;
+    const query = `
+      SELECT * FROM location_share_sessions
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await this.query(query, [userId, limit, offset]);
+    return result.rows;
+  }
+
+  async getLatestPatientLocation(patientId) {
+    const query = `
+      SELECT * FROM locations
+      WHERE patient_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const result = await this.query(query, [patientId]);
+    return result.rows[0];
+  }
+
+  async getLatestUserLocation(userId) {
+    const query = `
+      SELECT * FROM locations
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const result = await this.query(query, [userId]);
+    return result.rows[0];
+  }
+
+  async logLocationShareAccess(data) {
+    const { session_id, accessed_at, ip_address } = data;
+    const query = `
+      INSERT INTO location_share_access_logs (session_id, accessed_at, ip_address)
+      VALUES ($1, $2, $3)
+    `;
+    await this.query(query, [session_id, accessed_at, ip_address]);
+  }
+
+  async logEvent(data) {
+    const { type, user_id, patient_id, description, metadata } = data;
+    const query = `
+      INSERT INTO event_logs (type, user_id, patient_id, description, metadata, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await this.query(query, [type, user_id, patient_id, description, JSON.stringify(metadata)]);
+  }
+
   // User operations
   async createUser(userData) {
     const { email, password_hash, name, role, phone, firebase_uid } = userData;
