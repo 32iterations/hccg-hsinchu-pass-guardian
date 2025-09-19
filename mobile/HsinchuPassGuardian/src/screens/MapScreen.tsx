@@ -185,55 +185,71 @@ const MapScreen = ({ navigation, route }: any) => {
   const loadPatientData = async () => {
     try {
       // Load patients
-      const patientsResult = await ApiService.getPatients();
-      if (patientsResult.success && patientsResult.patients) {
-        // Mock patient locations for demo
-        const mockPatients: PatientLocation[] = patientsResult.patients.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          location: {
-            latitude: 24.8066 + (Math.random() - 0.5) * 0.01,
-            longitude: 120.9686 + (Math.random() - 0.5) * 0.01,
-          },
-          beacon_id: p.beacon_id,
-          last_update: new Date().toISOString(),
-          status: 'safe' as const,
-        }));
-        setPatientLocations(mockPatients);
+      try {
+        const patientsResult = await ApiService.getPatients();
+        if (patientsResult.success && patientsResult.patients) {
+          // Mock patient locations for demo
+          const mockPatients: PatientLocation[] = patientsResult.patients.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            location: {
+              latitude: 24.8066 + (Math.random() - 0.5) * 0.01,
+              longitude: 120.9686 + (Math.random() - 0.5) * 0.01,
+            },
+            beacon_id: p.beacon_id,
+            last_update: new Date().toISOString(),
+            status: 'safe' as const,
+          }));
+          setPatientLocations(mockPatients);
+        }
+      } catch (patientsError) {
+        console.warn('Failed to load patients:', patientsError);
+        // Continue without patient data
       }
 
       // Load geofences
       if (route.params?.patientId) {
-        const geofencesResult = await ApiService.getGeofences(route.params.patientId);
-        if (geofencesResult.success && geofencesResult.geofences) {
-          const fences: Geofence[] = geofencesResult.geofences.map((g: any) => ({
-            id: g.id,
-            name: g.name,
-            center: {
-              latitude: g.center_lat,
-              longitude: g.center_lng,
-            },
-            radius: g.radius,
-            active: g.active,
-          }));
-          setGeofences(fences);
+        try {
+          const geofencesResult = await ApiService.getGeofences(route.params.patientId);
+          if (geofencesResult.success && geofencesResult.geofences) {
+            const fences: Geofence[] = geofencesResult.geofences.map((g: any) => ({
+              id: g.id,
+              name: g.name,
+              center: {
+                latitude: g.center_lat || g.center?.latitude,
+                longitude: g.center_lng || g.center?.longitude,
+              },
+              radius: g.radius,
+              active: g.active || g.is_active,
+            }));
+            setGeofences(fences);
+          }
+        } catch (geofenceError) {
+          console.warn('Failed to load geofences:', geofenceError);
+          // Continue without geofence data
         }
       }
 
       // Load location history if patient selected
       if (route.params?.patientId) {
-        const historyResult = await ApiService.getLocationHistory(route.params.patientId, 24);
-        if (historyResult.success && historyResult.locations) {
-          const history: Location[] = historyResult.locations.map((l: any) => ({
-            latitude: l.latitude,
-            longitude: l.longitude,
-            timestamp: new Date(l.timestamp).getTime(),
-          }));
-          setLocationHistory(history);
+        try {
+          const historyResult = await ApiService.getLocationHistory(route.params.patientId, 24);
+          if (historyResult.success && historyResult.locations) {
+            const history: Location[] = historyResult.locations.map((l: any) => ({
+              latitude: l.latitude,
+              longitude: l.longitude,
+              timestamp: new Date(l.timestamp).getTime(),
+            }));
+            setLocationHistory(history);
+          }
+        } catch (historyError) {
+          console.warn('Failed to load location history:', historyError);
+          // Continue without location history
         }
       }
     } catch (error) {
       console.error('Failed to load patient data:', error);
+      // App should still work even if some data fails to load
     }
   };
 

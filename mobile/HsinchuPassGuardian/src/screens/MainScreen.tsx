@@ -68,7 +68,12 @@ const MainScreen = ({ navigation }: any) => {
         console.log('FCM Token:', fcmToken);
 
         // Update token to backend
-        await ApiService.updateFCMToken(fcmToken);
+        try {
+          await ApiService.updateFCMToken(fcmToken);
+        } catch (tokenError) {
+          console.warn('Failed to update FCM token:', tokenError);
+          // Continue without failing - this is not critical
+        }
 
         // Listen to messages
         const unsubscribe = messaging().onMessage(async remoteMessage => {
@@ -98,6 +103,7 @@ const MainScreen = ({ navigation }: any) => {
       }
     } catch (error) {
       console.error('Notification setup error:', error);
+      // Continue without Firebase notifications - app should still work
     }
   };
 
