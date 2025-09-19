@@ -193,9 +193,10 @@ class ApiService {
   }
 
   // Geofence management endpoints
-  async getGeofences(patientId: string) {
+  async getGeofences(patientId?: string) {
     try {
-      const response = await fetch(`${API_URL}/api/geofences/${patientId}`, {
+      // 改為不帶 patientId 參數，獲取所有地理圍欄
+      const response = await fetch(`${API_URL}/api/geofences`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -209,6 +210,88 @@ class ApiService {
       }
     } catch (error) {
       console.error('Get geofences error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  // 位置模擬相關 API
+  async getSimulationScenarios() {
+    try {
+      const response = await fetch(`${API_URL}/api/simulation/scenarios`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, scenarios: data.scenarios };
+      } else {
+        return { success: false, error: data.error || '無法取得模擬場景' };
+      }
+    } catch (error) {
+      console.error('Get simulation scenarios error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  async startSimulation(scenarioId: string, patientId: string, speed: number = 1) {
+    try {
+      const response = await fetch(`${API_URL}/api/simulation/start`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ scenarioId, patientId, speed }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, simulationId: data.simulationId };
+      } else {
+        return { success: false, error: data.error || '無法開始模擬' };
+      }
+    } catch (error) {
+      console.error('Start simulation error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  async getSimulationPosition(simulationId: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/simulation/current/${simulationId}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, position: data.position, simulation: data.simulation };
+      } else {
+        return { success: false, error: data.error || '無法取得模擬位置' };
+      }
+    } catch (error) {
+      console.error('Get simulation position error:', error);
+      return { success: false, error: '網路連線錯誤' };
+    }
+  }
+
+  async stopSimulation(simulationId: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/simulation/stop/${simulationId}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || '無法停止模擬' };
+      }
+    } catch (error) {
+      console.error('Stop simulation error:', error);
       return { success: false, error: '網路連線錯誤' };
     }
   }

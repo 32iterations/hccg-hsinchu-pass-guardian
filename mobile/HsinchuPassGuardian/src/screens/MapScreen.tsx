@@ -15,6 +15,8 @@ import MapView, {
   Circle,
   Polyline,
   PROVIDER_GOOGLE,
+  PROVIDER_DEFAULT,
+  Region,
 } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import ApiService from '../services/api';
@@ -43,6 +45,14 @@ interface PatientLocation {
   status: 'safe' | 'warning' | 'danger';
 }
 
+// CRITICAL: Default region to prevent crashes
+const DEFAULT_REGION: Region = {
+  latitude: 24.8066,
+  longitude: 120.9686,
+  latitudeDelta: 0.01,
+  longitudeDelta: 0.01,
+};
+
 const MapScreen = ({ navigation, route }: any) => {
   const mapRef = useRef<MapView>(null);
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
@@ -50,28 +60,26 @@ const MapScreen = ({ navigation, route }: any) => {
   const [locationHistory, setLocationHistory] = useState<Location[]>([]);
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMapReady, setIsMapReady] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientLocation | null>(null);
+  const [currentRegion, setCurrentRegion] = useState<Region>(DEFAULT_REGION);
   const watchIdRef = useRef<number | null>(null);
-
-  // Default to Hsinchu City Hall
-  const defaultRegion = {
-    latitude: 24.8066,
-    longitude: 120.9686,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  };
 
   useEffect(() => {
     requestLocationPermission();
-    loadPatientData();
-
     return () => {
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch(watchIdRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (isMapReady) {
+      loadPatientData();
+    }
+  }, [isMapReady]);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -88,9 +96,13 @@ const MapScreen = ({ navigation, route }: any) => {
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           getCurrentLocation();
+        } else {
+          // Even if permission denied, still show map with default location
+          setIsLoading(false);
         }
       } catch (err) {
-        console.warn(err);
+        console.warn('Permission error:', err);
+        setIsLoading(false);
       }
     } else {
       getCurrentLocation();
@@ -98,35 +110,68 @@ const MapScreen = ({ navigation, route }: any) => {
   };
 
   const getCurrentLocation = () => {
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const location = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          timestamp: position.timestamp,
-          accuracy: position.coords.accuracy,
-        };
-        setCurrentLocation(location);
-        setIsLoading(false);
+    // Check if Geolocation is available and has the correct method
+    if (!Geolocation || !Geolocation.getCurrentPosition) {
+      console.warn('Geolocation service not available');
+      setIsLoading(false);
+      return;
+    }
 
-        // Center map on current location
-        mapRef.current?.animateToRegion({
-          ...location,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        });
-      },
-      (error) => {
-        console.log('Location error:', error);
-        setIsLoading(false);
-        Alert.alert('無法取得位置', '請確認GPS已開啟');
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000,
-      }
-    );
+    try {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          if (position && position.coords) {
+            const location = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              timestamp: position.timestamp,
+              accuracy: position.coords.accuracy,
+            };
+            setCurrentLocation(location);
+
+            // Update region only if map is ready
+            if (isMapReady && mapRef.current) {
+              const newRegion: Region = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              };
+              setCurrentRegion(newRegion);
+              mapRef.current.animateToRegion(newRegion, 1000);
+            }
+          }
+          setIsLoading(false);
+        },
+        (error) => {
+          console.log('Location error:', error);
+          // Use default location on error - still show the map
+          setCurrentLocation({
+            latitude: DEFAULT_REGION.latitude,
+            longitude: DEFAULT_REGION.longitude,
+            timestamp: Date.now(),
+            accuracy: 100,
+          });
+          setIsLoading(false);
+        },
+        {
+          enableHighAccuracy: false, // Changed to false to prevent crashes
+          timeout: 20000,
+          maximumAge: 10000,
+          forceRequestLocation: false,
+        }
+      );
+    } catch (error) {
+      console.error('Failed to get location:', error);
+      // Fallback to default location
+      setCurrentLocation({
+        latitude: DEFAULT_REGION.latitude,
+        longitude: DEFAULT_REGION.longitude,
+        timestamp: Date.now(),
+        accuracy: 100,
+      });
+      setIsLoading(false);
+    }
   };
 
   const startLocationTracking = () => {
@@ -147,16 +192,18 @@ const MapScreen = ({ navigation, route }: any) => {
         };
 
         setCurrentLocation(location);
-        setLocationHistory(prev => [...prev, location].slice(-100)); // Keep last 100 points
+        setLocationHistory(prev => [...prev, location].slice(-100));
 
         // Update location to backend
-        if (selectedPatient) {
+        if (selectedPatient && location.latitude && location.longitude) {
           ApiService.updateLocation(
             selectedPatient.id,
             location.latitude,
             location.longitude,
             'gps'
-          );
+          ).catch(error => {
+            console.warn('Failed to update location:', error);
+          });
         }
 
         // Check geofence violations
@@ -167,8 +214,8 @@ const MapScreen = ({ navigation, route }: any) => {
       },
       {
         enableHighAccuracy: true,
-        distanceFilter: 10, // Update every 10 meters
-        interval: 5000, // Update every 5 seconds
+        distanceFilter: 10,
+        interval: 5000,
         fastestInterval: 2000,
       }
     );
@@ -188,7 +235,6 @@ const MapScreen = ({ navigation, route }: any) => {
       try {
         const patientsResult = await ApiService.getPatients();
         if (patientsResult.success && patientsResult.patients) {
-          // Mock patient locations for demo
           const mockPatients: PatientLocation[] = patientsResult.patients.map((p: any) => ({
             id: p.id,
             name: p.name,
@@ -202,54 +248,39 @@ const MapScreen = ({ navigation, route }: any) => {
           }));
           setPatientLocations(mockPatients);
         }
-      } catch (patientsError) {
-        console.warn('Failed to load patients:', patientsError);
-        // Continue without patient data
+      } catch (error) {
+        console.warn('Failed to load patients:', error);
       }
 
       // Load geofences
-      if (route.params?.patientId) {
-        try {
-          const geofencesResult = await ApiService.getGeofences(route.params.patientId);
-          if (geofencesResult.success && geofencesResult.geofences) {
-            const fences: Geofence[] = geofencesResult.geofences.map((g: any) => ({
-              id: g.id,
-              name: g.name,
+      try {
+        const geofencesResult = await ApiService.getGeofences();
+        if (geofencesResult.success && geofencesResult.geofences && Array.isArray(geofencesResult.geofences)) {
+          const validGeofences: Geofence[] = geofencesResult.geofences
+            .filter((g: any) =>
+              g &&
+              typeof g.center_lat === 'number' &&
+              typeof g.center_lng === 'number' &&
+              g.center_lat >= -90 && g.center_lat <= 90 &&
+              g.center_lng >= -180 && g.center_lng <= 180
+            )
+            .map((g: any) => ({
+              id: g.id || String(Math.random()),
+              name: g.name || '未命名圍欄',
               center: {
-                latitude: g.center_lat || g.center?.latitude,
-                longitude: g.center_lng || g.center?.longitude,
+                latitude: g.center_lat,
+                longitude: g.center_lng,
               },
-              radius: g.radius,
-              active: g.active || g.is_active,
+              radius: Number(g.radius) || 100,
+              active: g.active || g.is_active || false,
             }));
-            setGeofences(fences);
-          }
-        } catch (geofenceError) {
-          console.warn('Failed to load geofences:', geofenceError);
-          // Continue without geofence data
+          setGeofences(validGeofences);
         }
-      }
-
-      // Load location history if patient selected
-      if (route.params?.patientId) {
-        try {
-          const historyResult = await ApiService.getLocationHistory(route.params.patientId, 24);
-          if (historyResult.success && historyResult.locations) {
-            const history: Location[] = historyResult.locations.map((l: any) => ({
-              latitude: l.latitude,
-              longitude: l.longitude,
-              timestamp: new Date(l.timestamp).getTime(),
-            }));
-            setLocationHistory(history);
-          }
-        } catch (historyError) {
-          console.warn('Failed to load location history:', historyError);
-          // Continue without location history
-        }
+      } catch (error) {
+        console.warn('Failed to load geofences:', error);
       }
     } catch (error) {
-      console.error('Failed to load patient data:', error);
-      // App should still work even if some data fails to load
+      console.error('Failed to load data:', error);
     }
   };
 
@@ -275,7 +306,7 @@ const MapScreen = ({ navigation, route }: any) => {
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Earth's radius in meters
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -286,7 +317,7 @@ const MapScreen = ({ navigation, route }: any) => {
       Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distance in meters
+    return R * c;
   };
 
   const createGeofence = () => {
@@ -295,7 +326,6 @@ const MapScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    // Android doesn't have Alert.prompt, use a simple alert instead
     Alert.alert(
       '建立地理圍欄',
       '將在目前位置建立100公尺的安全圍欄',
@@ -313,11 +343,11 @@ const MapScreen = ({ navigation, route }: any) => {
                 name: `安全區域 ${new Date().toLocaleDateString()}`,
                 center_lat: currentLocation.latitude,
                 center_lng: currentLocation.longitude,
-                radius: 100, // Default 100 meters
+                radius: 100,
               });
 
               if (result.success) {
-                loadPatientData(); // Reload geofences
+                loadPatientData();
                 Alert.alert('成功', '地理圍欄已建立');
               }
             } else {
@@ -338,6 +368,7 @@ const MapScreen = ({ navigation, route }: any) => {
     }
   };
 
+  // Show loading screen while initializing
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -352,12 +383,21 @@ const MapScreen = ({ navigation, route }: any) => {
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
         initialRegion={currentLocation ? {
-          ...currentLocation,
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        } : defaultRegion}
+        } : DEFAULT_REGION}
+        region={currentRegion}
+        onMapReady={() => {
+          console.log('Map is ready');
+          setIsMapReady(true);
+        }}
+        onRegionChangeComplete={(region) => {
+          setCurrentRegion(region);
+        }}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
@@ -374,7 +414,7 @@ const MapScreen = ({ navigation, route }: any) => {
         )}
 
         {/* Patient locations */}
-        {patientLocations.map(patient => (
+        {isMapReady && patientLocations.map(patient => (
           <Marker
             key={patient.id}
             coordinate={patient.location}
@@ -385,20 +425,30 @@ const MapScreen = ({ navigation, route }: any) => {
           />
         ))}
 
-        {/* Geofences */}
-        {geofences.map(fence => fence.active && (
-          <Circle
-            key={fence.id}
-            center={fence.center}
-            radius={fence.radius}
-            fillColor="rgba(102, 126, 234, 0.2)"
-            strokeColor="rgba(102, 126, 234, 0.5)"
-            strokeWidth={2}
-          />
-        ))}
+        {/* Geofences - Only render when map is ready and data is valid */}
+        {isMapReady && geofences
+          .filter(fence =>
+            fence.active &&
+            fence.center &&
+            !isNaN(fence.center.latitude) &&
+            !isNaN(fence.center.longitude)
+          )
+          .map(fence => (
+            <Circle
+              key={fence.id}
+              center={{
+                latitude: fence.center.latitude,
+                longitude: fence.center.longitude
+              }}
+              radius={fence.radius}
+              fillColor="rgba(102, 126, 234, 0.2)"
+              strokeColor="rgba(102, 126, 234, 0.5)"
+              strokeWidth={2}
+            />
+          ))}
 
         {/* Location history path */}
-        {locationHistory.length > 1 && (
+        {isMapReady && locationHistory.length > 1 && (
           <Polyline
             coordinates={locationHistory}
             strokeColor="#667eea"

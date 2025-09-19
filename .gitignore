@@ -98,3 +98,5 @@ backend/.env
 .parcel-cache/
 .next/
 out/
+crash_log.1txt
+crash_log.txt

@@ -11,6 +11,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MainScreen from './src/screens/MainScreen';
 import BeaconScanScreen from './src/screens/BeaconScanScreen';
 import MapScreen from './src/screens/MapScreen';
+import SimulationScreen from './src/screens/SimulationScreen';
 import PatientsScreen from './src/screens/PatientsScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import GeofenceScreen from './src/screens/GeofenceScreen';
@@ -119,6 +120,11 @@ function App(): React.JSX.Element {
           name="Map"
           component={MapScreen}
           options={{ title: '即時定位' }}
+        />
+        <Stack.Screen
+          name="Simulation"
+          component={SimulationScreen}
+          options={{ title: '位置模擬' }}
         />
         <Stack.Screen
           name="Patients"
