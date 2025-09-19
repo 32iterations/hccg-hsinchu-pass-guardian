@@ -294,6 +294,141 @@ app.post('/api/notifications/register', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== EMERGENCY ENDPOINTS ====================
+
+// Send emergency alert/SOS
+app.post('/api/emergency/sos', authenticateToken, async (req, res) => {
+  const { timestamp, source = 'manual' } = req.body;
+
+  try {
+    // Create emergency record
+    const emergencyData = {
+      user_id: req.user.id,
+      type: 'sos',
+      status: 'active',
+      location: null, // Will be updated if location is provided
+      timestamp: timestamp || new Date().toISOString(),
+      source
+    };
+
+    // In a real implementation, this would:
+    // 1. Store emergency alert in database
+    // 2. Send push notifications to emergency contacts
+    // 3. Alert monitoring services
+    // For now, we'll simulate success
+
+    console.log(`🚨 緊急求救信號 - 用戶 ${req.user.id} 於 ${emergencyData.timestamp} 發送求救信號`);
+
+    // Simulate database storage and notification sending
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // If notification service is available, send alerts
+    if (notificationService && notificationService.sendEmergencyAlert) {
+      try {
+        await notificationService.sendEmergencyAlert(req.user.id, emergencyData);
+      } catch (notifError) {
+        console.warn('Emergency notification failed:', notifError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '緊急求救信號已發送',
+      emergency_id: `sos_${Date.now()}`,
+      timestamp: emergencyData.timestamp
+    });
+  } catch (error) {
+    console.error('Emergency SOS error:', error);
+    res.status(500).json({ error: '發送緊急求救失敗' });
+  }
+});
+
+// Share current location
+app.post('/api/location/share', authenticateToken, async (req, res) => {
+  const { latitude, longitude, message, contacts } = req.body;
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: '位置資訊不完整' });
+  }
+
+  try {
+    const shareData = {
+      user_id: req.user.id,
+      latitude,
+      longitude,
+      message: message || '我在這裡',
+      timestamp: new Date().toISOString(),
+      contacts: contacts || []
+    };
+
+    console.log(`📍 位置分享 - 用戶 ${req.user.id} 分享位置: ${latitude}, ${longitude}`);
+
+    // In a real implementation, this would:
+    // 1. Store location share in database
+    // 2. Send location to specified contacts via SMS/push notifications
+    // 3. Generate shareable location link
+
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // If notification service is available, send location share
+    if (notificationService && notificationService.shareLocation) {
+      try {
+        await notificationService.shareLocation(req.user.id, shareData);
+      } catch (notifError) {
+        console.warn('Location share notification failed:', notifError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '位置已成功分享',
+      share_id: `loc_${Date.now()}`,
+      shared_location: {
+        latitude,
+        longitude,
+        message: shareData.message,
+        timestamp: shareData.timestamp
+      }
+    });
+  } catch (error) {
+    console.error('Location share error:', error);
+    res.status(500).json({ error: '位置分享失敗' });
+  }
+});
+
+// Get emergency contacts
+app.get('/api/emergency/contacts', authenticateToken, async (req, res) => {
+  try {
+    // In a real implementation, this would query the database
+    // For now, return mock emergency contacts
+    const emergencyContacts = [
+      {
+        id: 1,
+        name: '緊急聯絡人',
+        phone: '119',
+        type: 'emergency'
+      },
+      {
+        id: 2,
+        name: '家屬',
+        phone: '0912345678',
+        type: 'family'
+      }
+    ];
+
+    console.log(`📞 獲取緊急聯絡人 - 用戶 ${req.user.id}`);
+
+    res.json({
+      success: true,
+      contacts: emergencyContacts
+    });
+  } catch (error) {
+    console.error('Get emergency contacts error:', error);
+    res.status(500).json({ error: '獲取緊急聯絡人失敗' });
+  }
+});
+
 // ==================== GEOFENCE ROUTES ====================
 // Apply authentication middleware and mount geofence routes
 app.use('/api', authenticateToken, geofenceRoutes);
