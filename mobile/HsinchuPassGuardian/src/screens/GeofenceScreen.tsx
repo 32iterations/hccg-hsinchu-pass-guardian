@@ -177,7 +177,7 @@ const GeofenceScreen = ({ navigation }: any) => {
               <View style={styles.locationInfo}>
                 <Text style={styles.coordLabel}>座標位置</Text>
                 <Text style={styles.coordText}>
-                  📍 {fence.center_lat.toFixed(6)}, {fence.center_lng.toFixed(6)}
+                  📍 {fence.center_lat ? fence.center_lat.toFixed(6) : '0.000000'}, {fence.center_lng ? fence.center_lng.toFixed(6) : '0.000000'}
                 </Text>
               </View>
             </View>

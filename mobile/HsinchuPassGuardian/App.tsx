@@ -4,6 +4,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import {ActivityIndicator, View, StyleSheet} from 'react-native';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Import screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -81,8 +82,9 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
+    <ErrorBoundary>
+      <NavigationContainer>
+        <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
@@ -153,6 +155,7 @@ function App(): React.JSX.Element {
         />
       </Stack.Navigator>
     </NavigationContainer>
+    </ErrorBoundary>
   );
 }
 

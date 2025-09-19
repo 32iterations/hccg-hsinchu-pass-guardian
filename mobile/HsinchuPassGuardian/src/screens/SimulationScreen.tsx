@@ -256,7 +256,7 @@ const SimulationScreen = ({ navigation }: any) => {
             </Text>
             {currentPosition.speed !== undefined && (
               <Text style={styles.statusText}>
-                速度: {currentPosition.speed.toFixed(1)} km/h
+                速度: {currentPosition.speed ? currentPosition.speed.toFixed(1) : '0.0'} km/h
               </Text>
             )}
             {currentPosition.battery !== undefined && (

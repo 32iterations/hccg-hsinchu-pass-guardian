@@ -164,7 +164,7 @@ const BeaconScanScreen = ({ navigation }: any) => {
                 styles.detailValue,
                 { color: getDistanceColor(item.distance) },
               ]}>
-              ~{item.distance.toFixed(1)} 公尺
+              ~{item.distance ? item.distance.toFixed(1) : '0.0'} 公尺
             </Text>
           </View>
 

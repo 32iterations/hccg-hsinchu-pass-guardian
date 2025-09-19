@@ -167,8 +167,8 @@ const MainScreen = ({ navigation }: any) => {
   const handleContactFamily = async () => {
     try {
       const result = await ApiService.getEmergencyContacts();
-      if (result.success && result.contacts?.length > 0) {
-        const contactOptions = result.contacts.map((contact: any, index: number) => ({
+      if (result?.success && result?.contacts?.length > 0) {
+        const contactOptions = (result.contacts || []).map((contact: any, index: number) => ({
           text: `${contact.name} (${contact.phone})`,
           onPress: () => {
             Alert.alert(
