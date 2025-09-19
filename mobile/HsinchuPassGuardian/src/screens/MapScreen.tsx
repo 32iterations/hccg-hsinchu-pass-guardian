@@ -9,6 +9,7 @@ import {
   Platform,
   PermissionsAndroid,
   ScrollView,
+  Modal,
 } from 'react-native';
 import MapView, {
   Marker,
@@ -20,6 +21,7 @@ import MapView, {
 } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import ApiService from '../services/api';
+import SimulationPanel from '../../components/SimulationPanel';
 
 interface Location {
   latitude: number;
@@ -46,9 +48,10 @@ interface PatientLocation {
 }
 
 // CRITICAL: Default region to prevent crashes
+// 新竹火車站正確座標
 const DEFAULT_REGION: Region = {
-  latitude: 24.8066,
-  longitude: 120.9686,
+  latitude: 24.8019,  // 新竹火車站緯度
+  longitude: 120.9718, // 新竹火車站經度
   latitudeDelta: 0.01,
   longitudeDelta: 0.01,
 };
@@ -64,6 +67,9 @@ const MapScreen = ({ navigation, route }: any) => {
   const [isTracking, setIsTracking] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientLocation | null>(null);
   const [currentRegion, setCurrentRegion] = useState<Region>(DEFAULT_REGION);
+  const [showSimulationPanel, setShowSimulationPanel] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationPath, setSimulationPath] = useState<Location[]>([]);
   const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -455,6 +461,16 @@ const MapScreen = ({ navigation, route }: any) => {
             strokeWidth={3}
           />
         )}
+
+        {/* Simulation path */}
+        {isMapReady && isSimulating && simulationPath.length > 1 && (
+          <Polyline
+            coordinates={simulationPath}
+            strokeColor="#FF6B6B"
+            strokeWidth={4}
+            lineDashPattern={[10, 5]}
+          />
+        )}
       </MapView>
 
       {/* Control panel */}
@@ -478,7 +494,64 @@ const MapScreen = ({ navigation, route }: any) => {
           onPress={createGeofence}>
           <Text style={styles.controlButtonText}>設定圍欄</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.controlButton, styles.simulationButton]}
+          onPress={() => setShowSimulationPanel(!showSimulationPanel)}>
+          <Text style={styles.controlButtonText}>模擬</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Simulation Panel Modal */}
+      <Modal
+        visible={showSimulationPanel}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSimulationPanel(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowSimulationPanel(false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            <SimulationPanel
+              onSimulationStart={(simulationId) => {
+                setIsSimulating(true);
+                console.log('Simulation started:', simulationId);
+              }}
+              onSimulationStop={() => {
+                setIsSimulating(false);
+                setSimulationPath([]);
+              }}
+              onLocationUpdate={(location) => {
+                if (location && location.latitude && location.longitude) {
+                  const newLocation = {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    timestamp: Date.now(),
+                  };
+                  setCurrentLocation(newLocation);
+                  setSimulationPath(prev => [...prev, newLocation]);
+
+                  // 更新地圖視角
+                  if (mapRef.current) {
+                    mapRef.current.animateToRegion({
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      latitudeDelta: 0.005,
+                      longitudeDelta: 0.005,
+                    }, 500);
+                  }
+                }
+              }}
+              isSimulating={isSimulating}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* Patient info panel */}
       {selectedPatient && (
@@ -585,6 +658,33 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 20,
     color: '#999',
+  },
+  simulationButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    maxHeight: '80%',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 15,
+    zIndex: 1,
+    padding: 10,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: 'bold',
   },
 });
 

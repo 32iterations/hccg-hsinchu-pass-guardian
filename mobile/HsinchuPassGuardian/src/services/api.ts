@@ -235,7 +235,7 @@ class ApiService {
     }
   }
 
-  async startSimulation(scenarioId: string, patientId: string, speed: number = 1) {
+  async startSimulation(scenarioId: string, speed: number = 1) {
     try {
       const response = await fetch(`${API_URL}/api/simulation/start`, {
         method: 'POST',
@@ -256,7 +256,7 @@ class ApiService {
     }
   }
 
-  async getSimulationPosition(simulationId: string) {
+  async getSimulationStatus(simulationId: string) {
     try {
       const response = await fetch(`${API_URL}/api/simulation/current/${simulationId}`, {
         method: 'GET',
