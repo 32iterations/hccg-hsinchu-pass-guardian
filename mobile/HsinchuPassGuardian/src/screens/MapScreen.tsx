@@ -90,14 +90,19 @@ const MapScreen = ({ navigation, route }: any) => {
     }
   }, [isMapReady]);
 
-  // 檢查地圖載入超時
+  // 檢查地圖載入超時 - 2025年最佳實踐：延長超時時間
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!isMapReady && !useSimulatedMap) {
-        console.log('Map loading timeout, switching to simulated map');
+        console.log('Google Maps loading timeout after 30 seconds, switching to simulated map');
         setUseSimulatedMap(true);
+        Alert.alert(
+          '地圖載入提示',
+          'Google Maps 載入時間較長，已切換至模擬地圖。您可以點擊左上角按鈕重新嘗試載入 Google Maps。',
+          [{ text: '確定' }]
+        );
       }
-    }, 8000); // 8秒超時
+    }, 30000); // 30秒超時 - 符合2025年最佳實踐
 
     return () => clearTimeout(timeout);
   }, [isMapReady, useSimulatedMap]);
@@ -380,26 +385,67 @@ const MapScreen = ({ navigation, route }: any) => {
     );
   };
 
-  // 地圖錯誤處理
+  // 地圖錯誤處理 - 2025年最佳實踐：提供重試選項
   const handleMapError = (error: any) => {
-    console.error('Map loading error:', error);
+    console.error('Google Maps loading error:', error);
     setMapLoadError(true);
-    setUseSimulatedMap(true);
     Alert.alert(
-      '地圖載入提示',
-      'Google Maps 暫時無法使用，已切換至模擬地圖模式。所有功能仍可正常使用。',
-      [{ text: '確定' }]
+      '🗺️ Google Maps 載入失敗',
+      '檢測到 Google Maps 載入問題。您可以選擇重新載入或切換至模擬地圖模式。',
+      [
+        {
+          text: '重新載入',
+          onPress: () => {
+            setMapLoadError(false);
+            setIsMapReady(false);
+            setUseSimulatedMap(false);
+            // 強制重新渲染 MapView
+            setTimeout(() => {
+              console.log('Retrying Google Maps load');
+            }, 100);
+          }
+        },
+        {
+          text: '使用模擬地圖',
+          onPress: () => {
+            setUseSimulatedMap(true);
+          }
+        }
+      ]
     );
   };
 
-  // 切換地圖類型
+  // 切換地圖類型 - 2025年最佳實踐：智能切換
   const toggleMapType = () => {
-    setUseSimulatedMap(!useSimulatedMap);
-    Alert.alert(
-      '地圖模式',
-      useSimulatedMap ? '切換至 Google Maps' : '切換至模擬地圖',
-      [{ text: '確定' }]
-    );
+    const switchingToGoogle = useSimulatedMap;
+
+    if (switchingToGoogle) {
+      // 切換至 Google Maps
+      Alert.alert(
+        '🌍 切換至 Google Maps',
+        '正在載入 Google Maps，這可能需要一些時間。載入期間請保持網路連線。',
+        [
+          { text: '取消', style: 'cancel' },
+          {
+            text: '確定',
+            onPress: () => {
+              setUseSimulatedMap(false);
+              setIsMapReady(false);
+              setMapLoadError(false);
+              console.log('Switching to Google Maps');
+            }
+          }
+        ]
+      );
+    } else {
+      // 切換至模擬地圖
+      setUseSimulatedMap(true);
+      Alert.alert(
+        '🗺️ 切換至模擬地圖',
+        '已切換至模擬地圖模式。所有功能仍可正常使用，位置模擬功能將更加準確。',
+        [{ text: '確定' }]
+      );
+    }
   };
 
   const getMarkerColor = (status: string) => {
@@ -417,6 +463,27 @@ const MapScreen = ({ navigation, route }: any) => {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#667eea" />
         <Text style={styles.loadingText}>載入地圖中...</Text>
+      </View>
+    );
+  }
+
+  // Show Google Maps loading indicator
+  if (!useSimulatedMap && !isMapReady && !mapLoadError) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.googleMapsLoadingContainer}>
+          <ActivityIndicator size="large" color="#667eea" />
+          <Text style={styles.googleMapsLoadingText}>正在載入 Google Maps...</Text>
+          <Text style={styles.googleMapsLoadingSubtext}>
+            首次載入可能需要較長時間，請耐心等候
+          </Text>
+          <TouchableOpacity
+            style={styles.switchToSimulatedButton}
+            onPress={() => setUseSimulatedMap(true)}
+          >
+            <Text style={styles.switchToSimulatedButtonText}>切換至模擬地圖</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -443,7 +510,7 @@ const MapScreen = ({ navigation, route }: any) => {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_DEFAULT}
+          provider={PROVIDER_GOOGLE}
           initialRegion={currentLocation ? {
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
@@ -452,7 +519,7 @@ const MapScreen = ({ navigation, route }: any) => {
           } : DEFAULT_REGION}
           region={currentRegion}
           onMapReady={() => {
-            console.log('Map is ready');
+            console.log('Google Maps is ready');
             setIsMapReady(true);
             setMapLoadError(false);
           }}
@@ -464,6 +531,9 @@ const MapScreen = ({ navigation, route }: any) => {
           showsMyLocationButton={true}
           showsCompass={true}
           showsScale={true}
+          loadingEnabled={true}
+          loadingIndicatorColor="#667eea"
+          loadingBackgroundColor="#F5F5F5"
         >
         {/* Current location marker */}
         {currentLocation && (
@@ -782,6 +852,46 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#999',
     fontWeight: 'bold',
+  },
+  // Google Maps 載入指示器樣式 - 2025年最佳實踐
+  googleMapsLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 20,
+  },
+  googleMapsLoadingText: {
+    marginTop: 15,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  googleMapsLoadingSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  switchToSimulatedButton: {
+    marginTop: 25,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  switchToSimulatedButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
