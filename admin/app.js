@@ -1,5 +1,5 @@
 // 管理儀表板主要應用程式
-const API_BASE = 'http://147.251.115.54:3000';
+const API_BASE = window.location.protocol + '//' + window.location.hostname + ':3001';
 let authToken = localStorage.getItem('adminToken');
 let map = null;
 let markers = {};

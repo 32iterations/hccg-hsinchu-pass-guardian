@@ -9,8 +9,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3000,
         ADMIN_PORT: 3001,
-        PUBLIC_IP: '147.251.115.54',
-        JWT_SECRET: process.env.JWT_SECRET || 'hsinchu-guardian-secret-2025'
+        PUBLIC_IP: 'hsinchu.dpdns.org',
+        JWT_SECRET: process.env.JWT_SECRET || 'hsinchu-guardian-secret-2025',
+        DATABASE_URL: 'postgresql://hccg:hccg2025@localhost:5432/hccg_development'
       },
       env_development: {
         NODE_ENV: 'development',
@@ -37,8 +38,9 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        PUBLIC_IP: '147.251.115.54',
-        JWT_SECRET: process.env.JWT_SECRET || 'hsinchu-guardian-secret-2025'
+        PUBLIC_IP: 'hsinchu.dpdns.org',
+        JWT_SECRET: process.env.JWT_SECRET || 'hsinchu-guardian-secret-2025',
+        DATABASE_URL: 'postgresql://hccg:hccg2025@localhost:5432/hccg_development'
       },
       env_development: {
         NODE_ENV: 'development',

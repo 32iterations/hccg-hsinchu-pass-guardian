@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- 使用正式 SSL 憑證，只需信任系統憑證 -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- 允許 HTTP 連線以支援開發環境 -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system"/>
             <certificates src="user"/>
         </trust-anchors>
     </base-config>
+
+    <!-- 特定域名配置 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">hsinchu.dpdns.org</domain>
+        <domain includeSubdomains="true">api.hsinchu.dpdns.org</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
 </network-security-config>

@@ -1,6 +1,6 @@
 // API Configuration
-// Using HTTPS with valid Let's Encrypt certificate
-export const API_BASE_URL = 'https://api.hsinchu.dpdns.org';
+// Using HTTP for immediate testing (Android 9+ requires domain)
+export const API_BASE_URL = 'http://api.hsinchu.dpdns.org';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {

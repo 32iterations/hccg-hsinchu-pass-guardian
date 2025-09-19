@@ -33,5 +33,5 @@ EXPOSE 3000 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3001/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
 
-# 啟動應用
-CMD ["node", "backend/server-admin.js"]
+# 啟動應用 (同時運行主要API和管理服務)
+CMD ["sh", "-c", "node backend/server.js & node backend/server-admin.js & wait"]
