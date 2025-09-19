@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   PermissionsAndroid,
   ScrollView,
   Modal,
+  Animated,
+  Easing,
 } from 'react-native';
 import MapView, {
   Marker,
@@ -18,8 +20,11 @@ import MapView, {
   PROVIDER_GOOGLE,
   PROVIDER_DEFAULT,
   Region,
+  AnimatedRegion,
+  MarkerAnimated,
 } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
+import NetInfo from '@react-native-community/netinfo';
 import ApiService from '../services/api';
 import SimulationPanel from '../../components/SimulationPanel';
 import SimulatedMapView from '../../components/SimulatedMapView';
@@ -29,6 +34,12 @@ interface Location {
   longitude: number;
   timestamp?: number;
   accuracy?: number;
+}
+
+// Animation coordinate type
+interface AnimatedLocation extends Location {
+  latitudeDelta?: number;
+  longitudeDelta?: number;
 }
 
 interface Geofence {
@@ -59,6 +70,16 @@ const DEFAULT_REGION: Region = {
 
 const MapScreen = ({ navigation, route }: any) => {
   const mapRef = useRef<MapView>(null);
+  const markerRef = useRef<any>(null);
+
+  // 動畫座標狀態
+  const [animatedCoordinate] = useState(new AnimatedRegion({
+    latitude: DEFAULT_REGION.latitude,
+    longitude: DEFAULT_REGION.longitude,
+    latitudeDelta: DEFAULT_REGION.latitudeDelta,
+    longitudeDelta: DEFAULT_REGION.longitudeDelta,
+  }));
+
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [patientLocations, setPatientLocations] = useState<PatientLocation[]>([]);
   const [locationHistory, setLocationHistory] = useState<Location[]>([]);
@@ -73,16 +94,57 @@ const MapScreen = ({ navigation, route }: any) => {
   const [simulationPath, setSimulationPath] = useState<Location[]>([]);
   const [useSimulatedMap, setUseSimulatedMap] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(false);
+  const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
+  const [mapLoadProgress] = useState(new Animated.Value(0));
   const watchIdRef = useRef<number | null>(null);
+  const animationInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // 檢查網路連接
+  const checkNetworkConnection = useCallback(async () => {
+    try {
+      const state = await NetInfo.fetch();
+      setIsNetworkAvailable(state.isConnected ?? false);
+
+      if (!state.isConnected) {
+        console.log('No network connection, consider using simulated map');
+        if (!useSimulatedMap && !isMapReady) {
+          Alert.alert(
+            '網路連線提示',
+            '偵測到網路連線問題，建議使用模擬地圖模式。',
+            [
+              { text: '使用模擬地圖', onPress: () => setUseSimulatedMap(true) },
+              { text: '繼續等待', style: 'cancel' }
+            ]
+          );
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Network check error:', error);
+      return false;
+    }
+  }, [useSimulatedMap, isMapReady]);
 
   useEffect(() => {
+    // 網路監聽器
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsNetworkAvailable(state.isConnected ?? false);
+    });
+
+    checkNetworkConnection();
     requestLocationPermission();
+
     return () => {
+      unsubscribe();
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch(watchIdRef.current);
       }
+      if (animationInterval.current) {
+        clearInterval(animationInterval.current);
+      }
     };
-  }, []);
+  }, [checkNetworkConnection]);
 
   useEffect(() => {
     if (isMapReady) {
@@ -90,22 +152,50 @@ const MapScreen = ({ navigation, route }: any) => {
     }
   }, [isMapReady]);
 
-  // 檢查地圖載入超時 - 2025年最佳實踐：延長超時時間
+  // 檢查地圖載入超時 - 2025年最佳實踐：延長超時至45秒
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isMapReady && !useSimulatedMap) {
-        console.log('Google Maps loading timeout after 30 seconds, switching to simulated map');
-        setUseSimulatedMap(true);
-        Alert.alert(
-          '地圖載入提示',
-          'Google Maps 載入時間較長，已切換至模擬地圖。您可以點擊左上角按鈕重新嘗試載入 Google Maps。',
-          [{ text: '確定' }]
-        );
-      }
-    }, 30000); // 30秒超時 - 符合2025年最佳實踐
+    let loadingAnimation: Animated.CompositeAnimation;
 
-    return () => clearTimeout(timeout);
-  }, [isMapReady, useSimulatedMap]);
+    if (!isMapReady && !useSimulatedMap) {
+      // 顯示載入進度動畫
+      loadingAnimation = Animated.timing(mapLoadProgress, {
+        toValue: 100,
+        duration: 45000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      });
+      loadingAnimation.start();
+
+      const timeout = setTimeout(() => {
+        if (!isMapReady && !useSimulatedMap) {
+          console.log('Google Maps loading timeout after 45 seconds');
+          Alert.alert(
+            '🗺️ Google Maps 載入超時',
+            '地圖載入時間過長，可能是網路或 API 設定問題。您可以選擇繼續等待或使用模擬地圖。',
+            [
+              { text: '繼續等待', onPress: () => console.log('User chose to wait') },
+              {
+                text: '使用模擬地圖',
+                onPress: () => {
+                  setUseSimulatedMap(true);
+                  setIsMapReady(true);
+                  setMapLoadError(false);
+                },
+                style: 'cancel'
+              }
+            ]
+          );
+        }
+      }, 45000); // 45秒超時 - 適應2025年網路環境
+
+      return () => {
+        clearTimeout(timeout);
+        if (loadingAnimation) {
+          loadingAnimation.stop();
+        }
+      };
+    }
+  }, [isMapReady, useSimulatedMap, mapLoadProgress]);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
