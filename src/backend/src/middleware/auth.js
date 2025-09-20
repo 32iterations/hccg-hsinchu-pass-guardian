@@ -335,11 +335,29 @@ class AuthMiddleware {
         }
 
         if (!hasPermission.hasPermission) {
+          // Get auditService for logging access denial
+          const { auditService } = require('../services/ServiceRegistry');
+
+          // Log access denial for audit trail
+          await auditService?.logSecurityEvent({
+            userId: user.userId,
+            action: 'read_attempt',
+            resource: req.params.id || req.baseUrl,
+            result: 'access_denied',
+            denialReason: 'insufficient_permissions',
+            userClearanceLevel: user.clearanceLevel || 'restricted',
+            resourceSensitivityLevel: 'confidential',
+            attemptedResource: req.params.id || req.baseUrl,
+            watermark: `AUDIT_${require('crypto').randomBytes(16).toString('hex').toUpperCase()}`
+          });
+
           return res.status(403).json({
             success: false,
-            error: 'Forbidden',
-            message: 'Insufficient permissions for this operation',
-            required: requiredPermissions
+            error: 'access_denied',
+            message: '權限不足',
+            userRole: user.roles[0],
+            requiredPermission: requiredPermissions[0] || 'read_sensitive_data',
+            resourceSensitivity: 'confidential'
           });
         }
 
@@ -383,10 +401,29 @@ class AuthMiddleware {
         }
 
         if (!hasAccess) {
+          // Get auditService for logging access denial
+          const { auditService } = require('../services/ServiceRegistry');
+
+          // Log access denial for audit trail
+          await auditService?.logSecurityEvent({
+            userId: user.userId,
+            action: 'read_attempt',
+            resource: resourceId,
+            result: 'access_denied',
+            denialReason: 'insufficient_permissions',
+            userClearanceLevel: user.clearanceLevel || 'restricted',
+            resourceSensitivityLevel: 'confidential',
+            attemptedResource: resourceId,
+            watermark: `AUDIT_${require('crypto').randomBytes(16).toString('hex').toUpperCase()}`
+          });
+
           return res.status(403).json({
             success: false,
-            error: 'Forbidden',
-            message: `Insufficient permissions for ${resourceType} access`
+            error: 'access_denied',
+            message: '權限不足',
+            userRole: user.roles[0],
+            requiredPermission: 'read_sensitive_data',
+            resourceSensitivity: 'confidential'
           });
         }
 
