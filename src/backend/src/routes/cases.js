@@ -4,10 +4,13 @@ const { authMiddleware } = require('../middleware/shared');
 const { getServices } = require('../services');
 
 const router = express.Router();
-// Get services from dependency injection container
-const services = getServices();
-const { caseFlowService, auditService, rbacService } = services;
 const validationMiddleware = new ValidationMiddleware();
+
+// Helper function to get services (lazy loading for testability)
+function getServiceInstances() {
+  const services = getServices();
+  return services;
+}
 
 // Apply authentication to all case routes
 router.use(authMiddleware.authenticate());
@@ -59,6 +62,9 @@ router.get('/search',
 router.get('/:id',
   async (req, res, next) => {
     try {
+      // Get services with lazy loading for testability
+      const { caseFlowService, auditService, rbacService } = getServiceInstances();
+
       const caseId = req.params.id;
       const userId = req.user?.userId;
       const userRoles = req.user?.roles || [];

@@ -98,6 +98,7 @@ describe('P4 承辦Console Production Validation', () => {
 
     // Mock the logSecurityEvent to store audit entries in globalAuditLogs
     auditService.logSecurityEvent = async function(data) {
+      console.log('🔥 AUDIT logSecurityEvent CALLED with:', JSON.stringify(data, null, 2));
       const auditEntry = {
         ...data,
         timestamp: new Date().toISOString(),
@@ -105,7 +106,7 @@ describe('P4 承辦Console Production Validation', () => {
         attemptedResource: data.resource // Map resource to attemptedResource for test compatibility
       };
       globalAuditLogs.push(auditEntry);
-      console.log('Audit log entry created:', auditEntry); // Debug logging
+      console.log('🔥 STORED audit entry. Total logs:', globalAuditLogs.length);
       return auditEntry;
     };
 
@@ -115,15 +116,32 @@ describe('P4 承辦Console Production Validation', () => {
       const services = getServices();
       const auditLogs = services.auditService._getAuditLogs ? services.auditService._getAuditLogs() : globalAuditLogs;
 
+      console.log('DEBUG getLatestAuditEntry - Filter:', filter);
+      console.log('DEBUG getLatestAuditEntry - Available audit logs:', auditLogs.map(log => ({
+        userId: log.userId,
+        action: log.action,
+        resource: log.resource,
+        result: log.result
+      })));
+
       // Find the latest entry matching the filter
       for (let i = auditLogs.length - 1; i >= 0; i--) {
         const entry = auditLogs[i];
-        if ((!filter.userId || entry.userId === filter.userId) &&
-            (!filter.action || entry.action === filter.action) &&
-            (!filter.resource || entry.resource === filter.resource)) {
+        const userIdMatch = !filter.userId || entry.userId === filter.userId;
+        const actionMatch = !filter.action || entry.action === filter.action;
+        const resourceMatch = !filter.resource || entry.resource === filter.resource;
+
+        console.log(`DEBUG Entry ${i}:`, {
+          entry: { userId: entry.userId, action: entry.action, resource: entry.resource },
+          matches: { userIdMatch, actionMatch, resourceMatch }
+        });
+
+        if (userIdMatch && actionMatch && resourceMatch) {
+          console.log('DEBUG Found matching entry:', entry);
           return entry;
         }
       }
+      console.log('DEBUG No matching entry found');
       return null;
     };
 
@@ -232,15 +250,18 @@ describe('P4 承辦Console Production Validation', () => {
     });
 
     // Configure the getServices mock to return our mocked services
-    getServices.mockImplementation(() => ({
-      rbacService,
-      caseFlowService,
-      auditService,
-      kpiService,
-      // Add any other services that might be needed
-      notificationService: { send: jest.fn() },
-      locationService: { trackLocation: jest.fn() }
-    }));
+    getServices.mockImplementation(() => {
+      console.log('🚀 getServices() called, returning mocked services');
+      return {
+        rbacService,
+        caseFlowService,
+        auditService,
+        kpiService,
+        // Add any other services that might be needed
+        notificationService: { send: jest.fn() },
+        locationService: { trackLocation: jest.fn() }
+      };
+    });
 
     // Test users with different roles
     testUsers = {
@@ -382,11 +403,17 @@ describe('P4 承辦Console Production Validation', () => {
         }));
 
         // Verify audit log created for denied access
+        console.log('🔍 About to call getLatestAuditEntry with filter:', {
+          userId: user.id,
+          action: 'read_attempt',
+          resource: testCases[0].id
+        });
         const auditEntry = await auditService.getLatestAuditEntry({
           userId: user.id,
           action: 'read_attempt',
           resource: testCases[0].id
         });
+        console.log('🔍 Audit entry result:', auditEntry);
 
         expect(auditEntry).toEqual(expect.objectContaining({
           result: 'access_denied',
