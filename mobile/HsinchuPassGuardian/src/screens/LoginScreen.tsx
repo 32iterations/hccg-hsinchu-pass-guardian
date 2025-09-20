@@ -219,6 +219,19 @@ const LoginScreen = ({ navigation }: any) => {
             onPress={handleRegister}>
             <Text style={styles.registerButtonText}>註冊新帳號</Text>
           </TouchableOpacity>
+
+          {/* Test Login Button - 測試登入 */}
+          <TouchableOpacity
+            style={[styles.registerButton, {backgroundColor: '#28a745', marginTop: 10}]}
+            onPress={() => {
+              // 直接跳過驗證，進入主畫面
+              AsyncStorage.setItem('token', 'test-token-123');
+              AsyncStorage.setItem('isLoggedIn', 'true');
+              AsyncStorage.setItem('userEmail', 'test@example.com');
+              navigation.navigate('Main');
+            }}>
+            <Text style={[styles.registerButtonText, {color: '#fff'}]}>🚀 快速測試登入</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Bottom Wave Decoration */}

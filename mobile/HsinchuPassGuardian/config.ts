@@ -1,6 +1,6 @@
 // API Configuration
-// Using direct IP for backend server connection
-export const API_BASE_URL = 'http://147.251.115.54:3000';
+// Using domain name for better accessibility
+export const API_BASE_URL = 'http://hsinchu.dpdns.org:3000';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {
