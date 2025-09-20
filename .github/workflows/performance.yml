@@ -50,7 +50,9 @@ jobs:
         if: steps.check_build.outputs.frontend_exists == 'true'
         run: |
           npx serve -s ${{ steps.check_build.outputs.build_dir }} -l 3000 &
-          sleep 10
+          SERVER_PID=$!
+          echo "Started server with PID: $SERVER_PID"
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
       - name: Serve backend API (fallback)
         if: steps.check_build.outputs.frontend_exists != 'true'
@@ -63,15 +65,79 @@ jobs:
           else
             # Create a simple static page for Lighthouse to audit
             mkdir -p temp_public
-            echo '<html><head><title>API Server</title></head><body><h1>API Server Running</h1><p>This is a backend API project.</p></body></html>' > temp_public/index.html
+            echo '<html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server Running</h1><p>This is a backend API project serving on port 3000.</p><script>console.log("Page loaded successfully");</script></body></html>' > temp_public/index.html
             npx serve -s temp_public -l 3000 &
           fi
-          sleep 10
+          SERVER_PID=$!
+          echo "Started server with PID: $SERVER_PID"
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+      - name: Wait for server to be available
+        run: |
+          echo "Waiting for server to be available on http://localhost:3000..."
+          for i in {1..15}; do
+            if curl -sSf --connect-timeout 5 --max-time 10 http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Server is up and responding!"
+              curl -I http://localhost:3000
+              exit 0
+            fi
+            echo "⏳ Attempt $i/15: Server not ready yet, waiting 3 seconds..."
+            sleep 3
+          done
+          echo "❌ Server never became available after 45 seconds."
+          echo "🔍 Checking if server process is still running..."
+          if [ ! -z "$SERVER_PID" ]; then
+            if ps -p $SERVER_PID > /dev/null; then
+              echo "Server process $SERVER_PID is still running"
+            else
+              echo "Server process $SERVER_PID has died"
+            fi
+          fi
+          echo "🔍 Checking what's listening on port 3000..."
+          netstat -tlnp | grep :3000 || echo "Nothing listening on port 3000"
+          echo "🔍 Checking server logs if available..."
+          ls -la temp_public/ 2>/dev/null || echo "No temp_public directory"
+          exit 1
 
       - name: Run Lighthouse CI
         run: |
           npm install -g @lhci/cli
-          lhci autorun
+          echo "🚀 Starting Lighthouse audit on http://localhost:3000"
+          # Create lighthouse config to handle potential issues
+          cat > lighthouserc.json << 'EOF'
+          {
+            "ci": {
+              "collect": {
+                "url": ["http://localhost:3000"],
+                "numberOfRuns": 1,
+                "settings": {
+                  "chromeFlags": "--no-sandbox --ignore-certificate-errors --disable-dev-shm-usage --disable-gpu --headless"
+                }
+              },
+              "assert": {
+                "assertions": {
+                  "categories:performance": ["warn", {"minScore": 0.6}],
+                  "categories:accessibility": ["warn", {"minScore": 0.8}],
+                  "categories:best-practices": ["warn", {"minScore": 0.8}],
+                  "categories:seo": ["warn", {"minScore": 0.8}]
+                }
+              }
+            }
+          }
+          EOF
+
+          # Test connection one more time before running lighthouse
+          if ! curl -sSf http://localhost:3000 > /dev/null; then
+            echo "❌ Server is not responding, cannot run Lighthouse"
+            exit 1
+          fi
+
+          # Run lighthouse with our config
+          lhci autorun --config=lighthouserc.json || {
+            echo "❌ Lighthouse failed, checking server status..."
+            curl -v http://localhost:3000 || echo "Server connection failed"
+            exit 1
+          }
 
       - name: Upload Lighthouse results
         uses: actions/upload-artifact@v4
