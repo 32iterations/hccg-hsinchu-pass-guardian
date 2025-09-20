@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -34,7 +34,7 @@ interface LeafletMapProps {
   onSimulationStop?: () => void;
 }
 
-const LeafletMap: React.FC<LeafletMapProps> = ({
+const LeafletMap = forwardRef<any, LeafletMapProps>(({
   locations,
   geofences,
   onMapReady,
@@ -46,12 +46,34 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   showHeatmap = false,
   onSimulationStart,
   onSimulationStop
-}) => {
+}, ref) => {
   const webViewRef = useRef<WebView>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
   // 新竹市中心坐標
   const HSINCHU_CENTER = { lat: 24.8074, lng: 120.98175 };
+
+  // 暴露方法給父組件使用
+  useImperativeHandle(ref, () => ({
+    startSimulation: () => {
+      console.log('[LeafletMap] Starting simulation from imperative handle');
+      sendToWebView('START_SIMULATION');
+      onSimulationStart?.();
+    },
+    stopSimulation: () => {
+      console.log('[LeafletMap] Stopping simulation from imperative handle');
+      sendToWebView('STOP_SIMULATION');
+      onSimulationStop?.();
+    },
+    toggleHeatmap: () => {
+      console.log('[LeafletMap] Toggling heatmap from imperative handle');
+      sendToWebView('TOGGLE_HEATMAP');
+    },
+    recenterMap: () => {
+      console.log('[LeafletMap] Recentering map from imperative handle');
+      sendToWebView('RECENTER');
+    }
+  }));
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -746,7 +768,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

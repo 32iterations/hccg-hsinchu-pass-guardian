@@ -47,6 +47,7 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
 
   const locationUpdateInterval = useRef<NodeJS.Timeout | null>(null);
   const geofenceCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const leafletMapRef = useRef<any>(null);
 
   // 新竹市中心坐標
   const HSINCHU_CENTER = { latitude: 24.8074, longitude: 120.98175 };
@@ -69,6 +70,27 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
       stopRealTimeUpdates();
     };
   }, [selectedPatient, isMapReady]);
+
+  // 新增：當模擬模式變更時，觸發地圖中的相應功能
+  useEffect(() => {
+    if (isMapReady && leafletMapRef.current) {
+      if (simulationMode) {
+        console.log('[LeafletRealTimeMapScreen] Starting simulation mode');
+        leafletMapRef.current.startSimulation();
+      } else {
+        console.log('[LeafletRealTimeMapScreen] Stopping simulation mode');
+        leafletMapRef.current.stopSimulation();
+      }
+    }
+  }, [simulationMode, isMapReady]);
+
+  // 新增：當熱像圖模式變更時，觸發地圖中的相應功能
+  useEffect(() => {
+    if (isMapReady && leafletMapRef.current) {
+      console.log('[LeafletRealTimeMapScreen] Toggling heatmap:', showHeatmap);
+      leafletMapRef.current.toggleHeatmap();
+    }
+  }, [showHeatmap, isMapReady]);
 
   const initializeScreen = async () => {
     try {
@@ -291,6 +313,7 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
       {/* 地圖區域 */}
       <View style={styles.mapContainer}>
         <LeafletMap
+          ref={leafletMapRef}
           locations={patientLocations}
           geofences={[]}
           mode={simulationMode ? "simulation" : "realtime"}
