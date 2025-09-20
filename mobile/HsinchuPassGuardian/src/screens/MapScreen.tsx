@@ -152,21 +152,37 @@ const MapScreen = ({ navigation, route }: any) => {
     }
   }, [isMapReady]);
 
-  // 改進的地圖載入邏輯 - 不依賴 onMapReady
+  // 改進的地圖載入邏輯 - 2025 最佳實踐
   useEffect(() => {
     let mapInitTimer: NodeJS.Timeout;
     let loadingAnimation: Animated.CompositeAnimation;
+    let mapReadyCheck: NodeJS.Timeout;
 
     if (!useSimulatedMap) {
       console.log('[MapScreen] Starting Google Maps initialization...');
 
-      // 立即嘗試標記地圖為準備就緒（不等待 onMapReady）
-      // 因為 MapView 本身可能已經渲染但回調未觸發
+      // 定期檢查地圖元件是否已載入但 onMapReady 未觸發
+      let checkCount = 0;
+      mapReadyCheck = setInterval(() => {
+        checkCount++;
+        if (mapRef.current && !isMapReady) {
+          console.log('[MapScreen] Map ref exists, marking as ready');
+          setIsMapReady(true);
+          setMapLoadError(false);
+          clearInterval(mapReadyCheck);
+        } else if (checkCount >= 20) { // 10秒後停止檢查
+          clearInterval(mapReadyCheck);
+        }
+      }, 500);
+
+      // 備用方案：1.5秒後強制設置為準備就緒
       mapInitTimer = setTimeout(() => {
-        console.log('[MapScreen] Force setting map ready after 3 seconds');
-        setIsMapReady(true);
-        setMapLoadError(false);
-      }, 3000);
+        if (!isMapReady) {
+          console.log('[MapScreen] Force setting map ready after 1.5 seconds');
+          setIsMapReady(true);
+          setMapLoadError(false);
+        }
+      }, 1500);
 
       // 顯示載入進度動畫
       loadingAnimation = Animated.timing(mapLoadProgress, {
@@ -210,6 +226,7 @@ const MapScreen = ({ navigation, route }: any) => {
       return () => {
         clearTimeout(mapInitTimer);
         clearTimeout(timeout);
+        clearInterval(mapReadyCheck);
         if (loadingAnimation) {
           loadingAnimation.stop();
         }
@@ -639,25 +656,53 @@ const MapScreen = ({ navigation, route }: any) => {
             console.log('[MapScreen] Google Maps onMapReady callback fired');
             setIsMapReady(true);
             setMapLoadError(false);
+            setIsLoading(false);
           }}
           onMapLoaded={() => {
             console.log('[MapScreen] Google Maps onMapLoaded callback fired');
             setIsMapReady(true);
+            setIsLoading(false);
           }}
           onError={(error) => {
             console.error('[MapScreen] Google Maps error:', error);
             handleMapError(error);
           }}
+          onRegionChange={() => {
+            // 當地圖開始移動時，確保地圖已準備好
+            if (!isMapReady) {
+              console.log('[MapScreen] Map interaction detected, marking as ready');
+              setIsMapReady(true);
+              setIsLoading(false);
+            }
+          }}
           onRegionChangeComplete={(region) => {
             setCurrentRegion(region);
+            // 確保地圖已準備好
+            if (!isMapReady) {
+              setIsMapReady(true);
+              setIsLoading(false);
+            }
+          }}
+          onPress={() => {
+            // 當用戶點擊地圖時，確保地圖已準備好
+            if (!isMapReady) {
+              console.log('[MapScreen] Map press detected, marking as ready');
+              setIsMapReady(true);
+              setIsLoading(false);
+            }
           }}
           showsUserLocation={true}
           showsMyLocationButton={true}
           showsCompass={true}
           showsScale={true}
-          loadingEnabled={true}
+          loadingEnabled={Platform.OS === 'ios'} // 只在 iOS 啟用以避免 Android 崩潰
           loadingIndicatorColor="#667eea"
           loadingBackgroundColor="#F5F5F5"
+          moveOnMarkerPress={false}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          scrollEnabled={true}
+          zoomEnabled={true}
         >
         {/* Current location marker */}
         {currentLocation && (
