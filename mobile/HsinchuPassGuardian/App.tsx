@@ -18,10 +18,12 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MainScreen from './src/screens/MainScreen';
 import BeaconScanScreen from './src/screens/BeaconScanScreen';
 import MapScreen from './src/screens/MapScreen';
+import EnhancedMapScreen from './src/screens/EnhancedMapScreen';
 import SimulationScreen from './src/screens/SimulationScreen';
 import PatientsScreen from './src/screens/PatientsScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import GeofenceScreen from './src/screens/GeofenceScreen';
+import EnhancedGeofenceScreen from './src/screens/EnhancedGeofenceScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createStackNavigator();
@@ -161,8 +163,13 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Map"
+          component={EnhancedMapScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OriginalMap"
           component={MapScreen}
-          options={{ title: '即時定位' }}
+          options={{ title: '原始地圖' }}
         />
         <Stack.Screen
           name="Simulation"
@@ -181,8 +188,13 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Geofence"
+          component={EnhancedGeofenceScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OriginalGeofence"
           component={GeofenceScreen}
-          options={{ title: '地理圍欄' }}
+          options={{ title: '原始圍欄' }}
         />
         <Stack.Screen
           name="Settings"
