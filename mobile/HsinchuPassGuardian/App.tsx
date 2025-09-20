@@ -20,12 +20,14 @@ import BeaconScanScreen from './src/screens/BeaconScanScreen';
 import MapScreen from './src/screens/MapScreen';
 import EnhancedMapScreen from './src/screens/EnhancedMapScreen';
 import RealTimeMapScreen from './src/screens/RealTimeMapScreen';
+import LeafletRealTimeMapScreen from './src/screens/LeafletRealTimeMapScreen';
 import SimulationScreen from './src/screens/SimulationScreen';
 import PatientsScreen from './src/screens/PatientsScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import GeofenceScreen from './src/screens/GeofenceScreen';
 import EnhancedGeofenceScreen from './src/screens/EnhancedGeofenceScreen';
 import RealGeofenceScreen from './src/screens/RealGeofenceScreen';
+import LeafletRealGeofenceScreen from './src/screens/LeafletRealGeofenceScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createStackNavigator();
@@ -165,7 +167,7 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Map"
-          component={RealTimeMapScreen}
+          component={LeafletRealTimeMapScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -177,6 +179,11 @@ function App(): React.JSX.Element {
           name="SimulationMap"
           component={EnhancedMapScreen}
           options={{ title: '模擬地圖' }}
+        />
+        <Stack.Screen
+          name="GoogleRealTimeMap"
+          component={RealTimeMapScreen}
+          options={{ title: 'Google地圖版本' }}
         />
         <Stack.Screen
           name="Simulation"
@@ -195,7 +202,7 @@ function App(): React.JSX.Element {
         />
         <Stack.Screen
           name="Geofence"
-          component={RealGeofenceScreen}
+          component={LeafletRealGeofenceScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -207,6 +214,11 @@ function App(): React.JSX.Element {
           name="SimulationGeofence"
           component={EnhancedGeofenceScreen}
           options={{ title: '模擬圍欄' }}
+        />
+        <Stack.Screen
+          name="GoogleRealGeofence"
+          component={RealGeofenceScreen}
+          options={{ title: 'Google圍欄版本' }}
         />
         <Stack.Screen
           name="Settings"
