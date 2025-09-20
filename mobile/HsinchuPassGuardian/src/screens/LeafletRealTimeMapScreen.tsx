@@ -41,6 +41,9 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
   const [isConnected, setIsConnected] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [simulationMode, setSimulationMode] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   const locationUpdateInterval = useRef<NodeJS.Timeout | null>(null);
   const geofenceCheckInterval = useRef<NodeJS.Timeout | null>(null);
@@ -290,9 +293,13 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
         <LeafletMap
           locations={patientLocations}
           geofences={[]}
-          mode="realtime"
+          mode={simulationMode ? "simulation" : "realtime"}
           onMapReady={handleMapReady}
           currentLocation={patientLocations.length > 0 ? patientLocations[patientLocations.length - 1] : undefined}
+          simulationMode={simulationMode}
+          showHeatmap={showHeatmap}
+          onSimulationStart={() => setIsSimulating(true)}
+          onSimulationStop={() => setIsSimulating(false)}
         />
       </View>
 
@@ -317,6 +324,22 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
 
         <View style={styles.controlButtons}>
           <TouchableOpacity
+            style={[styles.controlButton, simulationMode && styles.activeButton]}
+            onPress={() => setSimulationMode(!simulationMode)}
+          >
+            <Text style={styles.controlButtonText}>🔬</Text>
+            <Text style={styles.controlButtonLabel}>模擬</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.controlButton, showHeatmap && styles.activeButton]}
+            onPress={() => setShowHeatmap(!showHeatmap)}
+          >
+            <Text style={styles.controlButtonText}>🌡️</Text>
+            <Text style={styles.controlButtonLabel}>熱像圖</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.controlButton}
             onPress={refreshData}
             disabled={!isConnected || !selectedPatient}
@@ -331,14 +354,6 @@ const LeafletRealTimeMapScreen = ({ navigation, route }: any) => {
           >
             <Text style={styles.controlButtonText}>🚧</Text>
             <Text style={styles.controlButtonLabel}>圍欄</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => navigation.navigate('Alerts')}
-          >
-            <Text style={styles.controlButtonText}>🚨</Text>
-            <Text style={styles.controlButtonLabel}>警報</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -470,6 +485,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+  },
+  activeButton: {
+    backgroundColor: '#10B981',
   },
   offlineNotice: {
     position: 'absolute',

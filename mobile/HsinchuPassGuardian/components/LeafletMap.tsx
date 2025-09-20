@@ -26,8 +26,12 @@ interface LeafletMapProps {
   onMapReady?: () => void;
   onLocationUpdate?: (location: Location) => void;
   onGeofenceCreate?: (geofence: Omit<Geofence, 'id'>) => void;
-  mode: 'realtime' | 'geofence';
+  mode: 'realtime' | 'geofence' | 'simulation';
   currentLocation?: Location;
+  simulationMode?: boolean;
+  showHeatmap?: boolean;
+  onSimulationStart?: () => void;
+  onSimulationStop?: () => void;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -37,7 +41,11 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   onLocationUpdate,
   onGeofenceCreate,
   mode,
-  currentLocation
+  currentLocation,
+  simulationMode = false,
+  showHeatmap = false,
+  onSimulationStart,
+  onSimulationStop
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -51,7 +59,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>新竹護照監護人 - ${mode === 'realtime' ? '即時定位' : '地理圍欄'}</title>
+    <title>新竹護照監護人 - ${mode === 'realtime' ? '即時定位' : mode === 'simulation' ? '模擬測試' : '地理圍欄'}</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html {
@@ -82,10 +90,24 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             box-shadow: 0 0 20px rgba(239, 68, 68, 1);
             animation: pulse 1s infinite;
         }
+        .simulation-marker {
+            width: 24px;
+            height: 24px;
+            background-color: #8b5cf6;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.8);
+            animation: bounce 2s infinite;
+        }
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
         }
         .home-marker {
             width: 24px;
@@ -117,10 +139,61 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             border: 2px solid white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            font-size: 12px;
+        }
+        .control-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .control-btn:hover {
+            background: #3730a3;
+        }
+        .control-btn.active {
+            background: #059669;
+        }
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            margin: 2px 0;
+        }
+        .status-indicator.simulation {
+            background: #ddd6fe;
+            color: #5b21b6;
+        }
+        .status-indicator.heatmap {
+            background: #fef3c7;
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    ${mode === 'simulation' ? `
+    <div class="control-panel">
+        <div>模擬控制</div>
+        <button class="control-btn" onclick="startSimulation()">開始模擬</button>
+        <button class="control-btn" onclick="stopSimulation()">停止模擬</button>
+        <button class="control-btn" onclick="toggleHeatmap()">熱像圖</button>
+        <div class="status-indicator simulation" id="simStatus">等待開始</div>
+        <div class="status-indicator heatmap" id="heatmapStatus">熱像圖: 關閉</div>
+    </div>
+    ` : ''}
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -130,6 +203,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         let geofenceMarkers = [];
         let geofenceCircles = [];
         let pathPolylines = [];
+        let simulationMarkers = [];
+        let heatmapLayer;
+        let isSimulating = false;
+        let simulationInterval;
+        let heatmapData = [];
+        let showingHeatmap = ${showHeatmap};
 
         // 新竹市預設地點
         const hsinchuLocations = {
@@ -282,6 +361,216 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             });
         }
 
+        // 模擬功能
+        function startSimulation() {
+            if (isSimulating) return;
+            isSimulating = true;
+
+            document.getElementById('simStatus').textContent = '模擬中...';
+
+            const simulationPaths = [
+                // 路徑1: 火車站 -> 東門城 -> 市政府
+                [
+                    [24.8016, 120.9714], // 火車站
+                    [24.8020, 120.9700],
+                    [24.8016, 120.9672], // 東門城
+                    [24.8030, 120.9700],
+                    [24.8038, 120.9713]  // 市政府
+                ],
+                // 路徑2: 隨機移動模式
+                [
+                    [24.8100, 120.9750],
+                    [24.8090, 120.9760],
+                    [24.8080, 120.9770],
+                    [24.8070, 120.9780],
+                    [24.8060, 120.9790]
+                ]
+            ];
+
+            let currentPathIndex = 0;
+            let currentPointIndex = 0;
+
+            simulationInterval = setInterval(() => {
+                const currentPath = simulationPaths[currentPathIndex];
+                const currentPoint = currentPath[currentPointIndex];
+
+                // 添加模擬標記
+                const simulationMarker = L.marker(currentPoint, {
+                    icon: L.divIcon({
+                        className: 'simulation-marker',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map);
+
+                simulationMarkers.push(simulationMarker);
+
+                // 添加到熱像圖數據
+                heatmapData.push({
+                    lat: currentPoint[0],
+                    lng: currentPoint[1],
+                    count: Math.random() * 10 + 1
+                });
+
+                // 移動到下一個點
+                currentPointIndex++;
+                if (currentPointIndex >= currentPath.length) {
+                    currentPointIndex = 0;
+                    currentPathIndex = (currentPathIndex + 1) % simulationPaths.length;
+                }
+
+                // 更新熱像圖
+                if (showingHeatmap) {
+                    updateHeatmap();
+                }
+
+                // 通知React Native
+                window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'SIMULATION_UPDATE',
+                    data: {
+                        location: { latitude: currentPoint[0], longitude: currentPoint[1] },
+                        timestamp: new Date().toISOString()
+                    }
+                }));
+
+                // 限制標記數量，避免地圖過於擁擠
+                if (simulationMarkers.length > 20) {
+                    const oldMarker = simulationMarkers.shift();
+                    map.removeLayer(oldMarker);
+                }
+
+            }, 2000); // 每2秒更新一次
+
+            // 通知React Native模擬開始
+            window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'SIMULATION_STARTED'
+            }));
+        }
+
+        function stopSimulation() {
+            if (!isSimulating) return;
+            isSimulating = false;
+
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+
+            // 清除模擬標記
+            simulationMarkers.forEach(marker => map.removeLayer(marker));
+            simulationMarkers = [];
+
+            document.getElementById('simStatus').textContent = '已停止';
+
+            // 通知React Native模擬停止
+            window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'SIMULATION_STOPPED'
+            }));
+        }
+
+        // 熱像圖功能
+        function toggleHeatmap() {
+            showingHeatmap = !showingHeatmap;
+
+            if (showingHeatmap) {
+                createHeatmap();
+                document.getElementById('heatmapStatus').textContent = '熱像圖: 開啟';
+            } else {
+                if (heatmapLayer) {
+                    map.removeLayer(heatmapLayer);
+                }
+                document.getElementById('heatmapStatus').textContent = '熱像圖: 關閉';
+            }
+        }
+
+        function createHeatmap() {
+            // 生成示例熱像圖數據（基於新竹市重要地點）
+            if (heatmapData.length === 0) {
+                const sampleData = [
+                    { lat: 24.8016, lng: 120.9714, count: 8 }, // 火車站
+                    { lat: 24.8038, lng: 120.9713, count: 6 }, // 市政府
+                    { lat: 24.8016, lng: 120.9672, count: 4 }, // 東門城
+                    { lat: 24.8100, lng: 120.9750, count: 7 }, // 熱點1
+                    { lat: 24.8050, lng: 120.9800, count: 5 }, // 熱點2
+                    { lat: 24.8080, lng: 120.9650, count: 3 }  // 熱點3
+                ];
+                heatmapData = [...sampleData];
+            }
+
+            updateHeatmap();
+        }
+
+        function updateHeatmap() {
+            if (heatmapLayer) {
+                map.removeLayer(heatmapLayer);
+            }
+
+            // 創建熱像圖圓圈
+            heatmapData.forEach(point => {
+                const intensity = point.count / 10; // 正規化強度
+                const radius = 100 + (intensity * 200); // 基於強度的半徑
+                const opacity = 0.3 + (intensity * 0.4); // 基於強度的透明度
+
+                L.circle([point.lat, point.lng], {
+                    color: intensity > 0.7 ? '#ff0000' : intensity > 0.4 ? '#ff8800' : '#ffff00',
+                    fillColor: intensity > 0.7 ? '#ff0000' : intensity > 0.4 ? '#ff8800' : '#ffff00',
+                    fillOpacity: opacity,
+                    radius: radius,
+                    weight: 1
+                }).addTo(map);
+            });
+        }
+
+        // 路徑預測算法
+        function calculateMovementProbability(locations) {
+            if (locations.length < 2) return [];
+
+            const predictions = [];
+            const timePattern = analyzeTimePatterns(locations);
+            const locationPattern = analyzeLocationPatterns(locations);
+
+            // 基於歷史數據預測下一個可能的位置
+            const lastLocation = locations[locations.length - 1];
+            const probableNextLocations = [
+                {
+                    lat: lastLocation.latitude + (Math.random() - 0.5) * 0.001,
+                    lng: lastLocation.longitude + (Math.random() - 0.5) * 0.001,
+                    probability: 0.7
+                },
+                {
+                    lat: lastLocation.latitude + (Math.random() - 0.5) * 0.002,
+                    lng: lastLocation.longitude + (Math.random() - 0.5) * 0.002,
+                    probability: 0.5
+                },
+                {
+                    lat: lastLocation.latitude + (Math.random() - 0.5) * 0.003,
+                    lng: lastLocation.longitude + (Math.random() - 0.5) * 0.003,
+                    probability: 0.3
+                }
+            ];
+
+            return probableNextLocations;
+        }
+
+        function analyzeTimePatterns(locations) {
+            // 分析時間模式
+            const hourlyActivity = new Array(24).fill(0);
+            locations.forEach(loc => {
+                const hour = new Date(loc.timestamp).getHours();
+                hourlyActivity[hour]++;
+            });
+            return hourlyActivity;
+        }
+
+        function analyzeLocationPatterns(locations) {
+            // 分析位置模式
+            const locationFrequency = {};
+            locations.forEach(loc => {
+                const key = \`\${loc.latitude.toFixed(4)},\${loc.longitude.toFixed(4)}\`;
+                locationFrequency[key] = (locationFrequency[key] || 0) + 1;
+            });
+            return locationFrequency;
+        }
+
         // 添加新竹市重要地標
         function addHsinchuLandmarks() {
             // 新竹火車站
@@ -332,12 +621,32 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             switch(data.type) {
                 case 'UPDATE_LOCATIONS':
                     updatePatientLocations(data.locations);
+                    // 更新預測和熱像圖數據
+                    if (data.locations && data.locations.length > 0) {
+                        const predictions = calculateMovementProbability(data.locations);
+                        // 可以在這裡處理預測結果
+                    }
                     break;
                 case 'UPDATE_GEOFENCES':
                     updateGeofences(data.geofences);
                     break;
                 case 'RECENTER':
                     recenterMap();
+                    break;
+                case 'START_SIMULATION':
+                    startSimulation();
+                    break;
+                case 'STOP_SIMULATION':
+                    stopSimulation();
+                    break;
+                case 'TOGGLE_HEATMAP':
+                    toggleHeatmap();
+                    break;
+                case 'UPDATE_SIMULATION_MODE':
+                    // 處理模擬模式切換
+                    if (data.enabled && !isSimulating) {
+                        document.getElementById('simStatus').textContent = '準備就緒';
+                    }
                     break;
             }
         });
@@ -370,6 +679,20 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   };
 
+  const startSimulation = () => {
+    sendToWebView('START_SIMULATION');
+    onSimulationStart?.();
+  };
+
+  const stopSimulation = () => {
+    sendToWebView('STOP_SIMULATION');
+    onSimulationStop?.();
+  };
+
+  const toggleHeatmap = () => {
+    sendToWebView('TOGGLE_HEATMAP');
+  };
+
   const handleWebViewMessage = (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
@@ -384,6 +707,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             // 在圍欄模式下，地圖點擊可以觸發圍欄創建
             console.log('Map clicked:', message.data);
           }
+          break;
+        case 'SIMULATION_STARTED':
+          console.log('Simulation started');
+          break;
+        case 'SIMULATION_STOPPED':
+          console.log('Simulation stopped');
+          break;
+        case 'SIMULATION_UPDATE':
+          console.log('Simulation update:', message.data);
+          onLocationUpdate?.(message.data.location);
           break;
       }
     } catch (error) {
