@@ -1,6 +1,6 @@
 // API Configuration
 // Using domain name for better accessibility
-export const API_BASE_URL = 'http://hsinchu.dpdns.org:3000';
+export const API_BASE_URL = 'http://hsinchu.dpdns.org:3001';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {

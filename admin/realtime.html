@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GuardianTrack - 即時定位</title>
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Leaflet Heatmap Plugin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 確保地圖填滿框架 */
+        #map-container {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 10;
+        }
+        /* 自訂患者移動點的樣式 */
+        .patient-marker {
+            width: 20px;
+            height: 20px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+            transition: all 0.3s ease;
+        }
+        .patient-marker.warning {
+            background-color: #f97316;
+            box-shadow: 0 0 15px rgba(249, 115, 22, 1);
+            animation: pulse 1s infinite;
+        }
+        .patient-marker.danger {
+            background-color: #ef4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 1);
+            animation: pulse 0.5s infinite;
+        }
+        /* 動畫效果 */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .home-icon, .destination-icon {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        /* 路徑熱力圖樣式 */
+        .path-heatmap {
+            opacity: 0.6;
+        }
+        /* 預測路徑動畫 */
+        .prediction-path {
+            stroke-dasharray: 10, 5;
+            animation: dash 20s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-200">
+
+    <!-- 手機 UI 框架 -->
+    <div class="w-full max-w-sm h-[800px] bg-gray-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col border-4 border-black">
+
+        <!-- 主要內容區域 (地圖和浮動UI) -->
+        <main class="flex-1 relative">
+
+            <!-- 地圖容器 -->
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+
+            <!-- 浮動頂部導覽列 -->
+            <header class="absolute top-0 left-0 right-0 p-4 z-20">
+                <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-md p-3 flex items-center justify-between">
+                    <a href="./index.html" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </a>
+                    <h1 class="text-base font-bold text-gray-800">即時定位：<span id="patient-name" class="text-blue-600">陳秀英</span></h1>
+                    <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 12h6m6 0h6"></path>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 狀態指示器 -->
+            <div class="absolute top-20 right-4 z-20">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-2 flex items-center space-x-2">
+                    <div id="status-indicator" class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span id="status-text" class="text-xs font-medium">正常</span>
+                </div>
+            </div>
+
+            <!-- 路徑控制面板 -->
+            <div class="absolute top-20 left-4 z-20">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-2 space-y-2">
+                    <button id="toggle-path" class="w-full px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600 transition-colors">
+                        顯示路徑
+                    </button>
+                    <button id="toggle-heatmap" class="w-full px-3 py-1.5 bg-purple-500 text-white text-xs font-medium rounded hover:bg-purple-600 transition-colors">
+                        熱力圖
+                    </button>
+                    <button id="toggle-prediction" class="w-full px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded hover:bg-green-600 transition-colors">
+                        預測路徑
+                    </button>
+                </div>
+            </div>
+
+            <!-- 浮動底部資訊與控制面板 -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 z-20">
+                <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-4 space-y-3">
+                    <!-- 狀態信息 -->
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg text-gray-800">監控中</p>
+                            <p id="last-updated" class="text-xs text-gray-500">最後更新：-</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-600">移動速度</p>
+                            <p id="speed-display" class="text-sm font-bold text-gray-800">0 km/h</p>
+                        </div>
+                    </div>
+
+                    <!-- 進度條顯示偏離程度 -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs text-gray-600">
+                            <span>路徑偏離度</span>
+                            <span id="deviation-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="deviation-bar" class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 控制按鈕 -->
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <button id="recenter-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="mx-auto" viewBox="0 0 16 16">
+                                <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                            </svg>
+                            <span class="text-xs font-semibold mt-1 block">置中</span>
+                        </button>
+                        <button id="call-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="mx-auto" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+                            </svg>
+                            <span class="text-xs font-semibold mt-1 block">通話</span>
+                        </button>
+                        <button id="history-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="mx-auto" viewBox="0 0 16 16">
+                                <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z"/>
+                                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z"/>
+                                <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z"/>
+                            </svg>
+                            <span class="text-xs font-semibold mt-1 block">歷史</span>
+                        </button>
+                        <button id="start-simulation" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="mx-auto" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                            </svg>
+                            <span id="simulation-text" class="text-xs font-semibold mt-1 block">模擬</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Leaflet.js JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet Heat Plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script>
+        // === 配置參數 ===
+        const CONFIG = {
+            homeCoords: [24.8113, 120.9715],
+            destinationCoords: [24.8035, 120.9920],
+            mapCenter: [24.8074, 120.98175],
+            normalPath: [
+                [24.8113, 120.9715], [24.8110, 120.9725], [24.8105, 120.9740],
+                [24.8090, 120.9750], [24.8085, 120.9775], [24.8078, 120.9800],
+                [24.8070, 120.9820], [24.8065, 120.9845], [24.8055, 120.9870],
+                [24.8045, 120.9895], [24.8035, 120.9920]
+            ],
+            wanderingPath: [
+                [24.8070, 120.9820], [24.8072, 120.9825], [24.8068, 120.9828],
+                [24.8071, 120.9823], [24.8073, 120.9830], [24.8069, 120.9833],
+                [24.8066, 120.9835], [24.8063, 120.9832], [24.8067, 120.9829]
+            ],
+            deviationPointIndex: 6,
+            simulationSpeed: 1500, // ms per segment
+            heatmapIntensity: 0.8,
+            predictionDistance: 3 // 預測未來幾個點
+        };
+
+        // === 全局變數 ===
+        let map;
+        let patientMarker;
+        let homeMarker, destinationMarker;
+        let pathPolyline, warningPathPolyline;
+        let heatmapLayer;
+        let predictionPolylines = [];
+        let historyPoints = [];
+        let animationFrameId;
+        let isSimulating = false;
+        let showPath = false;
+        let showHeatmap = false;
+        let showPrediction = false;
+        let currentSpeed = 0;
+        let lastPosition = null;
+        let lastUpdateTime = null;
+
+        // === 初始化地圖 ===
+        function initializeMap() {
+            map = L.map('map', {
+                center: CONFIG.mapCenter,
+                zoom: 15,
+                zoomControl: false
+            });
+
+            // 添加地圖圖層
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // 添加縮放控制
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // 設置標記
+            setupMarkers();
+
+            // 初始化路徑
+            pathPolyline = L.polyline([], {
+                color: '#6b7280',
+                weight: 4,
+                opacity: 0.6,
+                dashArray: '10, 5'
+            });
+
+            // 初始化熱力圖層
+            initHeatmap();
+        }
+
+        // === 設置標記 ===
+        function setupMarkers() {
+            // 家標記
+            homeMarker = L.marker(CONFIG.homeCoords, {
+                icon: L.divIcon({
+                    className: 'home-icon',
+                    html: `<div class="w-8 h-8 bg-green-500 rounded-full border-3 border-white shadow-lg flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                              </svg>
+                          </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(map).bindPopup('<b>家 (起點)</b><br>新竹市東區光復路');
+
+            // 目的地標記
+            destinationMarker = L.marker(CONFIG.destinationCoords, {
+                icon: L.divIcon({
+                    className: 'destination-icon',
+                    html: `<div class="w-8 h-8 bg-red-500 rounded-full border-3 border-white shadow-lg flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18l-4.95-2.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                              </svg>
+                          </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(map).bindPopup('<b>失智據點 (目的地)</b><br>新竹市東區建功路');
+
+            // 患者標記
+            patientMarker = L.marker(CONFIG.homeCoords, {
+                icon: L.divIcon({
+                    className: 'patient-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+        }
+
+        // === 初始化熱力圖 ===
+        function initHeatmap() {
+            heatmapLayer = L.heatLayer([], {
+                radius: 25,
+                blur: 15,
+                maxZoom: 17,
+                gradient: {
+                    0.0: 'blue',
+                    0.25: 'cyan',
+                    0.5: 'lime',
+                    0.75: 'yellow',
+                    1.0: 'red'
+                }
+            });
+        }
+
+        // === 更新熱力圖 ===
+        function updateHeatmap(points) {
+            if (!showHeatmap) return;
+
+            // 根據點的密度計算權重
+            const heatData = points.map((point, index) => {
+                const intensity = Math.min(1, (index / points.length) * CONFIG.heatmapIntensity);
+                return [...point, intensity];
+            });
+
+            heatmapLayer.setLatLngs(heatData);
+            if (!map.hasLayer(heatmapLayer)) {
+                heatmapLayer.addTo(map);
+            }
+        }
+
+        // === 更新預測路徑 ===
+        function updatePredictionPath(currentPos, futurePoints) {
+            // 清除舊的預測線
+            predictionPolylines.forEach(line => map.removeLayer(line));
+            predictionPolylines = [];
+
+            if (!showPrediction || futurePoints.length === 0) return;
+
+            // 創建漸變的預測路徑
+            const colors = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'];
+            const weights = [8, 7, 6, 5, 4];
+            const opacities = [0.2, 0.25, 0.3, 0.35, 0.4];
+
+            for (let i = 0; i < Math.min(colors.length, futurePoints.length); i++) {
+                const pathSegment = i === 0 ?
+                    [currentPos, futurePoints[i]] :
+                    [futurePoints[i-1], futurePoints[i]];
+
+                const polyline = L.polyline(pathSegment, {
+                    color: colors[i],
+                    weight: weights[i],
+                    opacity: opacities[i],
+                    className: 'prediction-path',
+                    dashArray: '10, 5'
+                }).addTo(map);
+
+                predictionPolylines.push(polyline);
+            }
+        }
+
+        // === 計算速度 ===
+        function calculateSpeed(pos1, pos2, timeDelta) {
+            if (!pos1 || !pos2 || timeDelta === 0) return 0;
+
+            const distance = map.distance(pos1, pos2); // 米
+            const speed = (distance / timeDelta) * 3.6; // km/h
+            return Math.round(speed * 10) / 10;
+        }
+
+        // === 計算偏離度 ===
+        function calculateDeviation(currentPos, expectedPath) {
+            if (!expectedPath || expectedPath.length === 0) return 0;
+
+            // 找到最近的路徑點
+            let minDistance = Infinity;
+            expectedPath.forEach(point => {
+                const distance = map.distance(currentPos, point);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            });
+
+            // 將距離轉換為百分比（假設100米為100%偏離）
+            const deviationPercent = Math.min(100, (minDistance / 100) * 100);
+            return Math.round(deviationPercent);
+        }
+
+        // === 更新UI狀態 ===
+        function updateStatus(status, deviation) {
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            const deviationBar = document.getElementById('deviation-bar');
+            const deviationPercent = document.getElementById('deviation-percent');
+
+            // 更新偏離度
+            deviationPercent.textContent = `${deviation}%`;
+            deviationBar.style.width = `${deviation}%`;
+
+            // 根據狀態更新顏色
+            if (status === 'normal') {
+                statusIndicator.className = 'w-3 h-3 bg-green-500 rounded-full animate-pulse';
+                statusText.textContent = '正常';
+                deviationBar.className = 'bg-green-500 h-2 rounded-full transition-all duration-500';
+                patientMarker.getElement().className = 'patient-marker';
+            } else if (status === 'warning') {
+                statusIndicator.className = 'w-3 h-3 bg-orange-500 rounded-full animate-pulse';
+                statusText.textContent = '輕微偏離';
+                deviationBar.className = 'bg-orange-500 h-2 rounded-full transition-all duration-500';
+                patientMarker.getElement().className = 'patient-marker warning';
+            } else if (status === 'danger') {
+                statusIndicator.className = 'w-3 h-3 bg-red-500 rounded-full animate-pulse';
+                statusText.textContent = '嚴重偏離';
+                deviationBar.className = 'bg-red-500 h-2 rounded-full transition-all duration-500';
+                patientMarker.getElement().className = 'patient-marker danger';
+            }
+
+            // 更新時間
+            const now = new Date();
+            document.getElementById('last-updated').textContent =
+                `最後更新：${now.toLocaleTimeString('zh-TW')}`;
+        }
+
+        // === 開始模擬 ===
+        function startSimulation() {
+            if (isSimulating) {
+                stopSimulation();
+                return;
+            }
+
+            isSimulating = true;
+            historyPoints = [];
+            document.getElementById('simulation-text').textContent = '停止';
+            document.getElementById('start-simulation').classList.replace('bg-blue-600', 'bg-red-600');
+
+            // 重置位置
+            patientMarker.setLatLng(CONFIG.homeCoords);
+            lastPosition = CONFIG.homeCoords;
+            lastUpdateTime = Date.now();
+
+            // 清理舊路徑
+            if (warningPathPolyline) {
+                map.removeLayer(warningPathPolyline);
+            }
+
+            simulateNormalPath();
+        }
+
+        // === 模擬正常路徑 ===
+        function simulateNormalPath() {
+            let pathIndex = 0;
+
+            function moveAlongPath() {
+                if (!isSimulating || pathIndex >= CONFIG.normalPath.length) {
+                    if (pathIndex >= CONFIG.deviationPointIndex) {
+                        simulateWandering();
+                    }
+                    return;
+                }
+
+                const currentPos = CONFIG.normalPath[pathIndex];
+                const currentTime = Date.now();
+
+                // 計算速度
+                if (lastPosition && lastUpdateTime) {
+                    currentSpeed = calculateSpeed(
+                        lastPosition,
+                        currentPos,
+                        (currentTime - lastUpdateTime) / 1000
+                    );
+                    document.getElementById('speed-display').textContent = `${currentSpeed} km/h`;
+                }
+
+                // 更新位置
+                patientMarker.setLatLng(currentPos);
+                historyPoints.push(currentPos);
+
+                // 更新路徑顯示
+                if (showPath) {
+                    pathPolyline.setLatLngs(historyPoints);
+                    if (!map.hasLayer(pathPolyline)) {
+                        pathPolyline.addTo(map);
+                    }
+                }
+
+                // 更新熱力圖
+                updateHeatmap(historyPoints);
+
+                // 更新預測路徑
+                const futurePoints = CONFIG.normalPath.slice(
+                    pathIndex + 1,
+                    Math.min(pathIndex + CONFIG.predictionDistance + 1, CONFIG.normalPath.length)
+                );
+                updatePredictionPath(currentPos, futurePoints);
+
+                // 計算偏離度
+                const deviation = calculateDeviation(currentPos, CONFIG.normalPath);
+                updateStatus('normal', deviation);
+
+                // 平滑移動相機
+                map.panTo(currentPos, { animate: true, duration: 0.5 });
+
+                lastPosition = currentPos;
+                lastUpdateTime = currentTime;
+                pathIndex++;
+
+                setTimeout(moveAlongPath, CONFIG.simulationSpeed);
+            }
+
+            moveAlongPath();
+        }
+
+        // === 模擬偏離路徑 ===
+        function simulateWandering() {
+            let wanderIndex = 0;
+            const deviationStart = CONFIG.normalPath[CONFIG.deviationPointIndex];
+
+            // 創建警告路徑
+            warningPathPolyline = L.polyline([deviationStart], {
+                color: '#f97316',
+                weight: 5,
+                opacity: 0.7
+            }).addTo(map);
+
+            function wander() {
+                if (!isSimulating || wanderIndex >= CONFIG.wanderingPath.length) {
+                    showAlert();
+                    return;
+                }
+
+                const currentPos = CONFIG.wanderingPath[wanderIndex];
+                const currentTime = Date.now();
+
+                // 計算速度（偏離時速度通常會變慢）
+                if (lastPosition && lastUpdateTime) {
+                    currentSpeed = calculateSpeed(
+                        lastPosition,
+                        currentPos,
+                        (currentTime - lastUpdateTime) / 1000
+                    ) * 0.7; // 降低速度
+                    document.getElementById('speed-display').textContent = `${currentSpeed} km/h`;
+                }
+
+                // 更新位置
+                patientMarker.setLatLng(currentPos);
+                historyPoints.push(currentPos);
+                warningPathPolyline.addLatLng(currentPos);
+
+                // 更新熱力圖（增加強度）
+                updateHeatmap(historyPoints.concat(
+                    Array(5).fill(currentPos) // 在偏離點增加熱度
+                ));
+
+                // 計算偏離度
+                const deviation = calculateDeviation(currentPos, CONFIG.normalPath);
+
+                // 根據偏離程度更新狀態
+                if (deviation > 50) {
+                    updateStatus('danger', deviation);
+                } else {
+                    updateStatus('warning', deviation);
+                }
+
+                // 相機跟隨
+                map.panTo(currentPos, { animate: true, duration: 0.5 });
+
+                lastPosition = currentPos;
+                lastUpdateTime = currentTime;
+                wanderIndex++;
+
+                setTimeout(wander, CONFIG.simulationSpeed * 1.5); // 偏離時移動更慢
+            }
+
+            wander();
+        }
+
+        // === 顯示警報 ===
+        function showAlert() {
+            const alertLocation = CONFIG.wanderingPath[CONFIG.wanderingPath.length - 1];
+
+            // 創建警報標記
+            const alertMarker = L.marker(alertLocation, {
+                icon: L.divIcon({
+                    className: 'alert-icon',
+                    html: `<div class="relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 drop-shadow-lg animate-ping absolute" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                              </svg>
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 drop-shadow-lg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                              </svg>
+                          </div>`,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 48]
+                })
+            }).addTo(map);
+
+            // 彈出警告訊息
+            alertMarker.bindPopup(
+                `<div class="font-sans">
+                    <div class="font-bold text-lg mb-1 text-red-600">⚠️ 系統警報</div>
+                    <p class="text-sm mb-2">偵測到患者嚴重偏離預定路線！</p>
+                    <div class="text-xs text-gray-600">
+                        <p>最後位置：${alertLocation[0].toFixed(4)}, ${alertLocation[1].toFixed(4)}</p>
+                        <p>偏離距離：約 ${Math.round(map.distance(alertLocation, CONFIG.normalPath[CONFIG.deviationPointIndex]))} 公尺</p>
+                    </div>
+                    <div class="mt-2 pt-2 border-t">
+                        <button class="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold">
+                            立即聯絡
+                        </button>
+                    </div>
+                </div>`,
+                { maxWidth: 250 }
+            ).openPopup();
+
+            // 地圖聚焦到警報位置
+            map.flyTo(alertLocation, 17);
+
+            // 發送通知（實際應用中可以整合推送通知）
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('緊急警報', {
+                    body: '患者陳秀英嚴重偏離預定路線，請立即確認！',
+                    icon: '/assets/img/alert-icon.png'
+                });
+            }
+        }
+
+        // === 停止模擬 ===
+        function stopSimulation() {
+            isSimulating = false;
+            document.getElementById('simulation-text').textContent = '模擬';
+            document.getElementById('start-simulation').classList.replace('bg-red-600', 'bg-blue-600');
+
+            // 重置狀態
+            updateStatus('normal', 0);
+            currentSpeed = 0;
+            document.getElementById('speed-display').textContent = '0 km/h';
+        }
+
+        // === 切換路徑顯示 ===
+        function togglePath() {
+            showPath = !showPath;
+            const btn = document.getElementById('toggle-path');
+
+            if (showPath) {
+                btn.classList.replace('bg-blue-500', 'bg-blue-600');
+                btn.textContent = '隱藏路徑';
+                if (historyPoints.length > 0) {
+                    pathPolyline.setLatLngs(historyPoints);
+                    pathPolyline.addTo(map);
+                }
+            } else {
+                btn.classList.replace('bg-blue-600', 'bg-blue-500');
+                btn.textContent = '顯示路徑';
+                map.removeLayer(pathPolyline);
+            }
+        }
+
+        // === 切換熱力圖 ===
+        function toggleHeatmap() {
+            showHeatmap = !showHeatmap;
+            const btn = document.getElementById('toggle-heatmap');
+
+            if (showHeatmap) {
+                btn.classList.replace('bg-purple-500', 'bg-purple-600');
+                btn.textContent = '關閉熱力';
+                updateHeatmap(historyPoints);
+            } else {
+                btn.classList.replace('bg-purple-600', 'bg-purple-500');
+                btn.textContent = '熱力圖';
+                map.removeLayer(heatmapLayer);
+            }
+        }
+
+        // === 切換預測路徑 ===
+        function togglePrediction() {
+            showPrediction = !showPrediction;
+            const btn = document.getElementById('toggle-prediction');
+
+            if (showPrediction) {
+                btn.classList.replace('bg-green-500', 'bg-green-600');
+                btn.textContent = '關閉預測';
+            } else {
+                btn.classList.replace('bg-green-600', 'bg-green-500');
+                btn.textContent = '預測路徑';
+                predictionPolylines.forEach(line => map.removeLayer(line));
+                predictionPolylines = [];
+            }
+        }
+
+        // === 事件監聽器 ===
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+
+            // 控制按鈕
+            document.getElementById('start-simulation').addEventListener('click', startSimulation);
+            document.getElementById('recenter-btn').addEventListener('click', () => {
+                if (patientMarker) {
+                    map.flyTo(patientMarker.getLatLng(), 16);
+                }
+            });
+
+            // 路徑控制
+            document.getElementById('toggle-path').addEventListener('click', togglePath);
+            document.getElementById('toggle-heatmap').addEventListener('click', toggleHeatmap);
+            document.getElementById('toggle-prediction').addEventListener('click', togglePrediction);
+
+            // 其他按鈕
+            document.getElementById('call-btn').addEventListener('click', () => {
+                alert('撥打電話給陳秀英...');
+            });
+
+            document.getElementById('history-btn').addEventListener('click', () => {
+                alert('查看歷史軌跡...');
+            });
+
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                alert('開啟設定...');
+            });
+
+            // 請求通知權限
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+</body>
+</html>

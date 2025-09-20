@@ -115,7 +115,7 @@ const SOSButton: React.FC<SOSButtonProps> = ({ patientId, token, onSOS }) => {
     setShowMessageModal(false);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sos`, {
+      const response = await fetch(`${API_BASE_URL}/api/emergency/sos`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
