@@ -83,8 +83,8 @@ android {
         applicationId "com.hccg.hsinchu.passguardian"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 164
-        versionName "1.6.4"
+        versionCode 165
+        versionName "1.6.5"
     }
     signingConfigs {
         debug {

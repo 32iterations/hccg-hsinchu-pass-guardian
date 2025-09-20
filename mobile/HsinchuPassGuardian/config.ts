@@ -1,6 +1,6 @@
 // API Configuration
-// Using HTTP for immediate testing (Android 9+ requires domain)
-export const API_BASE_URL = 'http://api.hsinchu.dpdns.org';
+// Using direct IP for backend server connection
+export const API_BASE_URL = 'http://147.251.115.54:3000';
 
 // Firebase Configuration
 export const FIREBASE_CONFIG = {
