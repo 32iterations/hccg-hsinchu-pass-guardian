@@ -152,31 +152,50 @@ const MapScreen = ({ navigation, route }: any) => {
     }
   }, [isMapReady]);
 
-  // 檢查地圖載入超時 - 2025年最佳實踐：延長超時至45秒
+  // 改進的地圖載入邏輯 - 不依賴 onMapReady
   useEffect(() => {
+    let mapInitTimer: NodeJS.Timeout;
     let loadingAnimation: Animated.CompositeAnimation;
 
-    if (!isMapReady && !useSimulatedMap) {
+    if (!useSimulatedMap) {
+      console.log('[MapScreen] Starting Google Maps initialization...');
+
+      // 立即嘗試標記地圖為準備就緒（不等待 onMapReady）
+      // 因為 MapView 本身可能已經渲染但回調未觸發
+      mapInitTimer = setTimeout(() => {
+        console.log('[MapScreen] Force setting map ready after 3 seconds');
+        setIsMapReady(true);
+        setMapLoadError(false);
+      }, 3000);
+
       // 顯示載入進度動畫
       loadingAnimation = Animated.timing(mapLoadProgress, {
         toValue: 100,
-        duration: 45000,
+        duration: 3000,
         easing: Easing.linear,
         useNativeDriver: false,
       });
       loadingAnimation.start();
 
+      // 超時檢測 - 10秒後提示用戶
       const timeout = setTimeout(() => {
-        if (!isMapReady && !useSimulatedMap) {
-          console.log('Google Maps loading timeout after 45 seconds');
+        if (!isMapReady) {
+          console.log('[MapScreen] Offering fallback option after 10 seconds');
           Alert.alert(
-            '🗺️ Google Maps 載入超時',
-            '地圖載入時間過長，可能是網路或 API 設定問題。您可以選擇繼續等待或使用模擬地圖。',
+            '🗺️ Google Maps 載入緩慢',
+            '地圖載入時間較長，您可以選擇切換至模擬地圖以獲得更好的體驗。',
             [
-              { text: '繼續等待', onPress: () => console.log('User chose to wait') },
               {
-                text: '使用模擬地圖',
+                text: '繼續使用 Google Maps',
                 onPress: () => {
+                  console.log('[MapScreen] User chose to continue with Google Maps');
+                  setIsMapReady(true);
+                }
+              },
+              {
+                text: '切換模擬地圖',
+                onPress: () => {
+                  console.log('[MapScreen] User switched to simulated map');
                   setUseSimulatedMap(true);
                   setIsMapReady(true);
                   setMapLoadError(false);
@@ -186,16 +205,20 @@ const MapScreen = ({ navigation, route }: any) => {
             ]
           );
         }
-      }, 45000); // 45秒超時 - 適應2025年網路環境
+      }, 10000);
 
       return () => {
+        clearTimeout(mapInitTimer);
         clearTimeout(timeout);
         if (loadingAnimation) {
           loadingAnimation.stop();
         }
       };
+    } else {
+      // 模擬地圖立即準備就緒
+      setIsMapReady(true);
     }
-  }, [isMapReady, useSimulatedMap, mapLoadProgress]);
+  }, [useSimulatedMap]);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -557,21 +580,25 @@ const MapScreen = ({ navigation, route }: any) => {
     );
   }
 
-  // Show Google Maps loading indicator
-  if (!useSimulatedMap && !isMapReady && !mapLoadError) {
+  // 改進的載入指示器 - 僅在初始載入時顯示
+  if (!useSimulatedMap && !isMapReady && !mapLoadError && isLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.googleMapsLoadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.googleMapsLoadingText}>正在載入 Google Maps...</Text>
+          <Text style={styles.googleMapsLoadingText}>正在初始化地圖...</Text>
           <Text style={styles.googleMapsLoadingSubtext}>
-            首次載入可能需要較長時間，請耐心等候
+            請稍候片刻
           </Text>
           <TouchableOpacity
             style={styles.switchToSimulatedButton}
-            onPress={() => setUseSimulatedMap(true)}
+            onPress={() => {
+              console.log('[MapScreen] User manually switched to simulated map');
+              setUseSimulatedMap(true);
+              setIsMapReady(true);
+            }}
           >
-            <Text style={styles.switchToSimulatedButtonText}>切換至模擬地圖</Text>
+            <Text style={styles.switchToSimulatedButtonText}>立即使用模擬地圖</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -609,11 +636,18 @@ const MapScreen = ({ navigation, route }: any) => {
           } : DEFAULT_REGION}
           region={currentRegion}
           onMapReady={() => {
-            console.log('Google Maps is ready');
+            console.log('[MapScreen] Google Maps onMapReady callback fired');
             setIsMapReady(true);
             setMapLoadError(false);
           }}
-          onError={handleMapError}
+          onMapLoaded={() => {
+            console.log('[MapScreen] Google Maps onMapLoaded callback fired');
+            setIsMapReady(true);
+          }}
+          onError={(error) => {
+            console.error('[MapScreen] Google Maps error:', error);
+            handleMapError(error);
+          }}
           onRegionChangeComplete={(region) => {
             setCurrentRegion(region);
           }}
