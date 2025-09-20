@@ -23,14 +23,9 @@
       android:networkSecurityConfig="@xml/network_security_config"
       android:supportsRtl="true">
 
-      <!-- Google Maps API Key -->
+      <!-- Google Maps API Key - Only one key needed -->
       <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyDR82O3a-BWOSkJXHBMUMSzquYoz62pBVc" />
-
-      <!-- Maps SDK for Android API Key (Required for react-native-maps) -->
-      <meta-data
-        android:name="com.google.android.maps.v2.API_KEY"
         android:value="AIzaSyDR82O3a-BWOSkJXHBMUMSzquYoz62pBVc" />
 
       <!-- Ensure Maps is available -->
