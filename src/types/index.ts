@@ -150,6 +150,34 @@ export interface EmptyStateConfig {
   saveDraft?: {
     text: string;
   };
+  downloadSection?: {
+    title: string;
+    files: Array<{
+      name: string;
+      format: string;
+      size: string;
+    }>;
+  };
+  statusTimeline?: Array<{
+    date: string;
+    time?: string;
+    status: string;
+    current: boolean;
+  }>;
+  notification?: {
+    icon: string;
+    text: string;
+  };
+  notificationStatus?: {
+    enabled: boolean;
+    text: string;
+  };
+  settingsHint?: string;
+  onboardingSteps?: Array<{
+    title: string;
+    description: string;
+    completed: boolean;
+  }>;
 }
 
 // Console RBAC types

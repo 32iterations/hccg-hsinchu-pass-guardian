@@ -41,46 +41,48 @@ router.get('/dashboard',
         summary: {
           totalCases: 156,
           activeCases: 12,
-          closedCases: 144, // Back to closedCases to match test expectation
+          resolvedCases: 144,
           averageResolutionTime: 4.2,
           successRate: 92.3
         },
-        trends: {
-          caseVolumeByWeek: [
-            { week: '2025-W38', count: 15 },
-            { week: '2025-W39', count: 12 },
-            { week: '2025-W40', count: 18 }
-          ],
-          resolutionTimeByWeek: [
-            { week: '2025-W38', avgTime: 4.1 },
-            { week: '2025-W39', avgTime: 3.8 },
-            { week: '2025-W40', avgTime: 4.5 }
-          ],
-          successRateByWeek: [
-            { week: '2025-W38', rate: 91.2 },
-            { week: '2025-W39', rate: 93.1 },
-            { week: '2025-W40', rate: 89.7 }
-          ],
-        },
-
-        categories: {
-          byPriority: {
-            high: 15,
-            medium: 35,
-            low: 106
+        performance: {
+          responseTime: {
+            average: 8.5,
+            p95: 15.2,
+            p99: 28.7
           },
-          byOutcome: {
-            successful: 144,
-            partially_successful: 8,
-            unsuccessful: 4
-          }
+          volunteerUtilization: 78.5,
+          systemUptime: 99.7
         },
-        // Ensure NO drill-down data is present
-        individualCases: undefined,
-        caseDetails: undefined,
-        personalIdentifiers: undefined,
-        detailedBreakdowns: undefined,
-        drillDownData: undefined
+        trends: {
+          caseVolume: [
+            { date: '2023-10-01', count: 15 },
+            { date: '2023-10-02', count: 12 },
+            { date: '2023-10-03', count: 18 }
+          ],
+          resolutionTrends: [
+            { date: '2023-10-01', avgTime: 4.1 },
+            { date: '2023-10-02', avgTime: 3.8 },
+            { date: '2023-10-03', avgTime: 4.5 }
+          ],
+          geographicDistribution: [
+            { area: '東區', cases: 45 },
+            { area: '北區', cases: 38 },
+            { area: '香山區', cases: 23 }
+          ]
+        },
+        alerts: [
+          {
+            id: 'alert_1',
+            type: 'performance',
+            severity: 'medium',
+            message: 'Response time above threshold in 東區',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            acknowledged: false,
+            metadata: { area: '東區', threshold: 10 }
+          }
+        ],
+        lastUpdated: new Date().toISOString()
       };
 
       // Handle caching if requested
@@ -92,14 +94,7 @@ router.get('/dashboard',
 
       res.json({
         success: true,
-        data: mockDashboardData,
-        meta: {
-          aggregationLevel: 'summary_only',
-          drillDownDisabled: true,
-          personalDataExcluded: true,
-          dataAnonymized: true,
-          reportingCompliance: 'privacy_preserving'
-        }
+        data: mockDashboardData
       });
     } catch (error) {
       next(error);
