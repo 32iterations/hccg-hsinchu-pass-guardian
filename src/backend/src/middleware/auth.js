@@ -123,7 +123,7 @@ class AuthMiddleware {
             'admin-token': {
               userId: 'admin123',
               roles: ['admin'],
-              permissions: ['*', 'manage_roles', 'manage_users', 'view_audit_trail', 'create_cases', 'view_roles'],
+              permissions: ['*', 'manage_roles', 'manage_users', 'view_audit_trail', 'create_cases', 'view_roles', 'access_kpi_details', 'view_kpis', 'view_dashboard', 'view_metrics', 'view_compliance_reports', 'view_alerts', 'generate_reports'],
               department: 'administration',
               tenant: 'hsinchu_county'
             },

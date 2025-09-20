@@ -11,6 +11,15 @@ on:
       - main
   workflow_dispatch:
 
+# Add permissions for GitHub Actions to access repository data
+permissions:
+  contents: read       # Read repository contents
+  issues: write        # Write to issues (needed for PR comments)
+  pull-requests: write # Write to pull requests (needed for PR comments)
+  statuses: write      # Write commit statuses
+  checks: write        # Write check runs
+  actions: read        # Read actions (for artifacts)
+
 env:
   NODE_VERSION: '18'
   COVERAGE_THRESHOLD: 80
@@ -129,6 +138,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const coverage = '84.2';
             const comment = `### 📊 Test Coverage Report
@@ -144,12 +154,18 @@ jobs:
 
             View full report in artifacts.`;
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+              console.log('Successfully posted coverage comment to PR');
+            } catch (error) {
+              console.error('Failed to post coverage comment:', error.message);
+              core.setFailed(`Failed to post coverage comment: ${error.message}`);
+            }
 
   build:
     name: Build Application
@@ -293,12 +309,19 @@ jobs:
       - name: Update GitHub status
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: 'success',
-              description: 'TDD Pipeline completed',
-              context: 'TDD CI/CD'
-            });
+            try {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.sha,
+                state: '${{ job.status }}' === 'success' ? 'success' : 'failure',
+                description: 'TDD Pipeline completed - ${{ job.status }}',
+                context: 'TDD CI/CD'
+              });
+              console.log('Successfully updated commit status');
+            } catch (error) {
+              console.error('Failed to update commit status:', error.message);
+              // Don't fail the workflow for status update issues
+            }

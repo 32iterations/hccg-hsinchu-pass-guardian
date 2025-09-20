@@ -2,8 +2,37 @@ const request = require('supertest');
 const app = require('../../src/app');
 
 describe('KPI API Endpoints', () => {
+  let server;
+
+  // Set timeout for all tests in this suite
+  jest.setTimeout(30000);
+
+  beforeAll(async () => {
+    // Set test environment to ensure proper token handling
+    process.env.NODE_ENV = 'test';
+    process.env.JWT_SECRET = 'test-secret-key';
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterAll(async () => {
+    // Clean up any open handles
+    if (server) {
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
+    }
+
+    // Clear timers and handles
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
   });
 
   describe('GET /api/v1/kpi/dashboard', () => {

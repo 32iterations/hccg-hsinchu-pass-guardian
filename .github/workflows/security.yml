@@ -67,10 +67,46 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run TruffleHog
+      - name: Check if BASE and HEAD are different
+        id: check_commits
+        run: |
+          BASE_SHA=$(git rev-parse origin/main 2>/dev/null || git rev-parse main 2>/dev/null || echo "")
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          echo "BASE_SHA: $BASE_SHA"
+          echo "HEAD_SHA: $HEAD_SHA"
+
+          if [ "$BASE_SHA" = "$HEAD_SHA" ] || [ -z "$BASE_SHA" ]; then
+            echo "BASE and HEAD commits are the same or BASE is empty. Skipping TruffleHog scan."
+            echo "skip_scan=true" >> $GITHUB_OUTPUT
+            echo "reason=commits_identical" >> $GITHUB_OUTPUT
+          else
+            echo "BASE and HEAD are different. Running TruffleHog scan."
+            echo "skip_scan=false" >> $GITHUB_OUTPUT
+            echo "base_ref=$BASE_SHA" >> $GITHUB_OUTPUT
+            echo "head_ref=$HEAD_SHA" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run TruffleHog (if commits differ)
+        if: steps.check_commits.outputs.skip_scan != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
-          head: HEAD
+          base: ${{ steps.check_commits.outputs.base_ref }}
+          head: ${{ steps.check_commits.outputs.head_ref }}
           extra_args: --debug --only-verified
+
+      - name: Run TruffleHog (full scan fallback)
+        if: steps.check_commits.outputs.skip_scan == 'true'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --debug --only-verified
+
+      - name: Report scan status
+        run: |
+          if [ "${{ steps.check_commits.outputs.skip_scan }}" = "true" ]; then
+            echo "✅ TruffleHog scan completed using full repository scan (reason: ${{ steps.check_commits.outputs.reason }})"
+          else
+            echo "✅ TruffleHog scan completed using diff scan between commits"
+          fi

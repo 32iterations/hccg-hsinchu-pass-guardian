@@ -15,26 +15,16 @@ const { AuditService } = require('../../src/backend/services/AuditService');
 const { KPIService } = require('../../src/backend/services/KPIService');
 
 // Store for audit logs that will be used across all mocks
-const globalAuditLogs = [];
-
-// Create a shared logSecurityEvent implementation
-const logSecurityEventImpl = async (data) => {
-  const auditEntry = {
-    ...data,
-    timestamp: new Date().toISOString(),
-    watermark: data.watermark || `AUDIT_${require('crypto').randomBytes(16).toString('hex').toUpperCase()}`,
-    attemptedResource: data.resource // Map resource to attemptedResource
-  };
-  globalAuditLogs.push(auditEntry);
-  return auditEntry;
-};
+// This needs to be outside the mock definition
+let globalAuditLogs = [];
 
 // Mock the service container before loading the app
 jest.mock('../../src/backend/src/services', () => {
-  const mockAuditService = {
-    logEvent: jest.fn(),
-    logSecurityEvent: jest.fn(logSecurityEventImpl)
-  };
+  // Import crypto inside the mock factory
+  const crypto = require('crypto');
+
+  // The audit logs array that persists
+  const auditLogs = [];
 
   return {
     getServices: jest.fn(() => ({
@@ -48,7 +38,25 @@ jest.mock('../../src/backend/src/services', () => {
         getCaseById: jest.fn(),
         updateCaseStatus: jest.fn()
       },
-      auditService: mockAuditService,
+      auditService: {
+        logEvent: jest.fn(),
+        logSecurityEvent: jest.fn((data) => {
+          const auditEntry = {
+            ...data,
+            timestamp: new Date().toISOString(),
+            watermark: data.watermark || `AUDIT_${crypto.randomBytes(16).toString('hex').toUpperCase()}`,
+            attemptedResource: data.resource // Map resource to attemptedResource
+          };
+          auditLogs.push(auditEntry);
+          // Store in module-level variable that we can access in tests
+          if (typeof globalAuditLogs !== 'undefined') {
+            globalAuditLogs.push(auditEntry);
+          }
+          return auditEntry;
+        }),
+        // Add a method to get audit logs for testing
+        _getAuditLogs: () => auditLogs
+      },
       kpiService: {
         getAggregatedKPIs: jest.fn()
       }
@@ -101,11 +109,15 @@ describe('P4 承辦Console Production Validation', () => {
       return auditEntry;
     };
 
-    // Mock getLatestAuditEntry to retrieve from global storage
+    // Mock getLatestAuditEntry to retrieve from the mock's internal storage
     auditService.getLatestAuditEntry = async function(filter) {
-      // Find the latest entry matching the filter from globalAuditLogs
-      for (let i = globalAuditLogs.length - 1; i >= 0; i--) {
-        const entry = globalAuditLogs[i];
+      // Get audit logs from the mocked service
+      const services = getServices();
+      const auditLogs = services.auditService._getAuditLogs ? services.auditService._getAuditLogs() : globalAuditLogs;
+
+      // Find the latest entry matching the filter
+      for (let i = auditLogs.length - 1; i >= 0; i--) {
+        const entry = auditLogs[i];
         if ((!filter.userId || entry.userId === filter.userId) &&
             (!filter.action || entry.action === filter.action) &&
             (!filter.resource || entry.resource === filter.resource)) {
@@ -229,19 +241,6 @@ describe('P4 承辦Console Production Validation', () => {
       notificationService: { send: jest.fn() },
       locationService: { trackLocation: jest.fn() }
     }));
-
-    // Also update the initial mock's logSecurityEvent to use globalAuditLogs
-    const services = getServices();
-    services.auditService.logSecurityEvent.mockImplementation(async (data) => {
-      const auditEntry = {
-        ...data,
-        timestamp: new Date().toISOString(),
-        watermark: data.watermark || `AUDIT_${require('crypto').randomBytes(16).toString('hex').toUpperCase()}`,
-        attemptedResource: data.resource // Map resource to attemptedResource
-      };
-      globalAuditLogs.push(auditEntry);
-      return auditEntry;
-    });
 
     // Test users with different roles
     testUsers = {

@@ -230,12 +230,33 @@ jobs:
           npm audit --audit-level=moderate > security-report.txt || true
           echo "Security scan complete"
 
-      - name: Check for secrets
+      - name: Check if BASE and HEAD are different
+        id: check_commits
+        run: |
+          BASE_SHA=$(git rev-parse origin/main 2>/dev/null || git rev-parse main 2>/dev/null || echo "")
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          if [ "$BASE_SHA" = "$HEAD_SHA" ] || [ -z "$BASE_SHA" ]; then
+            echo "BASE and HEAD commits are the same or BASE is empty. Using full scan."
+            echo "skip_diff_scan=true" >> $GITHUB_OUTPUT
+          else
+            echo "BASE and HEAD are different. Using diff scan."
+            echo "skip_diff_scan=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for secrets (diff scan)
+        if: steps.check_commits.outputs.skip_diff_scan != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: main
           head: HEAD
+
+      - name: Check for secrets (full scan)
+        if: steps.check_commits.outputs.skip_diff_scan == 'true'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
 
       - name: SAST scan
         uses: github/super-linter@v6

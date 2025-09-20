@@ -82,17 +82,17 @@ jobs:
       - name: Run unit tests - Backend
         if: matrix.test-suite == 'backend'
         run: |
-          npm test -- --testPathPattern="src/backend/tests/unit" --coverage --coverageReporters=lcov,json,text
+          npm test -- --testPathPattern="src/backend/tests/unit" --coverage --coverageReporters=lcov --coverageReporters=json --coverageReporters=text
 
       - name: Run unit tests - Frontend
         if: matrix.test-suite == 'frontend'
         run: |
-          npm test -- --testPathPattern="tests/" --coverage --coverageReporters=lcov,json,text
+          npm test -- --testPathPattern="tests/" --coverage --coverageReporters=lcov --coverageReporters=json --coverageReporters=text
 
       - name: Run unit tests - Mobile
         if: matrix.test-suite == 'mobile'
         run: |
-          npm test -- --testPathPattern="src/mobile/tests" --coverage --coverageReporters=lcov,json,text
+          npm test -- --testPathPattern="src/mobile/tests" --coverage --coverageReporters=lcov --coverageReporters=json --coverageReporters=text
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -150,7 +150,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/guardian_test
           NODE_ENV: test
         run: |
-          npm test -- --testPathPattern="src/backend/tests/integration" --coverage --coverageReporters=lcov,json
+          npm test -- --testPathPattern="src/backend/tests/integration" --coverage --coverageReporters=lcov --coverageReporters=json
 
       - name: Upload integration coverage
         uses: actions/upload-artifact@v4
