@@ -57,18 +57,68 @@ jobs:
       - name: Serve backend API (fallback)
         if: steps.check_build.outputs.frontend_exists != 'true'
         run: |
-          # Check if backend can be started
-          if [ -f "src/backend/server.js" ]; then
-            cd src/backend && npm install && node server.js &
+          echo "🚀 Starting backend server for performance audit..."
+
+          # Try CI-friendly server first (no Firebase dependencies)
+          if [ -f "src/backend/server-ci.js" ]; then
+            echo "📱 Using CI server (src/backend/server-ci.js)"
+            cd src/backend && npm install --production --no-audit && node server-ci.js &
+            SERVER_PID=$!
+          elif [ -f "src/backend/src/app.js" ]; then
+            echo "📱 Using Express app directly"
+            cd src/backend && npm install --production --no-audit
+            # Create a simple launcher
+            cat > ci-launcher.js << 'EOF'
+const app = require('./src/app');
+app.get('/', (req, res) => {
+  res.send('<!DOCTYPE html><html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server</h1><p>Backend API for Lighthouse audit</p></body></html>');
+});
+app.listen(3000, () => console.log('CI server running on port 3000'));
+EOF
+            node ci-launcher.js &
+            SERVER_PID=$!
           elif [ -f "backend/server.js" ]; then
-            cd backend && npm install && node server.js &
+            echo "📱 Using legacy backend server with mock Firebase config"
+            # Create mock Firebase config for CI environment
+            mkdir -p config
+            cat > config/firebase-admin.json << 'EOF'
+{
+  "type": "service_account",
+  "project_id": "mock-project-ci",
+  "private_key_id": "mock-key-id",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8Q7HgL7hZL9cR\nv+mock+key+for+ci+testing+only+not+real+credentials+here+just+format\n-----END PRIVATE KEY-----\n",
+  "client_email": "mock@mock-project-ci.iam.gserviceaccount.com",
+  "client_id": "123456789",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token"
+}
+EOF
+            cd backend && npm install --production --no-audit && timeout 30s node server.js &
+            SERVER_PID=$!
           else
+            echo "📱 Using static fallback page"
             # Create a simple static page for Lighthouse to audit
             mkdir -p temp_public
-            echo '<html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server Running</h1><p>This is a backend API project serving on port 3000.</p><script>console.log("Page loaded successfully");</script></body></html>' > temp_public/index.html
+            cat > temp_public/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>API Server</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Backend API project for performance testing">
+</head>
+<body>
+  <h1>API Server Running</h1>
+  <p>This is a backend API project serving on port 3000.</p>
+  <script>console.log("Page loaded successfully at", new Date());</script>
+</body>
+</html>
+EOF
             npx serve -s temp_public -l 3000 &
+            SERVER_PID=$!
           fi
-          SERVER_PID=$!
+
           echo "Started server with PID: $SERVER_PID"
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
