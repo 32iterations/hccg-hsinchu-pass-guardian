@@ -95,6 +95,9 @@ module.exports = {
     '!src/**/node_modules/**'
   ],
 
+  // Coverage reporters - must be an array, not a string
+  coverageReporters: ['lcov', 'json', 'text'],
+
   // Coverage thresholds (reduced to current achievable levels)
   coverageThreshold: {
     global: {
