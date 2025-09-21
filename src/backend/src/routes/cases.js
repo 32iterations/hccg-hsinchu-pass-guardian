@@ -629,6 +629,9 @@ router.put('/:id/status',
 router.post('/:id/close',
   async (req, res, next) => {
     try {
+      // Get services with lazy loading
+      const { caseFlowService, rbacService, auditService } = getServiceInstances();
+
       const caseId = req.params.id;
       const closureData = req.body;
       const closedBy = req.user.userId;
