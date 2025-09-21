@@ -48,7 +48,8 @@ jobs:
       - name: Setup environment
         run: |
           mkdir -p dashboard/{data,reports,assets}
-          npm install -g jq commander
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Collect workflow metrics
         id: workflows
