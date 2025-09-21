@@ -19,7 +19,7 @@ on:
 permissions:
   security-events: write
   actions: write
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
   statuses: write
@@ -702,28 +702,25 @@ jobs:
 
       - name: Create GitHub release
         if: github.ref == 'refs/heads/main'
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          body: |
-            ## 🚀 Release v${{ github.run_number }}
+        run: |
+          gh release create "v${{ github.run_number }}" \
+            --title "Release v${{ github.run_number }}" \
+            --notes "## 🚀 Release v${{ github.run_number }}
 
-            **Commit:** ${{ github.sha }}
-            **Coverage:** >25% ✅
-            **Security:** Passed ✅
-            **Tests:** All passing ✅
+          **Commit:** ${{ github.sha }}
+          **Coverage:** >25% ✅
+          **Security:** Passed ✅
+          **Tests:** All passing ✅
 
-            ### Artifacts
-            - Backend: build-backend-${{ github.sha }}
-            - Frontend: build-frontend-${{ github.sha }}
-            - Mobile: build-mobile-${{ github.sha }}
+          ### Artifacts
+          - Backend: build-backend-${{ github.sha }}
+          - Frontend: build-frontend-${{ github.sha }}
+          - Mobile: build-mobile-${{ github.sha }}
 
-            See pipeline-report-${{ github.sha }} for detailed results.
-          draft: false
-          prerelease: false
+          See pipeline-report-${{ github.sha }} for detailed results." \
+            --latest
 
   # Cleanup old artifacts (optional)
   cleanup:
