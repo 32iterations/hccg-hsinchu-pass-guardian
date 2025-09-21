@@ -17,6 +17,12 @@ describe('KPI API Endpoints', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Clear all timers to prevent leaks
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+  });
+
   afterAll(async () => {
     // Clean up any open handles
     if (server) {
