@@ -1108,13 +1108,7 @@ router.post('/:id/assign',
       res.json({
         success: true,
         message: 'Case assigned successfully',
-        data: {
-          caseId: caseId,
-          assignedTo: assignmentData.assigneeId || assignmentData.primaryWorker,
-          assignedBy: assignedBy,
-          assignedAt: new Date().toISOString(),
-          previousAssignee: result.previousAssignee || null
-        }
+        data: assignmentResult
       });
     } catch (error) {
       console.error('Case assignment error:', error);
