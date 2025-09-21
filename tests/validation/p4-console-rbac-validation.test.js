@@ -76,6 +76,9 @@ describe('P4 承辦Console Production Validation', () => {
   let testCases;
 
   beforeAll(async () => {
+    // Use fake timers to prevent timer leaks
+    jest.useFakeTimers();
+
     // Clear global audit logs at the start
     globalAuditLogs.length = 0;
 
@@ -1308,5 +1311,23 @@ describe('P4 承辦Console Production Validation', () => {
     await auditService?.cleanup?.();
     await caseFlowService?.cleanup?.();
     await rbacService?.cleanup?.();
+
+    // Clear any timers that might be running
+    jest.clearAllTimers();
+
+    // Restore real timers
+    jest.useRealTimers();
+
+    // Clear global audit logs
+    if (globalAuditLogs) {
+      globalAuditLogs.length = 0;
+    }
+
+    // Ensure all mocks are cleared
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+
+    // Give time for any pending async operations to complete
+    await new Promise(resolve => setImmediate(resolve));
   });
 });
