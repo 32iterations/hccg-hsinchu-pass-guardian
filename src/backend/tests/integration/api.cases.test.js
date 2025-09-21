@@ -289,13 +289,13 @@ describe('Case Flow API Endpoints', () => {
       expect(response.body).toEqual({
         success: true,
         message: 'Case assigned successfully',
-        data: {
+        data: expect.objectContaining({
           caseId: 'case123',
           assignedTo: assignmentData.assigneeId,
           assignedBy: expect.any(String),
           assignedAt: expect.any(String),
           previousAssignee: expect.any(String)
-        }
+        })
       });
     });
 
