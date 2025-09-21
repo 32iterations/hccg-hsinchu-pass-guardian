@@ -1,9 +1,9 @@
 # language: zh-TW
 @P4 @audit @compliance @security
 Feature: 稽核與匯出功能
-  As a compliance officer or auditor
-  I want to access comprehensive audit trails and export capabilities
-  So that regulatory compliance and security monitoring can be maintained
+  # As a compliance officer or auditor
+  # I want to access comprehensive audit trails and export capabilities
+  # So that regulatory compliance and security monitoring can be maintained
 
   Background:
     Given audit system is operational

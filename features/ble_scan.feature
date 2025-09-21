@@ -1,7 +1,7 @@
 Feature: BLE Scanning with Privacy
-  As a volunteer user
-  I want to scan for BLE devices while preserving privacy
-  So that I can help locate missing persons without compromising anyone's personal data
+  # As a volunteer user
+  # I want to scan for BLE devices while preserving privacy
+  # So that I can help locate missing persons without compromising anyone's personal data
 
   Background:
     Given volunteer consent is granted

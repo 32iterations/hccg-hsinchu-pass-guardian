@@ -1,9 +1,9 @@
 # language: zh-TW
 @P4 @rbac @security @access-control
 Feature: 角色權限控制系統
-  As a system administrator
-  I want to manage user roles and permissions
-  So that access to sensitive data and functions is properly controlled
+  # As a system administrator
+  # I want to manage user roles and permissions
+  # So that access to sensitive data and functions is properly controlled
 
   Background:
     Given RBAC system is initialized
