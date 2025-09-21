@@ -132,6 +132,12 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             40% { transform: translateY(-10px); }
             60% { transform: translateY(-5px); }
         }
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
         .home-marker {
             width: 24px;
             height: 24px;
@@ -397,55 +403,129 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             });
         }
 
-        // 模擬功能
+        // 完整的患者移動模擬功能
         function startSimulation() {
             if (isSimulating) return;
             isSimulating = true;
 
-            document.getElementById('simStatus').textContent = '模擬中...';
+            // 重置所有狀態
+            resetSimulationState();
 
-            const simulationPaths = [
-                // 路徑1: 火車站 -> 東門城 -> 市政府
-                [
-                    [24.8016, 120.9714], // 火車站
-                    [24.8020, 120.9700],
-                    [24.8016, 120.9672], // 東門城
-                    [24.8030, 120.9700],
-                    [24.8038, 120.9713]  // 市政府
-                ],
-                // 路徑2: 隨機移動模式
-                [
-                    [24.8100, 120.9750],
-                    [24.8090, 120.9760],
-                    [24.8080, 120.9770],
-                    [24.8070, 120.9780],
-                    [24.8060, 120.9790]
-                ]
+            // 定義完整的移動場景
+            const homeCoords = [24.8113, 120.9715];    // 家 (起點)
+            const destinationCoords = [24.8035, 120.9920]; // 失智據點 (目的地)
+
+            // 正常路徑 - 從家到失智據點
+            const normalPath = [
+                [24.8113, 120.9715], // 家
+                [24.8110, 120.9725],
+                [24.8105, 120.9740],
+                [24.8090, 120.9750],
+                [24.8085, 120.9775],
+                [24.8078, 120.9800],
+                [24.8070, 120.9820], // 異常行為觸發點
+                [24.8065, 120.9845],
+                [24.8055, 120.9870],
+                [24.8045, 120.9895],
+                [24.8035, 120.9920]  // 失智據點
             ];
 
-            let currentPathIndex = 0;
-            let currentPointIndex = 0;
+            // 異常遊蕩路徑
+            const wanderingPath = [
+                [24.8070, 120.9820], // 開始遊蕩的位置
+                [24.8072, 120.9825],
+                [24.8068, 120.9828],
+                [24.8071, 120.9823],
+                [24.8073, 120.9826],
+                [24.8069, 120.9829],
+                [24.8070, 120.9821],
+                [24.8074, 120.9824],
+                [24.8067, 120.9827]
+            ];
+
+            // 添加起點和終點標記
+            addSimulationMarkers(homeCoords, destinationCoords);
+
+            // 畫出預期路徑
+            drawNormalPath(normalPath);
+
+            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 正常移動');
+
+            let currentStep = 0;
+            let isWandering = false;
+            let wanderStep = 0;
+            let simulationPhase = 'normal'; // normal, suspicious, alert
+            let alertTriggered = false;
 
             simulationInterval = setInterval(() => {
-                const currentPath = simulationPaths[currentPathIndex];
-                const currentPoint = currentPath[currentPointIndex];
+                let currentPos;
+                let status = 'normal';
 
-                // 添加模擬標記
-                const simulationMarker = L.marker(currentPoint, {
-                    icon: L.divIcon({
-                        className: 'simulation-marker',
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
+                if (!isWandering && currentStep < 6) {
+                    // 第一階段：正常移動
+                    currentPos = normalPath[currentStep];
+                    status = 'normal';
 
-                simulationMarkers.push(simulationMarker);
+                    if (currentStep === 5) {
+                        // 即將開始異常行為
+                        simulationPhase = 'pre-anomaly';
+                    }
 
-                // 更新患者位置和移動歷史
+                    currentStep++;
+                } else if (!isWandering && currentStep >= 6) {
+                    // 開始異常遊蕩行為
+                    isWandering = true;
+                    simulationPhase = 'suspicious';
+                    currentPos = wanderingPath[0];
+                    status = 'warning';
+                    wanderStep = 1;
+
+                    document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 偵測到異常行為');
+
+                    // 更新路徑顏色為警告
+                    updatePathStyle('warning');
+
+                } else if (isWandering && wanderStep < wanderingPath.length) {
+                    // 持續遊蕩
+                    currentPos = wanderingPath[wanderStep];
+
+                    if (wanderStep > 3 && !alertTriggered) {
+                        // 觸發警報
+                        status = 'alert';
+                        simulationPhase = 'alert';
+                        alertTriggered = true;
+
+                        document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 系統警報已觸發');
+
+                        // 顯示系統警報
+                        showSystemAlert(currentPos);
+
+                        // 更新路徑顏色為警報
+                        updatePathStyle('alert');
+                    } else if (wanderStep > 3) {
+                        status = 'alert';
+                    } else {
+                        status = 'warning';
+                    }
+
+                    wanderStep++;
+
+                    if (wanderStep >= wanderingPath.length) {
+                        // 遊蕩結束，停止模擬
+                        stopSimulation();
+                        return;
+                    }
+                }
+
+                // 更新患者標記
+                updatePatientMarker(currentPos, status);
+
+                // 更新移動歷史
                 currentPatientLocation = {
-                    lat: currentPoint[0],
-                    lng: currentPoint[1],
-                    timestamp: new Date()
+                    lat: currentPos[0],
+                    lng: currentPos[1],
+                    timestamp: new Date(),
+                    status: status
                 };
 
                 movementHistory.push(currentPatientLocation);
@@ -453,32 +533,29 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
                     movementHistory = movementHistory.slice(-20);
                 }
 
-                // 移動到下一個點
-                currentPointIndex++;
-                if (currentPointIndex >= currentPath.length) {
-                    currentPointIndex = 0;
-                    currentPathIndex = (currentPathIndex + 1) % simulationPaths.length;
+                // 畫出實際行走路徑
+                if (movementHistory.length > 1) {
+                    updateActualPath();
                 }
 
-                // 更新機率預測路徑
-                if (showingHeatmap) {
-                    updatePredictionPath();
+                // 更新颱風路徑式機率預測
+                if (showingHeatmap && simulationPhase === 'normal') {
+                    updateTyphoonStylePrediction(currentPos, normalPath, currentStep);
                 }
 
                 // 通知React Native
                 window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'SIMULATION_UPDATE',
                     data: {
-                        location: { latitude: currentPoint[0], longitude: currentPoint[1] },
-                        timestamp: new Date().toISOString()
+                        location: { latitude: currentPos[0], longitude: currentPos[1] },
+                        timestamp: new Date().toISOString(),
+                        status: status,
+                        phase: simulationPhase
                     }
                 }));
 
-                // 限制標記數量，避免地圖過於擁擠
-                if (simulationMarkers.length > 20) {
-                    const oldMarker = simulationMarkers.shift();
-                    map.removeLayer(oldMarker);
-                }
+                // 地圖跟隨
+                map.panTo(currentPos, { animate: true, duration: 0.5 });
 
             }, 2000); // 每2秒更新一次
 
@@ -496,16 +573,343 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
                 clearInterval(simulationInterval);
             }
 
-            // 清除模擬標記
-            simulationMarkers.forEach(marker => map.removeLayer(marker));
-            simulationMarkers = [];
+            // 清除所有模擬相關的標記和圖層
+            clearSimulationLayers();
 
-            document.getElementById('simStatus').textContent = '已停止';
+            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '已停止');
 
             // 通知React Native模擬停止
             window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: 'SIMULATION_STOPPED'
             }));
+        }
+
+        // 重置模擬狀態
+        function resetSimulationState() {
+            clearSimulationLayers();
+            movementHistory = [];
+            currentPatientLocation = null;
+        }
+
+        // 清除所有模擬圖層
+        function clearSimulationLayers() {
+            // 清除患者標記
+            if (window.currentPatientMarker) {
+                map.removeLayer(window.currentPatientMarker);
+                window.currentPatientMarker = null;
+            }
+
+            // 清除起點終點標記
+            if (window.homeMarker) {
+                map.removeLayer(window.homeMarker);
+                window.homeMarker = null;
+            }
+            if (window.destinationMarker) {
+                map.removeLayer(window.destinationMarker);
+                window.destinationMarker = null;
+            }
+
+            // 清除路徑線
+            if (window.normalPathLine) {
+                map.removeLayer(window.normalPathLine);
+                window.normalPathLine = null;
+            }
+            if (window.actualPathLine) {
+                map.removeLayer(window.actualPathLine);
+                window.actualPathLine = null;
+            }
+
+            // 清除預測路徑
+            clearPredictionPaths();
+
+            // 清除警報標記
+            if (window.alertMarker) {
+                map.removeLayer(window.alertMarker);
+                window.alertMarker = null;
+            }
+        }
+
+        // 添加起點和終點標記
+        function addSimulationMarkers(homeCoords, destinationCoords) {
+            // 家的標記
+            window.homeMarker = L.marker(homeCoords, {
+                icon: L.divIcon({
+                    className: 'home-marker',
+                    html: '<div style="width: 24px; height: 24px; background-color: #10b981; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🏠</div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                })
+            }).addTo(map);
+            window.homeMarker.bindPopup('<strong>家 (起點)</strong><br>患者開始移動的地方');
+
+            // 失智據點的標記
+            window.destinationMarker = L.marker(destinationCoords, {
+                icon: L.divIcon({
+                    className: 'destination-marker',
+                    html: '<div style="width: 24px; height: 24px; background-color: #ef4444; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🎯</div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                })
+            }).addTo(map);
+            window.destinationMarker.bindPopup('<strong>失智據點 (目的地)</strong><br>患者預計要到達的地方');
+        }
+
+        // 畫出正常預期路徑
+        function drawNormalPath(normalPath) {
+            window.normalPathLine = L.polyline(normalPath, {
+                color: '#94a3b8',
+                weight: 3,
+                opacity: 0.6,
+                dashArray: '10, 5'
+            }).addTo(map);
+            window.normalPathLine.bindPopup('預期路徑');
+        }
+
+        // 更新患者標記
+        function updatePatientMarker(currentPos, status) {
+            // 移除舊標記
+            if (window.currentPatientMarker) {
+                map.removeLayer(window.currentPatientMarker);
+            }
+
+            // 根據狀態設置樣式
+            let markerClass = 'patient-marker';
+            let bgColor = '#3b82f6';
+            let borderColor = 'white';
+            let animation = '';
+
+            if (status === 'warning') {
+                bgColor = '#f97316';
+                markerClass += ' warning';
+            } else if (status === 'alert') {
+                bgColor = '#ef4444';
+                markerClass += ' alert';
+                animation = 'animation: pulse 1s infinite;';
+            }
+
+            // 創建新標記
+            window.currentPatientMarker = L.marker(currentPos, {
+                icon: L.divIcon({
+                    className: markerClass,
+                    html: \`<div style="width: 20px; height: 20px; background-color: \${bgColor}; border-radius: 50%; border: 3px solid \${borderColor}; box-shadow: 0 0 15px rgba(\${bgColor.slice(1)}, 0.8); \${animation}"></div>\`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+
+            // 添加彈窗資訊
+            const statusText = status === 'alert' ? '警報' : status === 'warning' ? '警告' : '正常';
+            const statusColor = status === 'alert' ? '#ef4444' : status === 'warning' ? '#f97316' : '#10b981';
+            window.currentPatientMarker.bindPopup(\`
+                <div style="font-family: sans-serif;">
+                    <strong>患者：陳秀英</strong><br>
+                    <small>時間: \${new Date().toLocaleTimeString('zh-TW')}</small><br>
+                    <span style="color: \${statusColor}; font-weight: bold;">狀態: \${statusText}</span>
+                </div>
+            \`);
+        }
+
+        // 更新實際行走路徑
+        function updateActualPath() {
+            if (window.actualPathLine) {
+                map.removeLayer(window.actualPathLine);
+            }
+
+            const pathCoords = movementHistory.map(pos => [pos.lat, pos.lng]);
+
+            // 根據最新狀態設置路徑顏色
+            const latestStatus = movementHistory[movementHistory.length - 1].status;
+            let pathColor = '#3b82f6'; // 正常：藍色
+
+            if (latestStatus === 'warning') {
+                pathColor = '#f97316'; // 警告：橙色
+            } else if (latestStatus === 'alert') {
+                pathColor = '#ef4444'; // 警報：紅色
+            }
+
+            window.actualPathLine = L.polyline(pathCoords, {
+                color: pathColor,
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+            window.actualPathLine.bindPopup('實際移動路徑');
+        }
+
+        // 更新路徑樣式
+        function updatePathStyle(status) {
+            if (!window.actualPathLine) return;
+
+            let color = '#3b82f6';
+            if (status === 'warning') {
+                color = '#f97316';
+            } else if (status === 'alert') {
+                color = '#ef4444';
+            }
+
+            window.actualPathLine.setStyle({
+                color: color,
+                weight: 5,
+                opacity: 0.9
+            });
+        }
+
+        // 顯示系統警報
+        function showSystemAlert(currentPos) {
+            // 移除舊警報
+            if (window.alertMarker) {
+                map.removeLayer(window.alertMarker);
+            }
+
+            // 創建警報標記
+            window.alertMarker = L.marker(currentPos, {
+                icon: L.divIcon({
+                    className: 'alert-marker',
+                    html: \`
+                        <div style="position: relative;">
+                            <div style="width: 40px; height: 40px; background-color: #ef4444; border-radius: 50%; border: 3px solid white;
+                                        display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;
+                                        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;">
+                                ⚠️
+                            </div>
+                        </div>
+                    \`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                })
+            }).addTo(map);
+
+            // 顯示警報彈窗
+            window.alertMarker.bindPopup(\`
+                <div style="font-family: sans-serif; text-align: center;">
+                    <div style="color: #ef4444; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+                        🚨 系統警報
+                    </div>
+                    <p style="margin: 5px 0;">偵測到異常行走模式！</p>
+                    <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                        患者在同一區域徘徊超過預設時間
+                    </p>
+                    <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                        時間: \${new Date().toLocaleTimeString('zh-TW')}
+                    </p>
+                </div>
+            \`).openPopup();
+
+            // 地圖飛至警報位置
+            map.flyTo(currentPos, 17, { duration: 1 });
+        }
+
+        // 颱風路徑式機率預測
+        function updateTyphoonStylePrediction(currentPos, normalPath, currentStep) {
+            // 清除舊預測
+            clearPredictionPaths();
+
+            if (currentStep >= normalPath.length - 1) return;
+
+            // 生成多條預測路徑，類似颱風路徑預測
+            const predictions = generateTyphoonStylePaths(currentPos, normalPath, currentStep);
+
+            predictions.forEach((prediction, index) => {
+                const pathPoints = prediction.path;
+                const probability = prediction.probability;
+
+                // 根據機率設定顏色和樣式
+                let color, opacity, weight, dashArray;
+                if (probability > 0.7) {
+                    color = '#22c55e'; // 高機率：綠色
+                    opacity = 0.8;
+                    weight = 8;
+                    dashArray = null;
+                } else if (probability > 0.4) {
+                    color = '#eab308'; // 中機率：黃色
+                    opacity = 0.6;
+                    weight = 6;
+                    dashArray = null;
+                } else {
+                    color = '#f97316'; // 低機率：橙色
+                    opacity = 0.4;
+                    weight = 4;
+                    dashArray = '5, 5';
+                }
+
+                // 創建預測路徑
+                const pathLayer = L.polyline(pathPoints, {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
+
+                // 在路徑終點添加機率標籤
+                if (pathPoints.length > 0) {
+                    const endPoint = pathPoints[pathPoints.length - 1];
+                    const probabilityPercent = Math.round(probability * 100);
+                    const labelMarker = L.marker(endPoint, {
+                        icon: L.divIcon({
+                            className: 'probability-label',
+                            html: probabilityPercent + '%',
+                            iconSize: [40, 20],
+                            iconAnchor: [20, 10]
+                        })
+                    }).addTo(map);
+
+                    predictionPaths.push({
+                        layer: pathLayer,
+                        label: labelMarker,
+                        probability: probability
+                    });
+                } else {
+                    predictionPaths.push({
+                        layer: pathLayer,
+                        probability: probability
+                    });
+                }
+            });
+        }
+
+        // 生成颱風路徑式預測路徑
+        function generateTyphoonStylePaths(currentPos, normalPath, currentStep) {
+            const predictions = [];
+            const remainingPath = normalPath.slice(currentStep);
+
+            if (remainingPath.length === 0) return predictions;
+
+            // 主要路徑（最高機率）
+            const mainPath = [currentPos, ...remainingPath];
+            predictions.push({
+                path: mainPath,
+                probability: 0.85
+            });
+
+            // 生成偏移路徑
+            const pathVariations = [
+                { offset: 0.0005, probability: 0.65 },  // 輕微偏移
+                { offset: 0.001, probability: 0.45 },   // 中度偏移
+                { offset: 0.0015, probability: 0.25 },  // 大幅偏移
+                { offset: 0.002, probability: 0.15 }    // 極端偏移
+            ];
+
+            pathVariations.forEach((variation, index) => {
+                const offsetPath = [currentPos];
+
+                for (let i = 1; i < remainingPath.length; i++) {
+                    const point = remainingPath[i];
+                    const randomOffset = (Math.random() - 0.5) * variation.offset * 2;
+                    const offsetPoint = [
+                        point[0] + randomOffset,
+                        point[1] + randomOffset
+                    ];
+                    offsetPath.push(offsetPoint);
+                }
+
+                predictions.push({
+                    path: offsetPath,
+                    probability: variation.probability
+                });
+            });
+
+            return predictions.sort((a, b) => b.probability - a.probability);
         }
 
         // 機率預測功能
