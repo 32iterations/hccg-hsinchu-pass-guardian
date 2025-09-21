@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P4 @kpi @analytics @performance
 Feature: KPI 匯總與效能指標
   As a system administrator or stakeholder

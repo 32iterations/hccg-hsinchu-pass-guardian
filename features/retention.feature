@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P3 @retention @gdpr @taiwan-pdpa
 Feature: 回執保存與資料生命週期管理
   As a system administrator managing data retention

@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P4 @rbac @security @access-control
 Feature: 角色權限控制系統
   As a system administrator

@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P4 @audit @compliance @security
 Feature: 稽核與匯出功能
   As a compliance officer or auditor

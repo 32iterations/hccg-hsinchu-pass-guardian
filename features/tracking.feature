@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P3 @tracking @progress @notifications
 Feature: 進度追蹤與通知管理
   As a family member or volunteer user

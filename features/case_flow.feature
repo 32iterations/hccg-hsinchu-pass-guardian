@@ -1,4 +1,4 @@
-# Language: zh-TW
+# language: zh-TW
 @P4 @case-flow @workflow @case-management
 Feature: 案件流程管理系統
   As a case manager
