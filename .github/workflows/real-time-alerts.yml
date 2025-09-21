@@ -8,6 +8,12 @@ on:
   repository_dispatch:
     types: [quality-gate-failure, security-alert, coverage-drop]
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
 env:
   ALERT_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}

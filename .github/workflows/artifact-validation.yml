@@ -20,6 +20,10 @@ on:
           - size
           - performance
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   MAX_ARTIFACT_SIZE_MB: 100
   RETENTION_DAYS: 30

@@ -20,6 +20,11 @@ on:
         default: '20'
         type: number
 
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
 env:
   PERFORMANCE_THRESHOLD: ${{ github.event.inputs.performance_threshold || 20 }}
   BASELINE_COMMIT: ${{ github.event.inputs.baseline_commit || '' }}

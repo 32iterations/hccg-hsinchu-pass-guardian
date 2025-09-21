@@ -18,6 +18,12 @@ on:
           - summary
           - alerts-only
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
 env:
   DASHBOARD_RETENTION_DAYS: 30
   QUALITY_THRESHOLD: 80
@@ -42,7 +48,7 @@ jobs:
       - name: Setup environment
         run: |
           mkdir -p dashboard/{data,reports,assets}
-          npm install -g jq
+          npm install -g jq commander
 
       - name: Collect workflow metrics
         id: workflows

@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 6 * * *' # Daily at 6 AM
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lighthouse:
     name: Lighthouse Performance Audit
