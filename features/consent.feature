@@ -1,7 +1,7 @@
 Feature: Volunteer Consent Management
-  As a volunteer user of the HsinchuPass Guardian system
-  I want to manage my consent for background BLE scanning
-  So that I can help locate missing persons while protecting my privacy
+  # As a volunteer user of the HsinchuPass Guardian system
+  # I want to manage my consent for background BLE scanning
+  # So that I can help locate missing persons while protecting my privacy
 
   Background:
     Given the app is installed and initialized
