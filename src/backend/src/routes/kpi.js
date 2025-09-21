@@ -88,18 +88,6 @@ router.get('/dashboard',
             { area: '香山區', cases: 23 }
           ]
         },
-        categories: {
-          byPriority: {
-            high: 45,
-            medium: 78,
-            low: 33
-          },
-          byOutcome: {
-            successful: 132,
-            partially_successful: 10,
-            unsuccessful: 2
-          }
-        },
         alerts: [
           {
             id: 'alert_1',
@@ -426,18 +414,6 @@ router.get('/dashboard-legacy',
             { area: '北區', cases: 38 },
             { area: '香山區', cases: 23 }
           ]
-        },
-        categories: {
-          byPriority: {
-            high: 45,
-            medium: 78,
-            low: 33
-          },
-          byOutcome: {
-            successful: 132,
-            partially_successful: 10,
-            unsuccessful: 2
-          }
         },
         alerts: [
           {

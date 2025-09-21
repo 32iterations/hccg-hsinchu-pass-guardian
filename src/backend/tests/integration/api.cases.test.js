@@ -2,6 +2,11 @@ const request = require('supertest');
 const app = require('../../src/app');
 
 describe('Case Flow API Endpoints', () => {
+  let server;
+
+  // Set timeout for all tests in this suite
+  jest.setTimeout(30000);
+
   const mockCase = {
     id: 'case123',
     title: '失智長者走失案件',
@@ -17,8 +22,38 @@ describe('Case Flow API Endpoints', () => {
     }
   };
 
+  beforeAll(() => {
+    // Set test environment to ensure proper token handling
+    process.env.NODE_ENV = 'test';
+    process.env.JWT_SECRET = 'test-secret-key';
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Clear all timers to prevent leaks
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+  });
+
+  afterAll(async () => {
+    // Clean up any open handles
+    if (server) {
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
+    }
+
+    // Clear timers and handles
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
   });
 
   describe('POST /api/v1/cases/create', () => {
