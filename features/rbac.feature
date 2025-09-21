@@ -11,7 +11,7 @@ Background:
     And permission matrix is configured
     And audit logging is enabled
 
-  @rbac @roles @definition
+@rbac @roles @definition
 Scenario: System role definitions with clear boundaries
     Given the RBAC system defines user roles
     Then the following roles should exist:
@@ -26,7 +26,7 @@ Scenario: System role definitions with clear boundaries
     And each role should have clearly defined permissions
     And role inheritance should be explicitly configured
 
-  @rbac @volunteer @permissions
+@rbac @volunteer @permissions
 Scenario: Volunteer role permissions and restrictions
     Given I am authenticated as a volunteer user
     When I attempt to access system functions
@@ -44,7 +44,7 @@ Scenario: Volunteer role permissions and restrictions
       | 修改系統設定 | Privilege escalation |
       | 匯出資料 | Data protection |
 
-  @rbac @family-member @case-access
+@rbac @family-member @case-access
 Scenario: Family member role with case-specific access
     Given I am authenticated as a family member
     And I have reported case "CASE-2025-091701"
@@ -59,7 +59,7 @@ Scenario: Family member role with case-specific access
     But access should be revoked immediately when case is closed
     And no access to system administration functions
 
-  @rbac @case-manager @operational-access
+@rbac @case-manager @operational-access
 Scenario: Case manager role with multi-case operational permissions
     Given I am authenticated as a case manager
     And I am assigned to handle cases in "中正區"
@@ -76,7 +76,7 @@ Scenario: Case manager role with multi-case operational permissions
     And all actions should be logged for audit
     And sensitive personal data access should require justification
 
-  @rbac @emergency-operator @special-permissions
+@rbac @emergency-operator @special-permissions
 Scenario: Emergency operator role with time-sensitive access
     Given I am authenticated as an emergency operator
     And emergency case creation is required
@@ -92,7 +92,7 @@ Scenario: Emergency operator role with time-sensitive access
     And supervisor should be notified of all emergency access usage
     And post-incident review should be mandatory
 
-  @rbac @admin @system-management
+@rbac @admin @system-management
 Scenario: System administrator role with full access and accountability
     Given I am authenticated as a system administrator
     When I perform administrative functions
@@ -109,7 +109,7 @@ Scenario: System administrator role with full access and accountability
     And comprehensive audit logs should be maintained
     And admin access should be regularly reviewed and revalidated
 
-  @rbac @auditor @compliance-access
+@rbac @auditor @compliance-access
 Scenario: Auditor role with read-only compliance access
     Given I am authenticated as an auditor
     When I perform compliance review
@@ -128,7 +128,7 @@ Scenario: Auditor role with read-only compliance access
     And auditor access should be time-limited per audit period
     And auditor activities should themselves be logged
 
-  @rbac @permission-inheritance @role-hierarchy
+@rbac @permission-inheritance @role-hierarchy
 Scenario: Role hierarchy and permission inheritance
     Given role hierarchy is defined as:
       | Parent Role | Child Role | Inherited Permissions |
@@ -142,7 +142,7 @@ Scenario: Role hierarchy and permission inheritance
     And inheritance chain should be limited to 3 levels maximum
     And circular inheritance should be prevented and detected
 
-  @rbac @dynamic-permissions @context-aware
+@rbac @dynamic-permissions @context-aware
 Scenario: Dynamic permissions based on context and situation
     Given I have case_manager role
     And emergency situation is declared
@@ -156,7 +156,7 @@ Scenario: Dynamic permissions based on context and situation
     And permission elevation should be logged with context justification
     And supervisor should be notified of permission elevation
 
-  @rbac @delegation @temporary-access
+@rbac @delegation @temporary-access
 Scenario: Permission delegation for temporary coverage
     Given I am a case manager going on leave
     And I need to delegate my responsibilities
@@ -168,7 +168,7 @@ Scenario: Permission delegation for temporary coverage
     And delegated access should be clearly marked in audit logs
     And delegation should auto-expire at specified time
 
-  @rbac @geo-permissions @location-based-access
+@rbac @geo-permissions @location-based-access
 Scenario: Geographic-based permission restrictions
     Given I am a case manager assigned to "東區"
     When I attempt to access case data
@@ -179,7 +179,7 @@ Scenario: Geographic-based permission restrictions
     And geographic boundaries should be clearly defined in system
     And location-based access violations should trigger security alerts
 
-  @error-handling @rbac-failures
+@error-handling @rbac-failures
 Scenario: Handling RBAC system failures and security incidents
     Given RBAC system encounters technical difficulties
     When permission check fails
@@ -193,7 +193,7 @@ Scenario: Handling RBAC system failures and security incidents
     Then all fallback access should be immediately revoked
     And comprehensive security review should be conducted
 
-  @monitoring @rbac-analytics @security-metrics
+@monitoring @rbac-analytics @security-metrics
 Scenario: RBAC system monitoring and security analytics
     Given RBAC system is operational
     When security monitoring runs

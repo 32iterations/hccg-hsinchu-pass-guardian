@@ -11,7 +11,7 @@ Background:
     And privacy settings are configured
     And case access permissions are verified
 
-  @tracking @case-progress @family-member
+@tracking @case-progress @family-member
 Scenario: Family member tracks their case progress with privacy protection
     Given I am a family member who reported a missing person case
     And my case ID is "CASE-2025-091701"
@@ -25,7 +25,7 @@ Scenario: Family member tracks their case progress with privacy protection
     And I should NOT see detailed location data
     And I should NOT see other families' case information
 
-  @tracking @volunteer-contribution @anonymized-impact
+@tracking @volunteer-contribution @anonymized-impact
 Scenario: Volunteer tracks their contribution impact (anonymized)
     Given I am an active volunteer
     And I have been scanning for 7 days
@@ -38,7 +38,7 @@ Scenario: Volunteer tracks their contribution impact (anonymized)
     And I should NOT see family member information
     And I should see contribution impact as "您的協助可能幫助了走失者家庭"
 
-  @tracking @case-timeline @progress-milestones
+@tracking @case-timeline @progress-milestones
 Scenario: Case timeline with privacy-preserving milestones
     Given a missing person case has been active for 6 hours
     When family member checks case timeline
@@ -52,7 +52,7 @@ Scenario: Case timeline with privacy-preserving milestones
     And timeline should auto-update every 30 minutes
     And family should receive push notifications for major milestones
 
-  @tracking @multi-case-dashboard @volunteer-perspective
+@tracking @multi-case-dashboard @volunteer-perspective
 Scenario: Volunteer dashboard showing multiple case areas (anonymized)
     Given I am a volunteer in central Hsinchu area
     And there are 3 active cases within my scanning range
@@ -65,7 +65,7 @@ Scenario: Volunteer dashboard showing multiple case areas (anonymized)
     And areas should be displayed as generic "搜尋區域A/B/C"
     And I should receive notification when entering high-priority areas
 
-  @tracking @notification-preferences @granular-control
+@tracking @notification-preferences @granular-control
 Scenario: Granular notification preference management
     Given I want to customize my notification experience
     When I access "通知設定"
@@ -79,7 +79,7 @@ Scenario: Granular notification preference management
     And settings should apply immediately
     And preferences should be synced across devices
 
-  @tracking @real-time-updates @websocket
+@tracking @real-time-updates @websocket
 Scenario: Real-time progress updates via WebSocket connection
     Given I am viewing case progress page
     And WebSocket connection is established
@@ -91,7 +91,7 @@ Scenario: Real-time progress updates via WebSocket connection
     And fallback to polling should occur if WebSocket fails
     And battery impact should be minimized on mobile devices
 
-  @tracking @privacy-boundaries @information-filtering
+@tracking @privacy-boundaries @information-filtering
 Scenario: Strict privacy boundaries in progress information
     Given I am family member of Case A
     And another family has Case B in same area
@@ -103,7 +103,7 @@ Scenario: Strict privacy boundaries in progress information
     And NO cross-case correlation should be possible
     And system should actively prevent information leakage
 
-  @tracking @volunteer-safety @location-tracking-consent
+@tracking @volunteer-safety @location-tracking-consent
 Scenario: Volunteer safety tracking with explicit consent
     Given I am a volunteer in active search area
     And I opt-in to safety tracking with "同意安全位置追蹤"
@@ -115,7 +115,7 @@ Scenario: Volunteer safety tracking with explicit consent
     And I should be able to disable safety tracking anytime
     And safety data should be deleted after 24 hours
 
-  @tracking @case-resolution @outcome-notification
+@tracking @case-resolution @outcome-notification
 Scenario: Case resolution notification and outcome tracking
     Given I am involved in a missing person case (as family or volunteer)
     When case status changes to "resolved_found" or "resolved_safe"
@@ -126,7 +126,7 @@ Scenario: Case resolution notification and outcome tracking
     And follow-up surveys may be requested for service improvement
     But specific resolution details should remain confidential
 
-  @tracking @escalation-alerts @priority-changes
+@tracking @escalation-alerts @priority-changes
 Scenario: Case escalation and priority change notifications
     Given I am a volunteer in area with standard priority case
     When case priority escalates to "high" due to safety concerns
@@ -136,7 +136,7 @@ Scenario: Case escalation and priority change notifications
     And opt-out option should remain available
     And escalation reason should be general (no sensitive details)
 
-  @tracking @progress-analytics @family-insights
+@tracking @progress-analytics @family-insights
 Scenario: Progress analytics and insights for family members
     Given my case has been active for 48 hours
     When I view "進度分析"
@@ -149,7 +149,7 @@ Scenario: Progress analytics and insights for family members
     And insights should help manage family expectations
     And analytics should be updated every 4 hours
 
-  @tracking @volunteer-motivation @gamification-elements
+@tracking @volunteer-motivation @gamification-elements
 Scenario: Volunteer motivation through progress recognition (privacy-safe)
     Given I have been volunteering for 30 days
     When I check my volunteer profile
@@ -163,7 +163,7 @@ Scenario: Volunteer motivation through progress recognition (privacy-safe)
     And recognition should NOT compromise case privacy
     And opt-out from gamification should be available
 
-  @error-handling @tracking-system-failures
+@error-handling @tracking-system-failures
 Scenario: Handling tracking system failures and user communication
     Given tracking system experiences technical difficulties
     When progress updates fail to load
@@ -174,7 +174,7 @@ Scenario: Handling tracking system failures and user communication
     And critical notifications should still function via backup channels
     And user should be able to contact support for urgent case updates
 
-  @accessibility @tracking-interface @inclusive-design
+@accessibility @tracking-interface @inclusive-design
 Scenario: Accessible progress tracking for users with disabilities
     Given user has visual impairments and uses screen reader
     When accessing progress tracking interface
@@ -186,7 +186,7 @@ Scenario: Accessible progress tracking for users with disabilities
     And font sizes should be adjustable
     And progress information should be available via audio summaries
 
-  @monitoring @tracking-metrics @system-health
+@monitoring @tracking-metrics @system-health
 Scenario: System monitoring of tracking feature performance
     Given tracking system is operational
     When system health monitoring runs

@@ -11,7 +11,7 @@ Background:
     And notification system is configured
     And role-based access control is active
 
-  @case-flow @case-creation @initial-response
+@case-flow @case-creation @initial-response
 Scenario: Missing person case creation and initial workflow
     Given I am a case manager receiving a missing person report
     When I create a new case with details:
@@ -32,7 +32,7 @@ Scenario: Missing person case creation and initial workflow
       | 志工招募啟動 | 30分鐘內 | System |
       | 家屬聯絡確認 | 1小時內 | Case Manager |
 
-  @case-flow @risk-assessment @priority-classification
+@case-flow @risk-assessment @priority-classification
 Scenario: Automated risk assessment and priority classification
     Given a new case is created with missing person details
     When risk assessment algorithm runs
@@ -48,7 +48,7 @@ Scenario: Automated risk assessment and priority classification
     And volunteer recruitment should target 50+ volunteers
     And estimated case duration should be 12-24 hours
 
-  @case-flow @search-area-management @dynamic-expansion
+@case-flow @search-area-management @dynamic-expansion
 Scenario: Dynamic search area management based on case progress
     Given case has been active for 2 hours
     And initial 500m radius search yields no results
@@ -64,7 +64,7 @@ Scenario: Dynamic search area management based on case progress
     And inter-agency coordination should be considered
     And escalation to emergency services should be evaluated
 
-  @case-flow @volunteer-coordination @resource-allocation
+@case-flow @volunteer-coordination @resource-allocation
 Scenario: Volunteer coordination and resource allocation
     Given a case requires volunteer assistance
     And 85 volunteers are available in the search area
@@ -80,7 +80,7 @@ Scenario: Volunteer coordination and resource allocation
     And search coverage heatmap should be updated continuously
     And volunteer safety should be monitored throughout
 
-  @case-flow @family-communication @progress-updates
+@case-flow @family-communication @progress-updates
 Scenario: Structured family communication and progress updates
     Given family members are registered for case communications
     When case progress milestones are reached
@@ -95,7 +95,7 @@ Scenario: Structured family communication and progress updates
     And case manager should provide personal communication as needed
     And sensitive operational details should be filtered from family updates
 
-  @case-flow @inter-agency @escalation-procedures
+@case-flow @inter-agency @escalation-procedures
 Scenario: Inter-agency coordination and escalation procedures
     Given case has been active for 6 hours without resolution
     And all volunteer resources have been maximized
@@ -110,7 +110,7 @@ Scenario: Inter-agency coordination and escalation procedures
     And volunteer efforts should continue to complement official search
     And family should be informed of escalation and what to expect
 
-  @case-flow @case-resolution @closure-procedures
+@case-flow @case-resolution @closure-procedures
 Scenario: Case resolution and closure procedures
     Given missing person has been found safe
     When case resolution is confirmed
@@ -127,7 +127,7 @@ Scenario: Case resolution and closure procedures
     And volunteer scanning should return to normal background mode
     And case success metrics should be recorded for analysis
 
-  @case-flow @unsuccessful-resolution @long-term-management
+@case-flow @unsuccessful-resolution @long-term-management
 Scenario: Long-term case management for unsuccessful resolutions
     Given case has been active for 72 hours without resolution
     And all immediate search resources have been exhausted
@@ -144,7 +144,7 @@ Scenario: Long-term case management for unsuccessful resolutions
     And family should receive realistic expectation guidance
     And long-term support services should be offered
 
-  @case-flow @multiple-cases @resource-prioritization
+@case-flow @multiple-cases @resource-prioritization
 Scenario: Managing multiple concurrent cases with resource prioritization
     Given 3 active cases exist simultaneously:
       | Case ID | Priority | Duration | Resources Assigned |
@@ -160,7 +160,7 @@ Scenario: Managing multiple concurrent cases with resource prioritization
     And case managers should coordinate to avoid resource conflicts
     And system should optimize volunteer allocation across all cases
 
-  @case-flow @data-integration @analytics
+@case-flow @data-integration @analytics
 Scenario: Case data integration and analytics for improvement
     Given multiple cases have been resolved
     When case analytics are generated
@@ -175,7 +175,7 @@ Scenario: Case data integration and analytics for improvement
     And predictive models should be updated with new case data
     And best practices should be documented and shared
 
-  @error-handling @workflow-failures @contingency-procedures
+@error-handling @workflow-failures @contingency-procedures
 Scenario: Handling workflow failures and system contingencies
     Given case management workflow encounters system failures
     When automated processes fail
@@ -189,7 +189,7 @@ Scenario: Handling workflow failures and system contingencies
     And family should be informed of any service disruptions
     And post-incident analysis should improve system resilience
 
-  @monitoring @case-flow-metrics @performance-tracking
+@monitoring @case-flow-metrics @performance-tracking
 Scenario: Case flow performance monitoring and metrics
     Given case management system is operational
     When performance monitoring runs

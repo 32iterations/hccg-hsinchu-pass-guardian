@@ -11,7 +11,7 @@ Background:
     And Taiwan PDPA regulations are configured
     And data classification policies are loaded
 
-  @retention @consent-data @ttl
+@retention @consent-data @ttl
 Scenario: Volunteer consent data retention with TTL
     Given a volunteer provides consent at "2025-09-17T16:45:00Z"
     And consent retention policy is set to 3 years
@@ -25,7 +25,7 @@ Scenario: Volunteer consent data retention with TTL
     And all related volunteer data should be removed
     And audit log should record "consent_data_purged"
 
-  @retention @volunteer-hits @minimal-storage
+@retention @volunteer-hits @minimal-storage
 Scenario: VolunteerHit data minimal retention
     Given a VolunteerHit is created with anonymized data
     And hit retention policy is set to 30 days
@@ -38,7 +38,7 @@ Scenario: VolunteerHit data minimal retention
     And no manual intervention should be required
     And storage space should be reclaimed
 
-  @retention @case-data @investigation-period
+@retention @case-data @investigation-period
 Scenario: Missing person case data retention during active investigation
     Given a missing person case is created
     And case is marked as "active_investigation"
@@ -51,7 +51,7 @@ Scenario: Missing person case data retention during active investigation
     Then retention clock should start countdown
     And case data should be progressively purged (location first, then personal details, finally case metadata)
 
-  @retention @logs @audit-trail
+@retention @logs @audit-trail
 Scenario: System logs and audit trail retention
     Given system generates operational logs
     And audit events are recorded
@@ -63,7 +63,7 @@ Scenario: System logs and audit trail retention
     And log rotation should occur daily
     And compressed archives should be created for long-term storage
 
-  @retention @gdpr-right-to-be-forgotten @immediate-purge
+@retention @gdpr-right-to-be-forgotten @immediate-purge
 Scenario: GDPR Article 17 Right to Erasure (Right to be Forgotten)
     Given a volunteer has active consent and data
     And volunteer invokes right to be forgotten
@@ -76,7 +76,7 @@ Scenario: GDPR Article 17 Right to Erasure (Right to be Forgotten)
     And audit log should record complete erasure process
     But legal basis data required for compliance should be retained (anonymized case numbers for statistics only)
 
-  @retention @taiwan-pdpa @data-minimization
+@retention @taiwan-pdpa @data-minimization
 Scenario: Taiwan Personal Data Protection Act compliance
     Given Taiwan PDPA requirements are active
     When any personal data is collected
@@ -88,7 +88,7 @@ Scenario: Taiwan Personal Data Protection Act compliance
     Then data should be purged immediately regardless of TTL
     And destruction certificate should be generated
 
-  @retention @progressive-purge @data-aging
+@retention @progressive-purge @data-aging
 Scenario: Progressive data purging based on sensitivity
     Given a complete missing person case with various data types
     When case enters retention phase
@@ -100,7 +100,7 @@ Scenario: Progressive data purging based on sensitivity
     And 3 years (T+1095): All remaining data except statistical aggregates
     And each purge stage should be logged and verified
 
-  @retention @backup-lifecycle @disaster-recovery
+@retention @backup-lifecycle @disaster-recovery
 Scenario: Backup data lifecycle and retention
     Given production data has retention policies
     And backup systems replicate this data
@@ -113,7 +113,7 @@ Scenario: Backup data lifecycle and retention
     And restoration should not extend data lifetime beyond policy
     And compliance obligations should be preserved during recovery
 
-  @retention @cross-border @data-residency
+@retention @cross-border @data-residency
 Scenario: Cross-border data retention with Taiwan residency requirements
     Given volunteer data crosses Taiwan borders for processing
     When data is stored internationally
@@ -125,7 +125,7 @@ Scenario: Cross-border data retention with Taiwan residency requirements
     Then all international copies must be purged within 72 hours
     And deletion verification must be obtained from all jurisdictions
 
-  @retention @encryption-key-rotation @security
+@retention @encryption-key-rotation @security
 Scenario: Encryption key lifecycle tied to data retention
     Given encrypted personal data is stored
     And encryption keys have lifecycle policies
@@ -137,7 +137,7 @@ Scenario: Encryption key lifecycle tied to data retention
     And key destruction should make data unrecoverable
     And key destruction audit should be recorded
 
-  @retention @consent-withdrawal @immediate-effect
+@retention @consent-withdrawal @immediate-effect
 Scenario: Consent withdrawal triggers immediate retention policy override
     Given a volunteer has active consent with 3-year retention
     And volunteer data is stored across multiple systems
@@ -148,7 +148,7 @@ Scenario: Consent withdrawal triggers immediate retention policy override
     And only anonymized statistical data should remain
     And withdrawal timestamp should be permanently recorded (for legal protection)
 
-  @error-handling @retention-failures
+@error-handling @retention-failures
 Scenario: Handling retention policy enforcement failures
     Given automatic purge job encounters system errors
     When TTL expiration cannot be processed automatically
@@ -160,7 +160,7 @@ Scenario: Handling retention policy enforcement failures
     Then exception should be closed and logged
     And retention metrics should be updated
 
-  @monitoring @retention-metrics @compliance-reporting
+@monitoring @retention-metrics @compliance-reporting
 Scenario: Retention metrics and compliance reporting
     Given retention policies are actively enforced
     When compliance reporting is generated

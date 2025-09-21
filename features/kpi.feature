@@ -11,7 +11,7 @@ Background:
     And performance baselines are established
     And reporting dashboards are accessible
 
-  @kpi @volunteer-engagement @participation-metrics
+@kpi @volunteer-engagement @participation-metrics
 Scenario: Volunteer engagement and participation KPI tracking
     Given volunteer activities are being monitored
     When KPI dashboard is accessed
@@ -28,7 +28,7 @@ Scenario: Volunteer engagement and participation KPI tracking
     And benchmarks should be compared against regional averages
     And volunteer satisfaction surveys should supplement quantitative metrics
 
-  @kpi @case-resolution @effectiveness-metrics
+@kpi @case-resolution @effectiveness-metrics
 Scenario: Case resolution effectiveness and performance KPIs
     Given missing person cases are being tracked
     When case performance KPIs are calculated
@@ -45,7 +45,7 @@ Scenario: Case resolution effectiveness and performance KPIs
     And success factors should be correlated with resolution outcomes
     And improvement recommendations should be generated automatically
 
-  @kpi @system-performance @technical-metrics
+@kpi @system-performance @technical-metrics
 Scenario: System performance and technical infrastructure KPIs
     Given system components are monitored continuously
     When technical performance dashboard is reviewed
@@ -63,7 +63,7 @@ Scenario: System performance and technical infrastructure KPIs
     And alerts should trigger when KPIs approach threshold limits
     And infrastructure scaling recommendations should be provided
 
-  @kpi @privacy-compliance @gdpr-metrics
+@kpi @privacy-compliance @gdpr-metrics
 Scenario: Privacy compliance and GDPR performance indicators
     Given privacy compliance is monitored
     When privacy KPI dashboard is accessed
@@ -80,7 +80,7 @@ Scenario: Privacy compliance and GDPR performance indicators
     And regulatory compliance scores should be calculated
     And privacy training completion rates should be monitored
 
-  @kpi @user-experience @satisfaction-metrics
+@kpi @user-experience @satisfaction-metrics
 Scenario: User experience and satisfaction KPI measurement
     Given user interactions are tracked
     When UX performance metrics are analyzed
@@ -98,7 +98,7 @@ Scenario: User experience and satisfaction KPI measurement
     And A/B testing results should inform UX improvements
     And user feedback sentiment should be analyzed continuously
 
-  @kpi @operational-efficiency @resource-optimization
+@kpi @operational-efficiency @resource-optimization
 Scenario: Operational efficiency and resource optimization KPIs
     Given operational processes are monitored
     When operational efficiency metrics are calculated
@@ -115,7 +115,7 @@ Scenario: Operational efficiency and resource optimization KPIs
     And cost-benefit analysis should guide investment decisions
     And operational bottlenecks should be identified and addressed
 
-  @kpi @security-metrics @threat-detection
+@kpi @security-metrics @threat-detection
 Scenario: Security performance and threat detection KPIs
     Given security monitoring is active
     When security KPI dashboard is reviewed
@@ -132,7 +132,7 @@ Scenario: Security performance and threat detection KPIs
     And threat intelligence should be incorporated into metrics
     And security ROI should be calculated for investment justification
 
-  @kpi @predictive-analytics @forecasting
+@kpi @predictive-analytics @forecasting
 Scenario: Predictive analytics and performance forecasting
     Given historical KPI data is available
     When predictive models are applied
@@ -147,7 +147,7 @@ Scenario: Predictive analytics and performance forecasting
     And prediction accuracy should be monitored and improved
     And forecasts should inform proactive resource planning
 
-  @kpi @regional-comparison @benchmarking
+@kpi @regional-comparison @benchmarking
 Scenario: Regional performance comparison and benchmarking
     Given multiple regions are using the system
     When regional KPI comparison is performed
@@ -162,7 +162,7 @@ Scenario: Regional performance comparison and benchmarking
     And knowledge sharing should be facilitated between regions
     And regional customization needs should be analyzed
 
-  @error-handling @kpi-data-quality
+@error-handling @kpi-data-quality
 Scenario: KPI data quality monitoring and error handling
     Given KPI calculation processes may encounter data issues
     When data quality problems are detected
@@ -177,7 +177,7 @@ Scenario: KPI data quality monitoring and error handling
     And manual data correction workflows should be available
     And data quality trends should be monitored over time
 
-  @monitoring @kpi-governance @continuous-improvement
+@monitoring @kpi-governance @continuous-improvement
 Scenario: KPI governance and continuous improvement framework
     Given KPI system requires ongoing governance
     When KPI performance review is conducted

@@ -9,7 +9,7 @@ Background:
     And privacy notices are displayed
     And GDPR compliance is enabled
 
-  @consent @privacy
+@consent @privacy
 Scenario: User opts in to volunteer mode
     Given I am on the volunteer tab
     And I have not previously given consent
@@ -22,7 +22,7 @@ Scenario: User opts in to volunteer mode
     And consent version "2.1" should be stored
     And volunteer status should show "已啟用背景掃描"
 
-  @consent @privacy
+@consent @privacy
 Scenario: User withdraws consent
     Given I am in volunteer mode
     And background scanning is active
@@ -34,7 +34,7 @@ Scenario: User withdraws consent
     And local volunteer data should be purged
     And volunteer status should show "已停用"
 
-  @consent @persistence
+@consent @persistence
 Scenario: App restart preserves consent state
     Given I have given volunteer consent
     And the app is force-closed
@@ -44,7 +44,7 @@ Scenario: App restart preserves consent state
     And consent timestamp should be preserved
     And no re-consent should be required
 
-  @consent @gdpr
+@consent @gdpr
 Scenario: Consent timestamp tracking for GDPR compliance
     Given I opt in to volunteer mode at "2025-09-17T16:45:30Z"
     When I check consent metadata
@@ -54,7 +54,7 @@ Scenario: Consent timestamp tracking for GDPR compliance
     And IP address should not be stored
     And device fingerprint should be minimal
 
-  @consent @versioning
+@consent @versioning
 Scenario: Consent version management for terms updates
     Given I have consent version "2.0"
     And terms are updated to version "2.1"
@@ -66,7 +66,7 @@ Scenario: Consent version management for terms updates
     Then consent version should update to "2.1"
     And background scanning should resume
 
-  @consent @permissions
+@consent @permissions
 Scenario: Android 12+ permission handling
     Given I am on Android 12 or higher
     And I opt in to volunteer mode
@@ -77,7 +77,7 @@ Scenario: Android 12+ permission handling
     And "neverForLocation" flag should be set if no location inference
     And rationale should explain volunteer assistance purpose
 
-  @consent @ios
+@consent @ios
 Scenario: iOS background BLE permissions
     Given I am on iOS
     And I opt in to volunteer mode
@@ -88,7 +88,7 @@ Scenario: iOS background BLE permissions
     And CBCentralManager should be initialized with restore identifier
     And privacy usage description should be shown
 
-  @error-handling
+@error-handling
 Scenario: Permission denied graceful handling
     Given I opt in to volunteer mode
     When BLE permission is denied

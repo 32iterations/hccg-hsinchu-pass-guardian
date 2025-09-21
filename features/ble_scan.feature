@@ -10,7 +10,7 @@ Background:
     And anonymization service is configured
     And battery optimization is disabled for the app
 
-  @ble @privacy @android
+@ble @privacy @android
 Scenario: Android 12+ neverForLocation scanning
     Given I am on Android 12 or higher
     And neverForLocation preference is enabled
@@ -22,7 +22,7 @@ Scenario: Android 12+ neverForLocation scanning
     And no location inference should occur
     And device hashes should be generated with salt
 
-  @ble @privacy @android
+@ble @privacy @android
 Scenario: Android location-based scanning for positioning
     Given I am on Android 12 or higher
     And location inference is enabled for better accuracy
@@ -34,7 +34,7 @@ Scenario: Android location-based scanning for positioning
     And location should be fuzzed to 100m grid squares
     And timestamp should be rounded to 5-minute intervals
 
-  @ble @ios @background
+@ble @ios @background
 Scenario: iOS State Preservation after app termination
     Given I am on iOS
     And the app is running in background
@@ -46,7 +46,7 @@ Scenario: iOS State Preservation after app termination
     And previous scan configuration should be restored
     And volunteer hits should continue being recorded
 
-  @ble @ios @background
+@ble @ios @background
 Scenario: iOS State Restoration on app launch
     Given the app was terminated while BLE scanning
     And iOS preserved the BLE state
@@ -56,7 +56,7 @@ Scenario: iOS State Restoration on app launch
     And background scanning should resume
     And no user intervention should be required
 
-  @ble @discovery @filtering
+@ble @discovery @filtering
 Scenario: Device discovery with RSSI filtering
     Given BLE scanning is active
     When a BLE device is discovered
@@ -67,7 +67,7 @@ Scenario: Device discovery with RSSI filtering
     And RSSI value should be recorded
     And timestamp should be rounded to 5-minute intervals
 
-  @ble @discovery @filtering
+@ble @discovery @filtering
 Scenario: Weak signal device filtering
     Given BLE scanning is active
     When a BLE device is discovered
@@ -77,7 +77,7 @@ Scenario: Weak signal device filtering
     And no data should be stored or transmitted
     And battery usage should be minimized
 
-  @ble @privacy @anonymization
+@ble @privacy @anonymization
 Scenario: MAC address rotation handling
     Given a device with MAC rotation enabled
     When the device rotates its MAC address
@@ -88,7 +88,7 @@ Scenario: MAC address rotation handling
     And temporal clustering should respect privacy
     And k-anonymity should be maintained across rotations
 
-  @ble @performance @battery
+@ble @performance @battery
 Scenario: Battery-efficient scanning intervals
     Given volunteer mode is active
     And device is not charging
@@ -99,7 +99,7 @@ Scenario: Battery-efficient scanning intervals
     And duty cycle should be maximum 20%
     And adaptive intervals should respond to detection rate
 
-  @ble @performance @battery
+@ble @performance @battery
 Scenario: Aggressive scanning when charging
     Given volunteer mode is active
     And device is charging
@@ -110,7 +110,7 @@ Scenario: Aggressive scanning when charging
     And duty cycle can be up to 60%
     And more frequent uploads should be allowed
 
-  @ble @volunteer-hit @anonymization
+@ble @volunteer-hit @anonymization
 Scenario: VolunteerHit creation with complete anonymization
     Given a BLE device is discovered
     And RSSI is -75 dBm
@@ -126,7 +126,7 @@ Scenario: VolunteerHit creation with complete anonymization
     And NO device name should be stored
     And NO original MAC address should be stored
 
-  @ble @k-anonymity @privacy
+@ble @k-anonymity @privacy
 Scenario: K-anonymity enforcement for device clusters
     Given multiple devices are detected in same grid square
     When fewer than 3 devices are in cluster
@@ -136,7 +136,7 @@ Scenario: K-anonymity enforcement for device clusters
     Then all queued hits in cluster should be uploaded together
     And individual device identification should be impossible
 
-  @error-handling @ble
+@error-handling @ble
 Scenario: BLE adapter disabled during scanning
     Given BLE scanning is active
     When user disables Bluetooth adapter
@@ -147,7 +147,7 @@ Scenario: BLE adapter disabled during scanning
     Then scanning should resume automatically
     And no data loss should occur
 
-  @error-handling @permissions
+@error-handling @permissions
 Scenario: Permission revoked during operation
     Given BLE scanning is active
     When user revokes BLE permissions

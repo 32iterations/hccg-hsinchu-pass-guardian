@@ -10,7 +10,7 @@ Background:
     And location services are enabled
     And alert preferences are configured
 
-  @geo-alerts @radius @targeting
+@geo-alerts @radius @targeting
 Scenario: Alert radius configurations
     Given a missing person case is active at lat=24.8067, lng=120.9687
     And I am 400m away from the incident location
@@ -19,7 +19,7 @@ Scenario: Alert radius configurations
     And alert should show "500公尺範圍內協助提醒"
     And notification priority should be "high"
 
-  @geo-alerts @radius @targeting
+@geo-alerts @radius @targeting
 Scenario: Outside alert radius
     Given a missing person case is active at lat=24.8067, lng=120.9687
     And I am 1.2km away from the incident location
@@ -28,7 +28,7 @@ Scenario: Outside alert radius
     And no notification should be displayed
     And battery should not be consumed for irrelevant alerts
 
-  @geo-alerts @cooldown @spam-prevention
+@geo-alerts @cooldown @spam-prevention
 Scenario: Alert cooldown prevents spam
     Given I received an alert at "2025-09-17T16:45:00Z"
     And the same case generates another alert at "2025-09-17T16:47:00Z"
@@ -39,7 +39,7 @@ Scenario: Alert cooldown prevents spam
     Then cooldown should be reset
     And new alerts should be allowed
 
-  @geo-alerts @privacy @no-pii
+@geo-alerts @privacy @no-pii
 Scenario: Alert content contains NO personal information
     Given a missing person case involves "王小明, 65歲男性"
     When I receive a geo alert
@@ -50,7 +50,7 @@ Scenario: Alert content contains NO personal information
     And NO photo should be attached
     And NO personal details should be revealed
 
-  @geo-alerts @priority @info
+@geo-alerts @priority @info
 Scenario: Info level priority alert
     Given a non-urgent missing person case
     When info level alert is sent
@@ -60,7 +60,7 @@ Scenario: Info level priority alert
     And message should include "一般提醒"
     And color indicator should be blue
 
-  @geo-alerts @priority @warning
+@geo-alerts @priority @warning
 Scenario: Warning level priority alert
     Given a moderate risk missing person case
     When warning level alert is sent
@@ -70,7 +70,7 @@ Scenario: Warning level priority alert
     And alert should include "重要提醒"
     And color indicator should be orange
 
-  @geo-alerts @priority @critical
+@geo-alerts @priority @critical
 Scenario: Critical level priority alert
     Given a high-risk missing person case with safety concerns
     When critical level alert is sent
@@ -80,7 +80,7 @@ Scenario: Critical level priority alert
     And color indicator should be red
     And user should be able to dismiss or snooze
 
-  @geo-alerts @safety @mandatory-message
+@geo-alerts @safety @mandatory-message
 Scenario: Mandatory safety instructions in all alerts
     Given any level of geo alert
     When alert is displayed
@@ -90,7 +90,7 @@ Scenario: Mandatory safety instructions in all alerts
     And "回報可疑" button should be available
     And safety guidelines link should be provided
 
-  @geo-alerts @ab-testing @safety-messages
+@geo-alerts @ab-testing @safety-messages
 Scenario: A/B test variations for safety message effectiveness
     Given I am in A/B test group "safety_message_variant_B"
     When I receive a geo alert
@@ -100,7 +100,7 @@ Scenario: A/B test variations for safety message effectiveness
     But core safety instructions must remain unchanged
     And "撥打110" and "切勿接近" must always be present
 
-  @geo-alerts @localization @traditional-chinese
+@geo-alerts @localization @traditional-chinese
 Scenario: Traditional Chinese localization
     Given device language is Traditional Chinese
     When I receive any geo alert
@@ -110,7 +110,7 @@ Scenario: Traditional Chinese localization
     And font rendering should support CJK characters
     And text direction should be left-to-right
 
-  @geo-alerts @accessibility @screen-reader
+@geo-alerts @accessibility @screen-reader
 Scenario: Screen reader accessibility
     Given user has VoiceOver enabled (iOS) or TalkBack (Android)
     When geo alert is received
@@ -120,7 +120,7 @@ Scenario: Screen reader accessibility
     And reading order should be logical
     And emergency actions should be easily accessible
 
-  @geo-alerts @network @offline-handling
+@geo-alerts @network @offline-handling
 Scenario: Network connectivity during alert delivery
     Given device has intermittent network connectivity
     When geo alert is triggered from server
@@ -129,7 +129,7 @@ Scenario: Network connectivity during alert delivery
     And local cache should store recent alerts
     And retry mechanism should handle delivery failures
 
-  @geo-alerts @battery @optimization
+@geo-alerts @battery @optimization
 Scenario: Battery-efficient alert processing
     Given multiple geo alerts are queued
     And device battery is below 20%
@@ -139,7 +139,7 @@ Scenario: Battery-efficient alert processing
     And alert delivery should be prioritized over non-critical operations
     And power-saving mode should be respected
 
-  @error-handling @location-denied
+@error-handling @location-denied
 Scenario: Location permission denied for geo alerts
     Given geo alerts are configured
     When location permission is denied
@@ -148,7 +148,7 @@ Scenario: Location permission denied for geo alerts
     And alerts should fall back to general notifications
     And volunteer mode should remain functional
 
-  @error-handling @notification-disabled
+@error-handling @notification-disabled
 Scenario: Push notifications disabled
     Given geo alerts are enabled
     When push notification permission is disabled

@@ -11,7 +11,7 @@ Background:
     And GDPR compliance framework is active
     And Taiwan PDPA regulations are configured
 
-  @revoke @volunteer-consent @immediate-effect
+@revoke @volunteer-consent @immediate-effect
 Scenario: Volunteer revokes consent with immediate data processing halt
     Given I am a volunteer with active consent
     And background BLE scanning is operational
@@ -25,7 +25,7 @@ Scenario: Volunteer revokes consent with immediate data processing halt
     And revocation timestamp should be recorded as "2025-09-17T16:45:00Z"
     And I should see "同意已撤回，資料將在30天內完全刪除"
 
-  @revoke @family-member @care-relationship
+@revoke @family-member @care-relationship
 Scenario: Family member revokes consent for care recipient monitoring
     Given I am a family member with active consent for monitoring my care recipient
     And care recipient device binding exists
@@ -39,7 +39,7 @@ Scenario: Family member revokes consent for care recipient monitoring
     And care recipient should be notified of monitoring cessation
     And I should receive confirmation "照護監控已停止，相關資料將被刪除"
 
-  @revoke @partial-consent @granular-control
+@revoke @partial-consent @granular-control
 Scenario: Partial consent revocation with granular data control
     Given I have multiple active consents: volunteer mode, geofence alerts, data analytics
     When I access "管理我的同意設定"
@@ -51,7 +51,7 @@ Scenario: Partial consent revocation with granular data control
     And partial revocation should be logged with specific consent ID
     And affected data streams should be identified and isolated
 
-  @revoke @data-processing-halt @system-wide
+@revoke @data-processing-halt @system-wide
 Scenario: System-wide data processing halt upon revocation
     Given my data is being processed across multiple system components
     And I revoke consent
@@ -63,7 +63,7 @@ Scenario: System-wide data processing halt upon revocation
     And third-party data sharing should be immediately suspended
     And data processors should be notified of revocation within 1 hour
 
-  @revoke @thirty-day-deletion @gdpr-timeline
+@revoke @thirty-day-deletion @gdpr-timeline
 Scenario: Complete data deletion within 30-day GDPR timeline
     Given I revoked consent on "2025-09-17T16:45:00Z"
     When 30 days have elapsed
@@ -74,7 +74,7 @@ Scenario: Complete data deletion within 30-day GDPR timeline
     And I should receive confirmation "您的個人資料已完全刪除"
     And only revocation audit record should remain (for legal protection)
 
-  @revoke @backup-systems @comprehensive-deletion
+@revoke @backup-systems @comprehensive-deletion
 Scenario: Revocation affects backup and archive systems
     Given my data exists in: production database, daily backups, weekly archives, disaster recovery systems
     When I revoke consent
@@ -85,7 +85,7 @@ Scenario: Revocation affects backup and archive systems
     And cross-geographic backups should be synchronized for deletion
     And backup verification should confirm complete removal
 
-  @revoke @legal-basis-data @retention-exception
+@revoke @legal-basis-data @retention-exception
 Scenario: Legal basis data retention after consent revocation
     Given I revoke consent
     And some data has legal basis beyond consent (e.g., safety incident reports)
@@ -97,7 +97,7 @@ Scenario: Legal basis data retention after consent revocation
     And legal basis data retention should have defined expiration
     And I should be informed which data remains and why
 
-  @revoke @third-party-processors @data-sharing-cessation
+@revoke @third-party-processors @data-sharing-cessation
 Scenario: Third-party data processor notification and cessation
     Given my data has been shared with authorized third-party processors
     When I revoke consent
@@ -108,7 +108,7 @@ Scenario: Third-party data processor notification and cessation
     And my data should be blocked from future third-party sharing
     And processor notification audit trail should be maintained
 
-  @revoke @anonymization-verification @k-anonymity
+@revoke @anonymization-verification @k-anonymity
 Scenario: Anonymization verification after revocation
     Given my data has been anonymized for statistical purposes
     When I revoke consent
@@ -119,7 +119,7 @@ Scenario: Anonymization verification after revocation
     And third-party anonymization review should be conducted
     And anonymization certificate should be provided
 
-  @revoke @emergency-situations @safety-override
+@revoke @emergency-situations @safety-override
 Scenario: Revocation during active emergency situations
     Given I am a volunteer currently assisting in an active missing person case
     And my BLE data is contributing to ongoing search efforts
@@ -127,12 +127,12 @@ Scenario: Revocation during active emergency situations
     Then I should see warning "目前有進行中的緊急案件，撤回可能影響搜救"
     And emergency override option should be presented to case managers
     And I should have option to "立即撤回" or "案件結束後撤回"
-    If I choose immediate revocation
+    When I choose immediate revocation
     Then my data contribution should stop immediately despite emergency
     And case managers should be notified of volunteer withdrawal
     And search algorithms should adapt to reduced data availability
 
-  @revoke @cross-border-processing @international-deletion
+@revoke @cross-border-processing @international-deletion
 Scenario: Cross-border data processing revocation compliance
     Given my data is processed in multiple jurisdictions
     When I revoke consent under Taiwan PDPA
@@ -143,7 +143,7 @@ Scenario: Cross-border data processing revocation compliance
     And deletion coordination should ensure no data remnants
     And international deletion verification should be obtained
 
-  @revoke @technical-challenges @system-limitations
+@revoke @technical-challenges @system-limitations
 Scenario: Technical challenges in complete data removal
     Given data exists in immutable logs, blockchain records, or ML model weights
     When I revoke consent
@@ -154,7 +154,7 @@ Scenario: Technical challenges in complete data removal
     And technical limitations should be transparently communicated
     And alternative privacy protections should be offered
 
-  @error-handling @revocation-failures
+@error-handling @revocation-failures
 Scenario: Handling revocation process failures
     Given revocation process encounters system errors
     When automated deletion fails
@@ -168,7 +168,7 @@ Scenario: Handling revocation process failures
     Then user should receive confirmation and apology
     And system should be updated to prevent similar failures
 
-  @monitoring @revocation-metrics @compliance-tracking
+@monitoring @revocation-metrics @compliance-tracking
 Scenario: Revocation process monitoring and compliance metrics
     Given revocation requests are processed regularly
     When compliance reporting is generated

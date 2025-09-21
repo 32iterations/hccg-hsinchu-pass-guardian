@@ -11,7 +11,7 @@ Background:
     And user authentication is verified with appropriate audit permissions
     And audit log retention policies are active
 
-  @audit @user-activities @comprehensive-logging
+@audit @user-activities @comprehensive-logging
 Scenario: Comprehensive user activity audit logging
     Given various user activities occur in the system
     When audit logs are generated
@@ -28,7 +28,7 @@ Scenario: Comprehensive user activity audit logging
     And logs should be stored in append-only format
     And personal data in logs should be pseudonymized where possible
 
-  @audit @data-access @privacy-compliance
+@audit @data-access @privacy-compliance
 Scenario: Data access audit for privacy compliance
     Given users access personal data in the system
     When data access audit is performed
@@ -44,7 +44,7 @@ Scenario: Data access audit for privacy compliance
     And data access patterns should be analyzed for anomalies
     And privacy impact assessments should be automatically flagged
 
-  @audit @consent-lifecycle @gdpr-compliance
+@audit @consent-lifecycle @gdpr-compliance
 Scenario: Consent lifecycle audit for GDPR Article 7 compliance
     Given consent management events occur
     When consent audit trail is generated
@@ -59,7 +59,7 @@ Scenario: Consent lifecycle audit for GDPR Article 7 compliance
     And consent audit should demonstrate "freely given, specific, informed" criteria
     And withdrawal processing should be audited for GDPR Article 17 compliance
 
-  @audit @security-events @incident-response
+@audit @security-events @incident-response
 Scenario: Security event audit and incident response tracking
     Given security-related events occur in the system
     When security audit logs are reviewed
@@ -76,7 +76,7 @@ Scenario: Security event audit and incident response tracking
     And incident timeline should be reconstructable from audit logs
     And security metrics should be generated for continuous improvement
 
-  @audit @compliance-reporting @regulatory-exports
+@audit @compliance-reporting @regulatory-exports
 Scenario: Compliance reporting and regulatory data exports
     Given regulatory compliance reporting is required
     When compliance officer generates reports
@@ -92,7 +92,7 @@ Scenario: Compliance reporting and regulatory data exports
     And data should be formatted according to regulatory standards
     And export access should be logged and require dual approval
 
-  @audit @data-lineage @processing-transparency
+@audit @data-lineage @processing-transparency
 Scenario: Data lineage tracking for processing transparency
     Given personal data flows through multiple system components
     When data lineage audit is performed
@@ -107,7 +107,7 @@ Scenario: Data lineage tracking for processing transparency
     And processing purposes should be mapped to legal bases
     And automated data flow monitoring should detect unauthorized processing
 
-  @audit @vendor-compliance @third-party-audit
+@audit @vendor-compliance @third-party-audit
 Scenario: Third-party vendor compliance audit
     Given external vendors process personal data on our behalf
     When vendor compliance audit is conducted
@@ -123,7 +123,7 @@ Scenario: Third-party vendor compliance audit
     And non-compliance issues should trigger corrective action plans
     And vendor performance should be continuously monitored
 
-  @audit @anonymization-verification @privacy-protection
+@audit @anonymization-verification @privacy-protection
 Scenario: Anonymization process audit and verification
     Given personal data is anonymized for analytics
     When anonymization audit is performed
@@ -139,7 +139,7 @@ Scenario: Anonymization process audit and verification
     And re-identification testing should be performed regularly
     And anonymization failures should trigger data quarantine
 
-  @audit @cross-border-transfers @adequacy-decisions
+@audit @cross-border-transfers @adequacy-decisions
 Scenario: Cross-border data transfer audit for GDPR compliance
     Given personal data is transferred outside Taiwan/EU
     When cross-border transfer audit is conducted
@@ -154,7 +154,7 @@ Scenario: Cross-border data transfer audit for GDPR compliance
     And ongoing monitoring of destination country laws should be maintained
     And transfer suspension procedures should be defined
 
-  @audit @automated-decision-making @algorithm-audit
+@audit @automated-decision-making @algorithm-audit
 Scenario: Automated decision-making system audit
     Given system uses automated decision-making affecting users
     When algorithm audit is performed
@@ -170,7 +170,7 @@ Scenario: Automated decision-making system audit
     And decision outcomes should be statistically analyzed for fairness
     And algorithm changes should be version-controlled and audited
 
-  @error-handling @audit-system-failures
+@error-handling @audit-system-failures
 Scenario: Audit system failure handling and continuity
     Given audit system encounters technical failures
     When audit logging fails
@@ -187,7 +187,7 @@ Scenario: Audit system failure handling and continuity
     Then audit integrity should be verified
     And missing audit events should be reconstructed where possible
 
-  @monitoring @audit-metrics @governance-dashboard
+@monitoring @audit-metrics @governance-dashboard
 Scenario: Audit metrics monitoring and governance dashboard
     Given audit system operates continuously
     When audit governance dashboard is accessed
