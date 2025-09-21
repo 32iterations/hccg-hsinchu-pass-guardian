@@ -1,9 +1,9 @@
 # language: zh-TW
 @P3 @retention @gdpr @taiwan-pdpa
 Feature: 回執保存與資料生命週期管理
-  # As a system administrator managing data retention
-  # I want to enforce proper data lifecycle and retention policies
-  # So that we comply with GDPR, Taiwan PDPA, and minimize data exposure
+  As a system administrator managing data retention
+  I want to enforce proper data lifecycle and retention policies
+  So that we comply with GDPR, Taiwan PDPA, and minimize data exposure
 
   Background:
     Given the retention service is initialized

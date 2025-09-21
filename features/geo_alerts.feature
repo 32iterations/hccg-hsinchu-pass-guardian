@@ -1,7 +1,7 @@
 Feature: Geographic Alert Notifications
-  # As a volunteer user in the vicinity of a missing person case
-  # I want to receive appropriate alerts with safety instructions
-  # So that I can be aware of the situation while maintaining safety protocols
+  As a volunteer user in the vicinity of a missing person case
+  I want to receive appropriate alerts with safety instructions
+  So that I can be aware of the situation while maintaining safety protocols
 
   Background:
     Given volunteer consent is granted

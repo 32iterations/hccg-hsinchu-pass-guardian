@@ -1,9 +1,9 @@
 # language: zh-TW
 @P4 @kpi @analytics @performance
 Feature: KPI 匯總與效能指標
-  # As a system administrator or stakeholder
-  # I want to track key performance indicators and system metrics
-  # So that system effectiveness and operational performance can be monitored and improved
+  As a system administrator or stakeholder
+  I want to track key performance indicators and system metrics
+  So that system effectiveness and operational performance can be monitored and improved
 
   Background:
     Given KPI analytics system is operational
