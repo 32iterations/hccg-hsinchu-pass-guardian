@@ -21,6 +21,11 @@ on:
           - code-analysis
           - container
 
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 env:
   TRIVY_VERSION: '0.46.1'
   SEMGREP_VERSION: 'latest'
@@ -251,7 +256,7 @@ jobs:
           fi
 
       - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: |
