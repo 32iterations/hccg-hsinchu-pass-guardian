@@ -1,15 +1,16 @@
+# language: zh-TW
 Feature: Volunteer Consent Management
   # As a volunteer user of the HsinchuPass Guardian system
   # I want to manage my consent for background BLE scanning
   # So that I can help locate missing persons while protecting my privacy
 
-  Background:
+Background:
     Given the app is installed and initialized
     And privacy notices are displayed
     And GDPR compliance is enabled
 
   @consent @privacy
-  Scenario: User opts in to volunteer mode
+Scenario: User opts in to volunteer mode
     Given I am on the volunteer tab
     And I have not previously given consent
     When I tap "成為志工協助者"
@@ -22,7 +23,7 @@ Feature: Volunteer Consent Management
     And volunteer status should show "已啟用背景掃描"
 
   @consent @privacy
-  Scenario: User withdraws consent
+Scenario: User withdraws consent
     Given I am in volunteer mode
     And background scanning is active
     When I tap "停止志工協助"
@@ -34,7 +35,7 @@ Feature: Volunteer Consent Management
     And volunteer status should show "已停用"
 
   @consent @persistence
-  Scenario: App restart preserves consent state
+Scenario: App restart preserves consent state
     Given I have given volunteer consent
     And the app is force-closed
     When I restart the app
@@ -44,7 +45,7 @@ Feature: Volunteer Consent Management
     And no re-consent should be required
 
   @consent @gdpr
-  Scenario: Consent timestamp tracking for GDPR compliance
+Scenario: Consent timestamp tracking for GDPR compliance
     Given I opt in to volunteer mode at "2025-09-17T16:45:30Z"
     When I check consent metadata
     Then consent timestamp should be "2025-09-17T16:45:30Z"
@@ -54,7 +55,7 @@ Feature: Volunteer Consent Management
     And device fingerprint should be minimal
 
   @consent @versioning
-  Scenario: Consent version management for terms updates
+Scenario: Consent version management for terms updates
     Given I have consent version "2.0"
     And terms are updated to version "2.1"
     When I open the app
@@ -66,7 +67,7 @@ Feature: Volunteer Consent Management
     And background scanning should resume
 
   @consent @permissions
-  Scenario: Android 12+ permission handling
+Scenario: Android 12+ permission handling
     Given I am on Android 12 or higher
     And I opt in to volunteer mode
     When the app requests BLE permissions
@@ -77,7 +78,7 @@ Feature: Volunteer Consent Management
     And rationale should explain volunteer assistance purpose
 
   @consent @ios
-  Scenario: iOS background BLE permissions
+Scenario: iOS background BLE permissions
     Given I am on iOS
     And I opt in to volunteer mode
     When the app configures BLE
@@ -88,7 +89,7 @@ Feature: Volunteer Consent Management
     And privacy usage description should be shown
 
   @error-handling
-  Scenario: Permission denied graceful handling
+Scenario: Permission denied graceful handling
     Given I opt in to volunteer mode
     When BLE permission is denied
     Then volunteer mode should remain disabled

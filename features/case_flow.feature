@@ -5,14 +5,14 @@ Feature: 案件流程管理系統
   # I want to manage the complete lifecycle of missing person cases
   # So that search operations are coordinated effectively and efficiently
 
-  Background:
+Background:
     Given case management system is initialized
     And workflow engine is operational
     And notification system is configured
     And role-based access control is active
 
   @case-flow @case-creation @initial-response
-  Scenario: Missing person case creation and initial workflow
+Scenario: Missing person case creation and initial workflow
     Given I am a case manager receiving a missing person report
     When I create a new case with details:
       | Field | Value | Validation |
@@ -33,7 +33,7 @@ Feature: 案件流程管理系統
       | 家屬聯絡確認 | 1小時內 | Case Manager |
 
   @case-flow @risk-assessment @priority-classification
-  Scenario: Automated risk assessment and priority classification
+Scenario: Automated risk assessment and priority classification
     Given a new case is created with missing person details
     When risk assessment algorithm runs
     Then system should evaluate risk factors:
@@ -49,7 +49,7 @@ Feature: 案件流程管理系統
     And estimated case duration should be 12-24 hours
 
   @case-flow @search-area-management @dynamic-expansion
-  Scenario: Dynamic search area management based on case progress
+Scenario: Dynamic search area management based on case progress
     Given case has been active for 2 hours
     And initial 500m radius search yields no results
     And 30 volunteers are actively scanning
@@ -65,7 +65,7 @@ Feature: 案件流程管理系統
     And escalation to emergency services should be evaluated
 
   @case-flow @volunteer-coordination @resource-allocation
-  Scenario: Volunteer coordination and resource allocation
+Scenario: Volunteer coordination and resource allocation
     Given a case requires volunteer assistance
     And 85 volunteers are available in the search area
     When volunteer recruitment is activated
@@ -81,7 +81,7 @@ Feature: 案件流程管理系統
     And volunteer safety should be monitored throughout
 
   @case-flow @family-communication @progress-updates
-  Scenario: Structured family communication and progress updates
+Scenario: Structured family communication and progress updates
     Given family members are registered for case communications
     When case progress milestones are reached
     Then automated updates should be sent:
@@ -96,7 +96,7 @@ Feature: 案件流程管理系統
     And sensitive operational details should be filtered from family updates
 
   @case-flow @inter-agency @escalation-procedures
-  Scenario: Inter-agency coordination and escalation procedures
+Scenario: Inter-agency coordination and escalation procedures
     Given case has been active for 6 hours without resolution
     And all volunteer resources have been maximized
     When escalation criteria are met
@@ -111,7 +111,7 @@ Feature: 案件流程管理系統
     And family should be informed of escalation and what to expect
 
   @case-flow @case-resolution @closure-procedures
-  Scenario: Case resolution and closure procedures
+Scenario: Case resolution and closure procedures
     Given missing person has been found safe
     When case resolution is confirmed
     Then closure procedures should be initiated:
@@ -128,7 +128,7 @@ Feature: 案件流程管理系統
     And case success metrics should be recorded for analysis
 
   @case-flow @unsuccessful-resolution @long-term-management
-  Scenario: Long-term case management for unsuccessful resolutions
+Scenario: Long-term case management for unsuccessful resolutions
     Given case has been active for 72 hours without resolution
     And all immediate search resources have been exhausted
     When case transitions to long-term status
@@ -145,7 +145,7 @@ Feature: 案件流程管理系統
     And long-term support services should be offered
 
   @case-flow @multiple-cases @resource-prioritization
-  Scenario: Managing multiple concurrent cases with resource prioritization
+Scenario: Managing multiple concurrent cases with resource prioritization
     Given 3 active cases exist simultaneously:
       | Case ID | Priority | Duration | Resources Assigned |
       | CASE-001 | High | 2 hours | 60 volunteers |
@@ -161,7 +161,7 @@ Feature: 案件流程管理系統
     And system should optimize volunteer allocation across all cases
 
   @case-flow @data-integration @analytics
-  Scenario: Case data integration and analytics for improvement
+Scenario: Case data integration and analytics for improvement
     Given multiple cases have been resolved
     When case analytics are generated
     Then system should analyze:
@@ -176,7 +176,7 @@ Feature: 案件流程管理系統
     And best practices should be documented and shared
 
   @error-handling @workflow-failures @contingency-procedures
-  Scenario: Handling workflow failures and system contingencies
+Scenario: Handling workflow failures and system contingencies
     Given case management workflow encounters system failures
     When automated processes fail
     Then manual contingency procedures should activate:
@@ -190,7 +190,7 @@ Feature: 案件流程管理系統
     And post-incident analysis should improve system resilience
 
   @monitoring @case-flow-metrics @performance-tracking
-  Scenario: Case flow performance monitoring and metrics
+Scenario: Case flow performance monitoring and metrics
     Given case management system is operational
     When performance monitoring runs
     Then metrics should include: average case resolution time, volunteer response rate, family satisfaction, resource utilization efficiency

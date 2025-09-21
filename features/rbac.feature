@@ -5,14 +5,14 @@ Feature: 角色權限控制系統
   # I want to manage user roles and permissions
   # So that access to sensitive data and functions is properly controlled
 
-  Background:
+Background:
     Given RBAC system is initialized
     And role definitions are loaded
     And permission matrix is configured
     And audit logging is enabled
 
   @rbac @roles @definition
-  Scenario: System role definitions with clear boundaries
+Scenario: System role definitions with clear boundaries
     Given the RBAC system defines user roles
     Then the following roles should exist:
       | Role | Chinese Name | Access Level | Scope |
@@ -27,7 +27,7 @@ Feature: 角色權限控制系統
     And role inheritance should be explicitly configured
 
   @rbac @volunteer @permissions
-  Scenario: Volunteer role permissions and restrictions
+Scenario: Volunteer role permissions and restrictions
     Given I am authenticated as a volunteer user
     When I attempt to access system functions
     Then I should be able to:
@@ -45,7 +45,7 @@ Feature: 角色權限控制系統
       | 匯出資料 | Data protection |
 
   @rbac @family-member @case-access
-  Scenario: Family member role with case-specific access
+Scenario: Family member role with case-specific access
     Given I am authenticated as a family member
     And I have reported case "CASE-2025-091701"
     When I access case-related functions
@@ -60,7 +60,7 @@ Feature: 角色權限控制系統
     And no access to system administration functions
 
   @rbac @case-manager @operational-access
-  Scenario: Case manager role with multi-case operational permissions
+Scenario: Case manager role with multi-case operational permissions
     Given I am authenticated as a case manager
     And I am assigned to handle cases in "中正區"
     When I perform case management duties
@@ -77,7 +77,7 @@ Feature: 角色權限控制系統
     And sensitive personal data access should require justification
 
   @rbac @emergency-operator @special-permissions
-  Scenario: Emergency operator role with time-sensitive access
+Scenario: Emergency operator role with time-sensitive access
     Given I am authenticated as an emergency operator
     And emergency case creation is required
     When emergency situation occurs
@@ -93,7 +93,7 @@ Feature: 角色權限控制系統
     And post-incident review should be mandatory
 
   @rbac @admin @system-management
-  Scenario: System administrator role with full access and accountability
+Scenario: System administrator role with full access and accountability
     Given I am authenticated as a system administrator
     When I perform administrative functions
     Then I should be able to:
@@ -110,7 +110,7 @@ Feature: 角色權限控制系統
     And admin access should be regularly reviewed and revalidated
 
   @rbac @auditor @compliance-access
-  Scenario: Auditor role with read-only compliance access
+Scenario: Auditor role with read-only compliance access
     Given I am authenticated as an auditor
     When I perform compliance review
     Then I should be able to:
@@ -129,7 +129,7 @@ Feature: 角色權限控制系統
     And auditor activities should themselves be logged
 
   @rbac @permission-inheritance @role-hierarchy
-  Scenario: Role hierarchy and permission inheritance
+Scenario: Role hierarchy and permission inheritance
     Given role hierarchy is defined as:
       | Parent Role | Child Role | Inherited Permissions |
       | admin | supervisor | All supervisor permissions |
@@ -143,7 +143,7 @@ Feature: 角色權限控制系統
     And circular inheritance should be prevented and detected
 
   @rbac @dynamic-permissions @context-aware
-  Scenario: Dynamic permissions based on context and situation
+Scenario: Dynamic permissions based on context and situation
     Given I have case_manager role
     And emergency situation is declared
     When context-aware permissions are evaluated
@@ -157,7 +157,7 @@ Feature: 角色權限控制系統
     And supervisor should be notified of permission elevation
 
   @rbac @delegation @temporary-access
-  Scenario: Permission delegation for temporary coverage
+Scenario: Permission delegation for temporary coverage
     Given I am a case manager going on leave
     And I need to delegate my responsibilities
     When I delegate permissions to colleague "張管理員"
@@ -169,7 +169,7 @@ Feature: 角色權限控制系統
     And delegation should auto-expire at specified time
 
   @rbac @geo-permissions @location-based-access
-  Scenario: Geographic-based permission restrictions
+Scenario: Geographic-based permission restrictions
     Given I am a case manager assigned to "東區"
     When I attempt to access case data
     Then I should only access cases within my geographic jurisdiction
@@ -180,7 +180,7 @@ Feature: 角色權限控制系統
     And location-based access violations should trigger security alerts
 
   @error-handling @rbac-failures
-  Scenario: Handling RBAC system failures and security incidents
+Scenario: Handling RBAC system failures and security incidents
     Given RBAC system encounters technical difficulties
     When permission check fails
     Then system should fail-safe (deny access by default)
@@ -194,7 +194,7 @@ Feature: 角色權限控制系統
     And comprehensive security review should be conducted
 
   @monitoring @rbac-analytics @security-metrics
-  Scenario: RBAC system monitoring and security analytics
+Scenario: RBAC system monitoring and security analytics
     Given RBAC system is operational
     When security monitoring runs
     Then metrics should include: permission check frequency, access denials, role assignments, privilege escalations

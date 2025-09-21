@@ -5,14 +5,14 @@ Feature: 稽核與匯出功能
   # I want to access comprehensive audit trails and export capabilities
   # So that regulatory compliance and security monitoring can be maintained
 
-  Background:
+Background:
     Given audit system is operational
     And compliance frameworks are configured (GDPR, Taiwan PDPA)
     And user authentication is verified with appropriate audit permissions
     And audit log retention policies are active
 
   @audit @user-activities @comprehensive-logging
-  Scenario: Comprehensive user activity audit logging
+Scenario: Comprehensive user activity audit logging
     Given various user activities occur in the system
     When audit logs are generated
     Then the following activities should be logged:
@@ -29,7 +29,7 @@ Feature: 稽核與匯出功能
     And personal data in logs should be pseudonymized where possible
 
   @audit @data-access @privacy-compliance
-  Scenario: Data access audit for privacy compliance
+Scenario: Data access audit for privacy compliance
     Given users access personal data in the system
     When data access audit is performed
     Then system should log:
@@ -45,7 +45,7 @@ Feature: 稽核與匯出功能
     And privacy impact assessments should be automatically flagged
 
   @audit @consent-lifecycle @gdpr-compliance
-  Scenario: Consent lifecycle audit for GDPR Article 7 compliance
+Scenario: Consent lifecycle audit for GDPR Article 7 compliance
     Given consent management events occur
     When consent audit trail is generated
     Then system should record:
@@ -60,7 +60,7 @@ Feature: 稽核與匯出功能
     And withdrawal processing should be audited for GDPR Article 17 compliance
 
   @audit @security-events @incident-response
-  Scenario: Security event audit and incident response tracking
+Scenario: Security event audit and incident response tracking
     Given security-related events occur in the system
     When security audit logs are reviewed
     Then critical security events should be logged:
@@ -77,7 +77,7 @@ Feature: 稽核與匯出功能
     And security metrics should be generated for continuous improvement
 
   @audit @compliance-reporting @regulatory-exports
-  Scenario: Compliance reporting and regulatory data exports
+Scenario: Compliance reporting and regulatory data exports
     Given regulatory compliance reporting is required
     When compliance officer generates reports
     Then system should provide standardized exports:
@@ -93,7 +93,7 @@ Feature: 稽核與匯出功能
     And export access should be logged and require dual approval
 
   @audit @data-lineage @processing-transparency
-  Scenario: Data lineage tracking for processing transparency
+Scenario: Data lineage tracking for processing transparency
     Given personal data flows through multiple system components
     When data lineage audit is performed
     Then system should track:
@@ -108,7 +108,7 @@ Feature: 稽核與匯出功能
     And automated data flow monitoring should detect unauthorized processing
 
   @audit @vendor-compliance @third-party-audit
-  Scenario: Third-party vendor compliance audit
+Scenario: Third-party vendor compliance audit
     Given external vendors process personal data on our behalf
     When vendor compliance audit is conducted
     Then audit should cover:
@@ -124,7 +124,7 @@ Feature: 稽核與匯出功能
     And vendor performance should be continuously monitored
 
   @audit @anonymization-verification @privacy-protection
-  Scenario: Anonymization process audit and verification
+Scenario: Anonymization process audit and verification
     Given personal data is anonymized for analytics
     When anonymization audit is performed
     Then audit should verify:
@@ -140,7 +140,7 @@ Feature: 稽核與匯出功能
     And anonymization failures should trigger data quarantine
 
   @audit @cross-border-transfers @adequacy-decisions
-  Scenario: Cross-border data transfer audit for GDPR compliance
+Scenario: Cross-border data transfer audit for GDPR compliance
     Given personal data is transferred outside Taiwan/EU
     When cross-border transfer audit is conducted
     Then audit should verify:
@@ -155,7 +155,7 @@ Feature: 稽核與匯出功能
     And transfer suspension procedures should be defined
 
   @audit @automated-decision-making @algorithm-audit
-  Scenario: Automated decision-making system audit
+Scenario: Automated decision-making system audit
     Given system uses automated decision-making affecting users
     When algorithm audit is performed
     Then audit should examine:
@@ -171,7 +171,7 @@ Feature: 稽核與匯出功能
     And algorithm changes should be version-controlled and audited
 
   @error-handling @audit-system-failures
-  Scenario: Audit system failure handling and continuity
+Scenario: Audit system failure handling and continuity
     Given audit system encounters technical failures
     When audit logging fails
     Then fallback procedures should activate:
@@ -188,7 +188,7 @@ Feature: 稽核與匯出功能
     And missing audit events should be reconstructed where possible
 
   @monitoring @audit-metrics @governance-dashboard
-  Scenario: Audit metrics monitoring and governance dashboard
+Scenario: Audit metrics monitoring and governance dashboard
     Given audit system operates continuously
     When audit governance dashboard is accessed
     Then metrics should include:

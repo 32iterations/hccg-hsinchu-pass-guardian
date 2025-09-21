@@ -5,14 +5,14 @@ Feature: 進度追蹤與通知管理
   # I want to track progress of missing person cases and receive relevant notifications
   # So that I stay informed about case developments while respecting privacy boundaries
 
-  Background:
+Background:
     Given user authentication is valid
     And notification permissions are granted
     And privacy settings are configured
     And case access permissions are verified
 
   @tracking @case-progress @family-member
-  Scenario: Family member tracks their case progress with privacy protection
+Scenario: Family member tracks their case progress with privacy protection
     Given I am a family member who reported a missing person case
     And my case ID is "CASE-2025-091701"
     And case status is "active_investigation"
@@ -26,7 +26,7 @@ Feature: 進度追蹤與通知管理
     And I should NOT see other families' case information
 
   @tracking @volunteer-contribution @anonymized-impact
-  Scenario: Volunteer tracks their contribution impact (anonymized)
+Scenario: Volunteer tracks their contribution impact (anonymized)
     Given I am an active volunteer
     And I have been scanning for 7 days
     When I access "我的貢獻紀錄"
@@ -39,7 +39,7 @@ Feature: 進度追蹤與通知管理
     And I should see contribution impact as "您的協助可能幫助了走失者家庭"
 
   @tracking @case-timeline @progress-milestones
-  Scenario: Case timeline with privacy-preserving milestones
+Scenario: Case timeline with privacy-preserving milestones
     Given a missing person case has been active for 6 hours
     When family member checks case timeline
     Then timeline should show:
@@ -53,7 +53,7 @@ Feature: 進度追蹤與通知管理
     And family should receive push notifications for major milestones
 
   @tracking @multi-case-dashboard @volunteer-perspective
-  Scenario: Volunteer dashboard showing multiple case areas (anonymized)
+Scenario: Volunteer dashboard showing multiple case areas (anonymized)
     Given I am a volunteer in central Hsinchu area
     And there are 3 active cases within my scanning range
     When I access volunteer dashboard
@@ -66,7 +66,7 @@ Feature: 進度追蹤與通知管理
     And I should receive notification when entering high-priority areas
 
   @tracking @notification-preferences @granular-control
-  Scenario: Granular notification preference management
+Scenario: Granular notification preference management
     Given I want to customize my notification experience
     When I access "通知設定"
     Then I should be able to configure:
@@ -80,7 +80,7 @@ Feature: 進度追蹤與通知管理
     And preferences should be synced across devices
 
   @tracking @real-time-updates @websocket
-  Scenario: Real-time progress updates via WebSocket connection
+Scenario: Real-time progress updates via WebSocket connection
     Given I am viewing case progress page
     And WebSocket connection is established
     When case status changes on server
@@ -92,7 +92,7 @@ Feature: 進度追蹤與通知管理
     And battery impact should be minimized on mobile devices
 
   @tracking @privacy-boundaries @information-filtering
-  Scenario: Strict privacy boundaries in progress information
+Scenario: Strict privacy boundaries in progress information
     Given I am family member of Case A
     And another family has Case B in same area
     When I view progress information
@@ -104,7 +104,7 @@ Feature: 進度追蹤與通知管理
     And system should actively prevent information leakage
 
   @tracking @volunteer-safety @location-tracking-consent
-  Scenario: Volunteer safety tracking with explicit consent
+Scenario: Volunteer safety tracking with explicit consent
     Given I am a volunteer in active search area
     And I opt-in to safety tracking with "同意安全位置追蹤"
     When I am in high-risk search zone
@@ -116,7 +116,7 @@ Feature: 進度追蹤與通知管理
     And safety data should be deleted after 24 hours
 
   @tracking @case-resolution @outcome-notification
-  Scenario: Case resolution notification and outcome tracking
+Scenario: Case resolution notification and outcome tracking
     Given I am involved in a missing person case (as family or volunteer)
     When case status changes to "resolved_found" or "resolved_safe"
     Then I should receive immediate notification "好消息！走失者已安全找到"
@@ -127,7 +127,7 @@ Feature: 進度追蹤與通知管理
     But specific resolution details should remain confidential
 
   @tracking @escalation-alerts @priority-changes
-  Scenario: Case escalation and priority change notifications
+Scenario: Case escalation and priority change notifications
     Given I am a volunteer in area with standard priority case
     When case priority escalates to "high" due to safety concerns
     Then I should receive priority notification "案件優先級提升，請加強協助"
@@ -137,7 +137,7 @@ Feature: 進度追蹤與通知管理
     And escalation reason should be general (no sensitive details)
 
   @tracking @progress-analytics @family-insights
-  Scenario: Progress analytics and insights for family members
+Scenario: Progress analytics and insights for family members
     Given my case has been active for 48 hours
     When I view "進度分析"
     Then I should see search effectiveness metrics:
@@ -150,7 +150,7 @@ Feature: 進度追蹤與通知管理
     And analytics should be updated every 4 hours
 
   @tracking @volunteer-motivation @gamification-elements
-  Scenario: Volunteer motivation through progress recognition (privacy-safe)
+Scenario: Volunteer motivation through progress recognition (privacy-safe)
     Given I have been volunteering for 30 days
     When I check my volunteer profile
     Then I should see achievement badges:
@@ -164,7 +164,7 @@ Feature: 進度追蹤與通知管理
     And opt-out from gamification should be available
 
   @error-handling @tracking-system-failures
-  Scenario: Handling tracking system failures and user communication
+Scenario: Handling tracking system failures and user communication
     Given tracking system experiences technical difficulties
     When progress updates fail to load
     Then user should see "系統暫時無法更新，請稍後再試"
@@ -175,7 +175,7 @@ Feature: 進度追蹤與通知管理
     And user should be able to contact support for urgent case updates
 
   @accessibility @tracking-interface @inclusive-design
-  Scenario: Accessible progress tracking for users with disabilities
+Scenario: Accessible progress tracking for users with disabilities
     Given user has visual impairments and uses screen reader
     When accessing progress tracking interface
     Then all progress information should be screen reader compatible
@@ -187,7 +187,7 @@ Feature: 進度追蹤與通知管理
     And progress information should be available via audio summaries
 
   @monitoring @tracking-metrics @system-health
-  Scenario: System monitoring of tracking feature performance
+Scenario: System monitoring of tracking feature performance
     Given tracking system is operational
     When system health monitoring runs
     Then metrics should include: update delivery success rate, WebSocket connection stability, notification delivery rate

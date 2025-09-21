@@ -3,38 +3,38 @@ Feature: 安心守護權限可見度
   身份別決定功能可見度與可用性
   確保實名驗證機制正確運作
 
-  Background:
+Background:
     Given 系統已載入權限設定
     And 相容性要求為 "iOS 15.6+" 與 "Android 9+"
 
-  Scenario: 未登入用戶查看安心守護
+Scenario: 未登入用戶查看安心守護
     Given 我是未登入用戶
     When 我嘗試訪問 "安心守護" 功能
     Then 系統應顯示 "請先登入" 提示
     And 導向登入頁面
 
-  Scenario: 一般會員查看家屬頁
+Scenario: 一般會員查看家屬頁
     Given 我是一般會員
     When 我打開家屬頁
     Then 系統應顯示 "此功能需實名驗證" 提示
     And 顯示實名認證引導按鈕
     And 功能狀態為 "鎖定"
 
-  Scenario: 一般會員查看志工頁
+Scenario: 一般會員查看志工頁
     Given 我是一般會員
     When 我打開志工頁
     Then 系統應顯示 "此功能需實名驗證" 提示
     And 顯示實名認證引導按鈕
     And 功能狀態為 "鎖定"
 
-  Scenario: 一般會員查看申辦頁
+Scenario: 一般會員查看申辦頁
     Given 我是一般會員
     When 我打開申辦頁
     Then 系統應顯示申辦資訊
     And 顯示 "申辦需完成實名驗證" 提示
     And 申辦按鈕狀態為 "不可點擊"
 
-  Scenario: 實名會員使用家屬頁完整功能
+Scenario: 實名會員使用家屬頁完整功能
     Given 我是實名會員
     When 我打開家屬頁
     Then 系統應顯示以下功能
@@ -45,7 +45,7 @@ Feature: 安心守護權限可見度
       | 歷史軌跡   | 可用   |
     And 不顯示實名驗證提示
 
-  Scenario: 實名會員使用志工頁功能
+Scenario: 實名會員使用志工頁功能
     Given 我是實名會員
     When 我打開志工頁
     Then 系統應顯示以下功能
@@ -56,14 +56,14 @@ Feature: 安心守護權限可見度
       | 志工排班   | 可用   |
     And 不顯示實名驗證提示
 
-  Scenario: 實名會員使用申辦功能
+Scenario: 實名會員使用申辦功能
     Given 我是實名會員
     When 我打開申辦頁
     Then 系統應顯示完整申辦表單
     And 申辦按鈕狀態為 "可點擊"
     And 顯示 "您已完成實名驗證，可開始申辦" 狀態
 
-  Scenario: 承辦人員查看所有功能
+Scenario: 承辦人員查看所有功能
     Given 我是承辦人員
     When 我打開安心守護任一頁面
     Then 系統應顯示管理功能

@@ -5,14 +5,14 @@ Feature: 回執保存與資料生命週期管理
   # I want to enforce proper data lifecycle and retention policies
   # So that we comply with GDPR, Taiwan PDPA, and minimize data exposure
 
-  Background:
+Background:
     Given the retention service is initialized
     And GDPR compliance mode is enabled
     And Taiwan PDPA regulations are configured
     And data classification policies are loaded
 
   @retention @consent-data @ttl
-  Scenario: Volunteer consent data retention with TTL
+Scenario: Volunteer consent data retention with TTL
     Given a volunteer provides consent at "2025-09-17T16:45:00Z"
     And consent retention policy is set to 3 years
     When the consent record is created
@@ -26,7 +26,7 @@ Feature: 回執保存與資料生命週期管理
     And audit log should record "consent_data_purged"
 
   @retention @volunteer-hits @minimal-storage
-  Scenario: VolunteerHit data minimal retention
+Scenario: VolunteerHit data minimal retention
     Given a VolunteerHit is created with anonymized data
     And hit retention policy is set to 30 days
     When the VolunteerHit is stored
@@ -39,7 +39,7 @@ Feature: 回執保存與資料生命週期管理
     And storage space should be reclaimed
 
   @retention @case-data @investigation-period
-  Scenario: Missing person case data retention during active investigation
+Scenario: Missing person case data retention during active investigation
     Given a missing person case is created
     And case is marked as "active_investigation"
     When case retention policy is applied
@@ -52,7 +52,7 @@ Feature: 回執保存與資料生命週期管理
     And case data should be progressively purged (location first, then personal details, finally case metadata)
 
   @retention @logs @audit-trail
-  Scenario: System logs and audit trail retention
+Scenario: System logs and audit trail retention
     Given system generates operational logs
     And audit events are recorded
     When log retention policies are applied
@@ -64,7 +64,7 @@ Feature: 回執保存與資料生命週期管理
     And compressed archives should be created for long-term storage
 
   @retention @gdpr-right-to-be-forgotten @immediate-purge
-  Scenario: GDPR Article 17 Right to Erasure (Right to be Forgotten)
+Scenario: GDPR Article 17 Right to Erasure (Right to be Forgotten)
     Given a volunteer has active consent and data
     And volunteer invokes right to be forgotten
     When erasure request is processed
@@ -77,7 +77,7 @@ Feature: 回執保存與資料生命週期管理
     But legal basis data required for compliance should be retained (anonymized case numbers for statistics only)
 
   @retention @taiwan-pdpa @data-minimization
-  Scenario: Taiwan Personal Data Protection Act compliance
+Scenario: Taiwan Personal Data Protection Act compliance
     Given Taiwan PDPA requirements are active
     When any personal data is collected
     Then specific purpose must be defined and recorded
@@ -89,7 +89,7 @@ Feature: 回執保存與資料生命週期管理
     And destruction certificate should be generated
 
   @retention @progressive-purge @data-aging
-  Scenario: Progressive data purging based on sensitivity
+Scenario: Progressive data purging based on sensitivity
     Given a complete missing person case with various data types
     When case enters retention phase
     Then immediate purge (T+0): Real-time location data, device identifiers
@@ -101,7 +101,7 @@ Feature: 回執保存與資料生命週期管理
     And each purge stage should be logged and verified
 
   @retention @backup-lifecycle @disaster-recovery
-  Scenario: Backup data lifecycle and retention
+Scenario: Backup data lifecycle and retention
     Given production data has retention policies
     And backup systems replicate this data
     When backups are created
@@ -114,7 +114,7 @@ Feature: 回執保存與資料生命週期管理
     And compliance obligations should be preserved during recovery
 
   @retention @cross-border @data-residency
-  Scenario: Cross-border data retention with Taiwan residency requirements
+Scenario: Cross-border data retention with Taiwan residency requirements
     Given volunteer data crosses Taiwan borders for processing
     When data is stored internationally
     Then Taiwan copy must be maintained as primary
@@ -126,7 +126,7 @@ Feature: 回執保存與資料生命週期管理
     And deletion verification must be obtained from all jurisdictions
 
   @retention @encryption-key-rotation @security
-  Scenario: Encryption key lifecycle tied to data retention
+Scenario: Encryption key lifecycle tied to data retention
     Given encrypted personal data is stored
     And encryption keys have lifecycle policies
     When data reaches 80% of retention period
@@ -138,7 +138,7 @@ Feature: 回執保存與資料生命週期管理
     And key destruction audit should be recorded
 
   @retention @consent-withdrawal @immediate-effect
-  Scenario: Consent withdrawal triggers immediate retention policy override
+Scenario: Consent withdrawal triggers immediate retention policy override
     Given a volunteer has active consent with 3-year retention
     And volunteer data is stored across multiple systems
     When volunteer withdraws consent
@@ -149,7 +149,7 @@ Feature: 回執保存與資料生命週期管理
     And withdrawal timestamp should be permanently recorded (for legal protection)
 
   @error-handling @retention-failures
-  Scenario: Handling retention policy enforcement failures
+Scenario: Handling retention policy enforcement failures
     Given automatic purge job encounters system errors
     When TTL expiration cannot be processed automatically
     Then failed purges should be queued for retry
@@ -161,7 +161,7 @@ Feature: 回執保存與資料生命週期管理
     And retention metrics should be updated
 
   @monitoring @retention-metrics @compliance-reporting
-  Scenario: Retention metrics and compliance reporting
+Scenario: Retention metrics and compliance reporting
     Given retention policies are actively enforced
     When compliance reporting is generated
     Then metrics should include: total records under retention, TTL distribution, purge success rate, policy violations

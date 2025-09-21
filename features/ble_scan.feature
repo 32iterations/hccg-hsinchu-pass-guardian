@@ -1,16 +1,17 @@
+# language: zh-TW
 Feature: BLE Scanning with Privacy
   # As a volunteer user
   # I want to scan for BLE devices while preserving privacy
   # So that I can help locate missing persons without compromising anyone's personal data
 
-  Background:
+Background:
     Given volunteer consent is granted
     And BLE permissions are approved
     And anonymization service is configured
     And battery optimization is disabled for the app
 
   @ble @privacy @android
-  Scenario: Android 12+ neverForLocation scanning
+Scenario: Android 12+ neverForLocation scanning
     Given I am on Android 12 or higher
     And neverForLocation preference is enabled
     When BLE scanning starts
@@ -22,7 +23,7 @@ Feature: BLE Scanning with Privacy
     And device hashes should be generated with salt
 
   @ble @privacy @android
-  Scenario: Android location-based scanning for positioning
+Scenario: Android location-based scanning for positioning
     Given I am on Android 12 or higher
     And location inference is enabled for better accuracy
     When BLE scanning starts with location
@@ -34,7 +35,7 @@ Feature: BLE Scanning with Privacy
     And timestamp should be rounded to 5-minute intervals
 
   @ble @ios @background
-  Scenario: iOS State Preservation after app termination
+Scenario: iOS State Preservation after app termination
     Given I am on iOS
     And the app is running in background
     When iOS terminates the app due to memory pressure
@@ -46,7 +47,7 @@ Feature: BLE Scanning with Privacy
     And volunteer hits should continue being recorded
 
   @ble @ios @background
-  Scenario: iOS State Restoration on app launch
+Scenario: iOS State Restoration on app launch
     Given the app was terminated while BLE scanning
     And iOS preserved the BLE state
     When the app launches
@@ -56,7 +57,7 @@ Feature: BLE Scanning with Privacy
     And no user intervention should be required
 
   @ble @discovery @filtering
-  Scenario: Device discovery with RSSI filtering
+Scenario: Device discovery with RSSI filtering
     Given BLE scanning is active
     When a BLE device is discovered
     And RSSI is stronger than -90 dBm
@@ -67,7 +68,7 @@ Feature: BLE Scanning with Privacy
     And timestamp should be rounded to 5-minute intervals
 
   @ble @discovery @filtering
-  Scenario: Weak signal device filtering
+Scenario: Weak signal device filtering
     Given BLE scanning is active
     When a BLE device is discovered
     And RSSI is weaker than -90 dBm
@@ -77,7 +78,7 @@ Feature: BLE Scanning with Privacy
     And battery usage should be minimized
 
   @ble @privacy @anonymization
-  Scenario: MAC address rotation handling
+Scenario: MAC address rotation handling
     Given a device with MAC rotation enabled
     When the device rotates its MAC address
     And new MAC "AA:BB:CC:DD:EE:F1" is detected
@@ -88,7 +89,7 @@ Feature: BLE Scanning with Privacy
     And k-anonymity should be maintained across rotations
 
   @ble @performance @battery
-  Scenario: Battery-efficient scanning intervals
+Scenario: Battery-efficient scanning intervals
     Given volunteer mode is active
     And device is not charging
     When BLE scanning operates
@@ -99,7 +100,7 @@ Feature: BLE Scanning with Privacy
     And adaptive intervals should respond to detection rate
 
   @ble @performance @battery
-  Scenario: Aggressive scanning when charging
+Scenario: Aggressive scanning when charging
     Given volunteer mode is active
     And device is charging
     When BLE scanning operates
@@ -110,7 +111,7 @@ Feature: BLE Scanning with Privacy
     And more frequent uploads should be allowed
 
   @ble @volunteer-hit @anonymization
-  Scenario: VolunteerHit creation with complete anonymization
+Scenario: VolunteerHit creation with complete anonymization
     Given a BLE device is discovered
     And RSSI is -75 dBm
     And current time is "2025-09-17T16:47:32Z"
@@ -126,7 +127,7 @@ Feature: BLE Scanning with Privacy
     And NO original MAC address should be stored
 
   @ble @k-anonymity @privacy
-  Scenario: K-anonymity enforcement for device clusters
+Scenario: K-anonymity enforcement for device clusters
     Given multiple devices are detected in same grid square
     When fewer than 3 devices are in cluster
     Then VolunteerHits should be queued but not uploaded
@@ -136,7 +137,7 @@ Feature: BLE Scanning with Privacy
     And individual device identification should be impossible
 
   @error-handling @ble
-  Scenario: BLE adapter disabled during scanning
+Scenario: BLE adapter disabled during scanning
     Given BLE scanning is active
     When user disables Bluetooth adapter
     Then scanning should pause gracefully
@@ -147,7 +148,7 @@ Feature: BLE Scanning with Privacy
     And no data loss should occur
 
   @error-handling @permissions
-  Scenario: Permission revoked during operation
+Scenario: Permission revoked during operation
     Given BLE scanning is active
     When user revokes BLE permissions
     Then scanning should stop immediately

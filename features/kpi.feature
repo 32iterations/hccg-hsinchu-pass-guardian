@@ -5,14 +5,14 @@ Feature: KPI 匯總與效能指標
   # I want to track key performance indicators and system metrics
   # So that system effectiveness and operational performance can be monitored and improved
 
-  Background:
+Background:
     Given KPI analytics system is operational
     And data collection pipelines are configured
     And performance baselines are established
     And reporting dashboards are accessible
 
   @kpi @volunteer-engagement @participation-metrics
-  Scenario: Volunteer engagement and participation KPI tracking
+Scenario: Volunteer engagement and participation KPI tracking
     Given volunteer activities are being monitored
     When KPI dashboard is accessed
     Then volunteer engagement metrics should include:
@@ -29,7 +29,7 @@ Feature: KPI 匯總與效能指標
     And volunteer satisfaction surveys should supplement quantitative metrics
 
   @kpi @case-resolution @effectiveness-metrics
-  Scenario: Case resolution effectiveness and performance KPIs
+Scenario: Case resolution effectiveness and performance KPIs
     Given missing person cases are being tracked
     When case performance KPIs are calculated
     Then case resolution metrics should show:
@@ -46,7 +46,7 @@ Feature: KPI 匯總與效能指標
     And improvement recommendations should be generated automatically
 
   @kpi @system-performance @technical-metrics
-  Scenario: System performance and technical infrastructure KPIs
+Scenario: System performance and technical infrastructure KPIs
     Given system components are monitored continuously
     When technical performance dashboard is reviewed
     Then system performance KPIs should track:
@@ -64,7 +64,7 @@ Feature: KPI 匯總與效能指標
     And infrastructure scaling recommendations should be provided
 
   @kpi @privacy-compliance @gdpr-metrics
-  Scenario: Privacy compliance and GDPR performance indicators
+Scenario: Privacy compliance and GDPR performance indicators
     Given privacy compliance is monitored
     When privacy KPI dashboard is accessed
     Then compliance metrics should include:
@@ -81,7 +81,7 @@ Feature: KPI 匯總與效能指標
     And privacy training completion rates should be monitored
 
   @kpi @user-experience @satisfaction-metrics
-  Scenario: User experience and satisfaction KPI measurement
+Scenario: User experience and satisfaction KPI measurement
     Given user interactions are tracked
     When UX performance metrics are analyzed
     Then user experience KPIs should show:
@@ -99,7 +99,7 @@ Feature: KPI 匯總與效能指標
     And user feedback sentiment should be analyzed continuously
 
   @kpi @operational-efficiency @resource-optimization
-  Scenario: Operational efficiency and resource optimization KPIs
+Scenario: Operational efficiency and resource optimization KPIs
     Given operational processes are monitored
     When operational efficiency metrics are calculated
     Then efficiency KPIs should track:
@@ -116,7 +116,7 @@ Feature: KPI 匯總與效能指標
     And operational bottlenecks should be identified and addressed
 
   @kpi @security-metrics @threat-detection
-  Scenario: Security performance and threat detection KPIs
+Scenario: Security performance and threat detection KPIs
     Given security monitoring is active
     When security KPI dashboard is reviewed
     Then security metrics should include:
@@ -133,7 +133,7 @@ Feature: KPI 匯總與效能指標
     And security ROI should be calculated for investment justification
 
   @kpi @predictive-analytics @forecasting
-  Scenario: Predictive analytics and performance forecasting
+Scenario: Predictive analytics and performance forecasting
     Given historical KPI data is available
     When predictive models are applied
     Then forecasting should provide:
@@ -148,7 +148,7 @@ Feature: KPI 匯總與效能指標
     And forecasts should inform proactive resource planning
 
   @kpi @regional-comparison @benchmarking
-  Scenario: Regional performance comparison and benchmarking
+Scenario: Regional performance comparison and benchmarking
     Given multiple regions are using the system
     When regional KPI comparison is performed
     Then benchmarking should show:
@@ -163,7 +163,7 @@ Feature: KPI 匯總與效能指標
     And regional customization needs should be analyzed
 
   @error-handling @kpi-data-quality
-  Scenario: KPI data quality monitoring and error handling
+Scenario: KPI data quality monitoring and error handling
     Given KPI calculation processes may encounter data issues
     When data quality problems are detected
     Then error handling should include:
@@ -178,7 +178,7 @@ Feature: KPI 匯總與效能指標
     And data quality trends should be monitored over time
 
   @monitoring @kpi-governance @continuous-improvement
-  Scenario: KPI governance and continuous improvement framework
+Scenario: KPI governance and continuous improvement framework
     Given KPI system requires ongoing governance
     When KPI performance review is conducted
     Then governance framework should include:

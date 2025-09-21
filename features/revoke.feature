@@ -5,14 +5,14 @@ Feature: 同意撤回與資料移除流程
   # I want to revoke my consent and have my data removed
   # So that I can exercise my privacy rights under GDPR and Taiwan PDPA
 
-  Background:
+Background:
     Given user authentication is valid
     And consent records exist in the system
     And GDPR compliance framework is active
     And Taiwan PDPA regulations are configured
 
   @revoke @volunteer-consent @immediate-effect
-  Scenario: Volunteer revokes consent with immediate data processing halt
+Scenario: Volunteer revokes consent with immediate data processing halt
     Given I am a volunteer with active consent
     And background BLE scanning is operational
     And I have VolunteerHit data from the past 30 days
@@ -26,7 +26,7 @@ Feature: 同意撤回與資料移除流程
     And I should see "同意已撤回，資料將在30天內完全刪除"
 
   @revoke @family-member @care-relationship
-  Scenario: Family member revokes consent for care recipient monitoring
+Scenario: Family member revokes consent for care recipient monitoring
     Given I am a family member with active consent for monitoring my care recipient
     And care recipient device binding exists
     And geofence alerts are configured
@@ -40,7 +40,7 @@ Feature: 同意撤回與資料移除流程
     And I should receive confirmation "照護監控已停止，相關資料將被刪除"
 
   @revoke @partial-consent @granular-control
-  Scenario: Partial consent revocation with granular data control
+Scenario: Partial consent revocation with granular data control
     Given I have multiple active consents: volunteer mode, geofence alerts, data analytics
     When I access "管理我的同意設定"
     And I revoke only "資料分析使用同意"
@@ -52,7 +52,7 @@ Feature: 同意撤回與資料移除流程
     And affected data streams should be identified and isolated
 
   @revoke @data-processing-halt @system-wide
-  Scenario: System-wide data processing halt upon revocation
+Scenario: System-wide data processing halt upon revocation
     Given my data is being processed across multiple system components
     And I revoke consent
     When revocation is processed
@@ -64,7 +64,7 @@ Feature: 同意撤回與資料移除流程
     And data processors should be notified of revocation within 1 hour
 
   @revoke @thirty-day-deletion @gdpr-timeline
-  Scenario: Complete data deletion within 30-day GDPR timeline
+Scenario: Complete data deletion within 30-day GDPR timeline
     Given I revoked consent on "2025-09-17T16:45:00Z"
     When 30 days have elapsed
     Then all my personal data should be completely deleted
@@ -75,7 +75,7 @@ Feature: 同意撤回與資料移除流程
     And only revocation audit record should remain (for legal protection)
 
   @revoke @backup-systems @comprehensive-deletion
-  Scenario: Revocation affects backup and archive systems
+Scenario: Revocation affects backup and archive systems
     Given my data exists in: production database, daily backups, weekly archives, disaster recovery systems
     When I revoke consent
     Then deletion process should include all backup systems
@@ -86,7 +86,7 @@ Feature: 同意撤回與資料移除流程
     And backup verification should confirm complete removal
 
   @revoke @legal-basis-data @retention-exception
-  Scenario: Legal basis data retention after consent revocation
+Scenario: Legal basis data retention after consent revocation
     Given I revoke consent
     And some data has legal basis beyond consent (e.g., safety incident reports)
     When deletion process executes
@@ -98,7 +98,7 @@ Feature: 同意撤回與資料移除流程
     And I should be informed which data remains and why
 
   @revoke @third-party-processors @data-sharing-cessation
-  Scenario: Third-party data processor notification and cessation
+Scenario: Third-party data processor notification and cessation
     Given my data has been shared with authorized third-party processors
     When I revoke consent
     Then all third-party processors should be notified within 4 hours
@@ -109,7 +109,7 @@ Feature: 同意撤回與資料移除流程
     And processor notification audit trail should be maintained
 
   @revoke @anonymization-verification @k-anonymity
-  Scenario: Anonymization verification after revocation
+Scenario: Anonymization verification after revocation
     Given my data has been anonymized for statistical purposes
     When I revoke consent
     Then anonymized datasets should be reviewed for potential re-identification
@@ -120,7 +120,7 @@ Feature: 同意撤回與資料移除流程
     And anonymization certificate should be provided
 
   @revoke @emergency-situations @safety-override
-  Scenario: Revocation during active emergency situations
+Scenario: Revocation during active emergency situations
     Given I am a volunteer currently assisting in an active missing person case
     And my BLE data is contributing to ongoing search efforts
     When I attempt to revoke consent
@@ -133,7 +133,7 @@ Feature: 同意撤回與資料移除流程
     And search algorithms should adapt to reduced data availability
 
   @revoke @cross-border-processing @international-deletion
-  Scenario: Cross-border data processing revocation compliance
+Scenario: Cross-border data processing revocation compliance
     Given my data is processed in multiple jurisdictions
     When I revoke consent under Taiwan PDPA
     Then Taiwan data should be deleted within Taiwan PDPA timeline
@@ -144,7 +144,7 @@ Feature: 同意撤回與資料移除流程
     And international deletion verification should be obtained
 
   @revoke @technical-challenges @system-limitations
-  Scenario: Technical challenges in complete data removal
+Scenario: Technical challenges in complete data removal
     Given data exists in immutable logs, blockchain records, or ML model weights
     When I revoke consent
     Then technically deletable data should be removed immediately
@@ -155,7 +155,7 @@ Feature: 同意撤回與資料移除流程
     And alternative privacy protections should be offered
 
   @error-handling @revocation-failures
-  Scenario: Handling revocation process failures
+Scenario: Handling revocation process failures
     Given revocation process encounters system errors
     When automated deletion fails
     Then manual intervention should be triggered immediately
@@ -169,7 +169,7 @@ Feature: 同意撤回與資料移除流程
     And system should be updated to prevent similar failures
 
   @monitoring @revocation-metrics @compliance-tracking
-  Scenario: Revocation process monitoring and compliance metrics
+Scenario: Revocation process monitoring and compliance metrics
     Given revocation requests are processed regularly
     When compliance reporting is generated
     Then metrics should include: total revocations, average processing time, deletion success rate, system failures
