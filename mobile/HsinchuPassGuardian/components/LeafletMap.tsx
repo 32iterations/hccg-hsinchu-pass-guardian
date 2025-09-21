@@ -403,7 +403,7 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             });
         }
 
-        // 完整的患者移動模擬功能
+        // 完整的患者移動模擬功能 - 強化版：確保沿著完整路徑移動
         function startSimulation() {
             if (isSimulating) return;
             isSimulating = true;
@@ -411,111 +411,113 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             // 重置所有狀態
             resetSimulationState();
 
-            // 定義完整的移動場景
+            // 定義完整的從家到失智據點的路徑
             const homeCoords = [24.8113, 120.9715];    // 家 (起點)
             const destinationCoords = [24.8035, 120.9920]; // 失智據點 (目的地)
 
-            // 正常路徑 - 從家到失智據點
-            const normalPath = [
-                [24.8113, 120.9715], // 家
-                [24.8110, 120.9725],
-                [24.8105, 120.9740],
-                [24.8090, 120.9750],
-                [24.8085, 120.9775],
-                [24.8078, 120.9800],
-                [24.8070, 120.9820], // 異常行為觸發點
-                [24.8065, 120.9845],
-                [24.8055, 120.9870],
-                [24.8045, 120.9895],
-                [24.8035, 120.9920]  // 失智據點
+            // 📍 完整路徑：從家到失智據點的連續路線
+            const completeJourneyPath = [
+                // 第一部分：正常移動段 (從家出發)
+                [24.8113, 120.9715], // 🏠 家 (起點)
+                [24.8110, 120.9730], // 正常步行 1
+                [24.8105, 120.9750], // 正常步行 2
+                [24.8095, 120.9770], // 正常步行 3
+                [24.8090, 120.9785], // 正常步行 4
+                [24.8085, 120.9800], // 正常步行 5
+                [24.8080, 120.9815], // ⚠️ 開始迷失的地點
+
+                // 第二部分：異常徘徊段 (在迷失地點來回徘徊)
+                [24.8075, 120.9820], // 開始遊蕩 1
+                [24.8078, 120.9825], // 來回徘徊 1
+                [24.8072, 120.9822], // 繼續徘徊 1
+                [24.8076, 120.9827], // 重複路線 1
+                [24.8074, 120.9823], // 更明顯的重複 1
+                [24.8079, 120.9819], // 回到原點附近 1
+                [24.8073, 120.9821], // 繼續徘徊 2
+                [24.8077, 120.9826], // 🚨 警報觸發點
+
+                // 第三部分：警報後繼續徘徊但逐漸遠離正確路徑
+                [24.8070, 120.9830], // 警報後位置 1
+                [24.8068, 120.9828], // 持續迷失 1
+                [24.8071, 120.9832], // 持續迷失 2
+                [24.8069, 120.9835], // 🚩 最終位置 (距離目的地很遠)
             ];
 
-            // 異常遊蕩路徑
-            const wanderingPath = [
-                [24.8070, 120.9820], // 開始遊蕩的位置
-                [24.8072, 120.9825],
-                [24.8068, 120.9828],
-                [24.8071, 120.9823],
-                [24.8073, 120.9826],
-                [24.8069, 120.9829],
-                [24.8070, 120.9821],
-                [24.8074, 120.9824],
-                [24.8067, 120.9827]
-            ];
+            // 定義階段分割點 (用於判斷當前處於哪個階段)
+            const phaseBreakpoints = {
+                normalEnd: 6,    // 前7個點 (0-6) 為正常階段
+                suspiciousEnd: 15, // 第8-15個點 為異常徘徊階段
+                alertEnd: completeJourneyPath.length - 1 // 剩餘點為警報階段
+            };
 
             // 添加起點和終點標記
             addSimulationMarkers(homeCoords, destinationCoords);
 
-            // 畫出預期路徑
-            drawNormalPath(normalPath);
+            // 🛣️ 畫出完整預期路徑 (從家到失智據點的直線路徑)
+            drawCompleteExpectedPath(homeCoords, destinationCoords);
 
-            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 正常移動');
+            // 🛣️ 畫出實際將要行走的路徑 (顯示為虛線，表示計劃路線)
+            drawPlannedPath(completeJourneyPath.slice(0, phaseBreakpoints.normalEnd + 1));
+
+            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 患者開始從家出發前往失智據點');
 
             let currentStep = 0;
-            let isWandering = false;
-            let wanderStep = 0;
-            let simulationPhase = 'normal'; // normal, suspicious, alert
+            let simulationPhase = 'normal';
             let alertTriggered = false;
 
+            // 🏃‍♀️ 開始模擬患者沿著完整路徑移動
+
             simulationInterval = setInterval(() => {
-                let currentPos;
+                if (currentStep >= completeJourneyPath.length) {
+                    // 模擬完成，停止
+                    document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬完成：患者已迷失，距離目的地很遠');
+                    setTimeout(() => stopSimulation(), 3000);
+                    return;
+                }
+
+                // 📍 從完整路徑中取得當前位置
+                let currentPos = completeJourneyPath[currentStep];
                 let status = 'normal';
+                let phase = 'normal';
 
-                if (!isWandering && currentStep < 6) {
-                    // 第一階段：正常移動
-                    currentPos = normalPath[currentStep];
+                // 🎯 根據當前步驟判斷階段和狀態
+                if (currentStep <= phaseBreakpoints.normalEnd) {
+                    phase = 'normal';
                     status = 'normal';
-
-                    if (currentStep === 5) {
-                        // 即將開始異常行為
-                        simulationPhase = 'pre-anomaly';
-                    }
-
-                    currentStep++;
-                } else if (!isWandering && currentStep >= 6) {
-                    // 開始異常遊蕩行為
-                    isWandering = true;
-                    simulationPhase = 'suspicious';
-                    currentPos = wanderingPath[0];
+                } else if (currentStep <= phaseBreakpoints.suspiciousEnd) {
+                    phase = 'suspicious';
                     status = 'warning';
-                    wanderStep = 1;
+                } else {
+                    phase = 'alert';
+                    status = 'alert';
+                }
 
-                    document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 偵測到異常行為');
+                // 🔄 更新階段狀態和視覺提示
+                if (simulationPhase !== phase) {
+                    simulationPhase = phase;
 
-                    // 更新路徑顏色為警告
-                    updatePathStyle('warning');
-
-                } else if (isWandering && wanderStep < wanderingPath.length) {
-                    // 持續遊蕩
-                    currentPos = wanderingPath[wanderStep];
-
-                    if (wanderStep > 3 && !alertTriggered) {
-                        // 觸發警報
-                        status = 'alert';
-                        simulationPhase = 'alert';
-                        alertTriggered = true;
-
-                        document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 系統警報已觸發');
-
-                        // 顯示系統警報
-                        showSystemAlert(currentPos);
-
-                        // 更新路徑顏色為警報
-                        updatePathStyle('alert');
-                    } else if (wanderStep > 3) {
-                        status = 'alert';
-                    } else {
-                        status = 'warning';
-                    }
-
-                    wanderStep++;
-
-                    if (wanderStep >= wanderingPath.length) {
-                        // 遊蕩結束，停止模擬
-                        stopSimulation();
-                        return;
+                    switch (phase) {
+                        case 'normal':
+                            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '模擬中: 患者正常移動前往失智據點');
+                            updatePathStyle('normal');
+                            break;
+                        case 'suspicious':
+                            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '⚠️ 模擬中: 偵測到患者開始迷失，出現徘徊行為');
+                            updatePathStyle('warning');
+                            // 顯示徘徊警告
+                            showWanderingAlert(currentPos);
+                            break;
+                        case 'alert':
+                            document.getElementById('simStatus') && (document.getElementById('simStatus').textContent = '🚨 模擬中: 系統警報已觸發');
+                            updatePathStyle('alert');
+                            // 顯示系統警報
+                            showSystemAlert(currentPos);
+                            alertTriggered = true;
+                            break;
                     }
                 }
+
+                currentStep++;
 
                 // 更新患者標記
                 updatePatientMarker(currentPos, status);
@@ -610,13 +612,21 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             }
 
             // 清除路徑線
-            if (window.normalPathLine) {
-                map.removeLayer(window.normalPathLine);
-                window.normalPathLine = null;
+            if (window.expectedPathLine) {
+                map.removeLayer(window.expectedPathLine);
+                window.expectedPathLine = null;
+            }
+            if (window.plannedPathLine) {
+                map.removeLayer(window.plannedPathLine);
+                window.plannedPathLine = null;
             }
             if (window.actualPathLine) {
                 map.removeLayer(window.actualPathLine);
                 window.actualPathLine = null;
+            }
+            if (window.normalPathLine) {
+                map.removeLayer(window.normalPathLine);
+                window.normalPathLine = null;
             }
 
             // 清除預測路徑
@@ -654,15 +664,44 @@ const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
             window.destinationMarker.bindPopup('<strong>失智據點 (目的地)</strong><br>患者預計要到達的地方');
         }
 
-        // 畫出正常預期路徑
-        function drawNormalPath(normalPath) {
-            window.normalPathLine = L.polyline(normalPath, {
-                color: '#94a3b8',
+        // 🛣️ 畫出完整預期路徑 (從家到失智據點的直線路徑)
+        function drawCompleteExpectedPath(homeCoords, destinationCoords) {
+            // 清除舊的預期路徑
+            if (window.expectedPathLine) {
+                map.removeLayer(window.expectedPathLine);
+            }
+
+            // 畫出從家到失智據點的直線路徑 (這是理想路線)
+            window.expectedPathLine = L.polyline([homeCoords, destinationCoords], {
+                color: '#10b981',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '15, 10'
+            }).addTo(map);
+            window.expectedPathLine.bindPopup('📍 理想路線：從家直達失智據點');
+        }
+
+        // 🛣️ 畫出計劃路徑 (患者實際將要走的路線)
+        function drawPlannedPath(pathSegment) {
+            // 清除舊的計劃路徑
+            if (window.plannedPathLine) {
+                map.removeLayer(window.plannedPathLine);
+            }
+
+            // 畫出患者計劃要走的路線 (第一階段正常移動路徑)
+            window.plannedPathLine = L.polyline(pathSegment, {
+                color: '#3b82f6',
                 weight: 3,
                 opacity: 0.6,
-                dashArray: '10, 5'
+                dashArray: '8, 5'
             }).addTo(map);
-            window.normalPathLine.bindPopup('預期路徑');
+            window.plannedPathLine.bindPopup('🚶‍♀️ 計劃路線：患者實際行走路徑');
+        }
+
+        // 顯示徘徊警告
+        function showWanderingAlert(currentPos) {
+            // 這個函數在後面已經有實現，只需要確保它存在
+            console.log('顯示徘徊警告於位置:', currentPos);
         }
 
         // 更新患者標記

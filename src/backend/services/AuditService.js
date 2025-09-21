@@ -1002,6 +1002,11 @@ class AuditService {
       action: 'case_closure',
       userId: data.closedBy,
       resource: data.caseId,
+      workflowValidation: data.workflowValidation || 'passed',
+      mandatoryFieldsCompleted: data.mandatoryFieldsCompleted || true,
+      approvalRequired: data.approvalRequired || false,
+      immutableRecord: data.immutableRecord || true,
+      watermark: data.watermark || `audit-${Date.now()}-${data.caseId}`,
       details: data
     });
   }
