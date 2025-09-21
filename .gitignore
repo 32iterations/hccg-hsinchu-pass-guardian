@@ -100,3 +100,7 @@ backend/.env
 out/
 crash_log.1txt
 crash_log.txt
+
+# Organized Directories
+apk-releases/
+nginx-configs/
