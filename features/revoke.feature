@@ -1,5 +1,4 @@
 # language: zh-TW
-@P3 @revoke @gdpr @taiwan-pdpa
 Feature: 同意撤回與資料移除流程
   # As a volunteer or family member user
   # I want to revoke my consent and have my data removed

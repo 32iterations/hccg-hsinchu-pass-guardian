@@ -1,5 +1,4 @@
 # language: zh-TW
-@P3 @tracking @progress @notifications
 Feature: 進度追蹤與通知管理
   # As a family member or volunteer user
   # I want to track progress of missing person cases and receive relevant notifications

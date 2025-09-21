@@ -1,5 +1,4 @@
 # language: zh-TW
-@P4 @rbac @security @access-control
 Feature: 角色權限控制系統
   # As a system administrator
   # I want to manage user roles and permissions
