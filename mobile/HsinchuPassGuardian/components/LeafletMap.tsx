@@ -34,19 +34,20 @@ interface LeafletMapProps {
   onSimulationStop?: () => void;
 }
 
-const LeafletMap = forwardRef<any, LeafletMapProps>(({
-  locations,
-  geofences,
-  onMapReady,
-  onLocationUpdate,
-  onGeofenceCreate,
-  mode,
-  currentLocation,
-  simulationMode = false,
-  showHeatmap = false,
-  onSimulationStart,
-  onSimulationStop
-}, ref) => {
+const LeafletMap = forwardRef((props: LeafletMapProps, ref: any) => {
+  const {
+    locations,
+    geofences,
+    onMapReady,
+    onLocationUpdate,
+    onGeofenceCreate,
+    mode,
+    currentLocation,
+    simulationMode = false,
+    showHeatmap = false,
+    onSimulationStart,
+    onSimulationStop
+  } = props;
   const webViewRef = useRef<WebView>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
@@ -202,6 +203,16 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
             background: #fef3c7;
             color: #92400e;
         }
+        .probability-label {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -211,9 +222,9 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
         <div>模擬控制</div>
         <button class="control-btn" onclick="startSimulation()">開始模擬</button>
         <button class="control-btn" onclick="stopSimulation()">停止模擬</button>
-        <button class="control-btn" onclick="toggleHeatmap()">熱像圖</button>
+        <button class="control-btn" onclick="toggleHeatmap()">機率預測</button>
         <div class="status-indicator simulation" id="simStatus">等待開始</div>
-        <div class="status-indicator heatmap" id="heatmapStatus">熱像圖: 關閉</div>
+        <div class="status-indicator heatmap" id="heatmapStatus">機率預測: 關閉</div>
     </div>
     ` : ''}
 
@@ -231,6 +242,9 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
         let simulationInterval;
         let heatmapData = [];
         let showingHeatmap = ${showHeatmap};
+        let predictionPaths = [];
+        let currentPatientLocation = null;
+        let movementHistory = [];
 
         // 新竹市預設地點
         const hsinchuLocations = {
@@ -427,12 +441,17 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
 
                 simulationMarkers.push(simulationMarker);
 
-                // 添加到熱像圖數據
-                heatmapData.push({
+                // 更新患者位置和移動歷史
+                currentPatientLocation = {
                     lat: currentPoint[0],
                     lng: currentPoint[1],
-                    count: Math.random() * 10 + 1
-                });
+                    timestamp: new Date()
+                };
+
+                movementHistory.push(currentPatientLocation);
+                if (movementHistory.length > 20) {
+                    movementHistory = movementHistory.slice(-20);
+                }
 
                 // 移動到下一個點
                 currentPointIndex++;
@@ -441,9 +460,9 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
                     currentPathIndex = (currentPathIndex + 1) % simulationPaths.length;
                 }
 
-                // 更新熱像圖
+                // 更新機率預測路徑
                 if (showingHeatmap) {
-                    updateHeatmap();
+                    updatePredictionPath();
                 }
 
                 // 通知React Native
@@ -489,57 +508,160 @@ const LeafletMap = forwardRef<any, LeafletMapProps>(({
             }));
         }
 
-        // 熱像圖功能
+        // 機率預測功能
         function toggleHeatmap() {
             showingHeatmap = !showingHeatmap;
 
             if (showingHeatmap) {
-                createHeatmap();
-                document.getElementById('heatmapStatus').textContent = '熱像圖: 開啟';
+                updatePredictionPath();
+                document.getElementById('heatmapStatus').textContent = '機率預測: 開啟';
             } else {
-                if (heatmapLayer) {
-                    map.removeLayer(heatmapLayer);
+                clearPredictionPaths();
+                document.getElementById('heatmapStatus').textContent = '機率預測: 關閉';
+            }
+        }
+
+        // 清除機率預測路徑
+        function clearPredictionPaths() {
+            predictionPaths.forEach(prediction => {
+                if (prediction.layer) {
+                    map.removeLayer(prediction.layer);
                 }
-                document.getElementById('heatmapStatus').textContent = '熱像圖: 關閉';
-            }
-        }
-
-        function createHeatmap() {
-            // 生成示例熱像圖數據（基於新竹市重要地點）
-            if (heatmapData.length === 0) {
-                const sampleData = [
-                    { lat: 24.8016, lng: 120.9714, count: 8 }, // 火車站
-                    { lat: 24.8038, lng: 120.9713, count: 6 }, // 市政府
-                    { lat: 24.8016, lng: 120.9672, count: 4 }, // 東門城
-                    { lat: 24.8100, lng: 120.9750, count: 7 }, // 熱點1
-                    { lat: 24.8050, lng: 120.9800, count: 5 }, // 熱點2
-                    { lat: 24.8080, lng: 120.9650, count: 3 }  // 熱點3
-                ];
-                heatmapData = [...sampleData];
-            }
-
-            updateHeatmap();
-        }
-
-        function updateHeatmap() {
-            if (heatmapLayer) {
-                map.removeLayer(heatmapLayer);
-            }
-
-            // 創建熱像圖圓圈
-            heatmapData.forEach(point => {
-                const intensity = point.count / 10; // 正規化強度
-                const radius = 100 + (intensity * 200); // 基於強度的半徑
-                const opacity = 0.3 + (intensity * 0.4); // 基於強度的透明度
-
-                L.circle([point.lat, point.lng], {
-                    color: intensity > 0.7 ? '#ff0000' : intensity > 0.4 ? '#ff8800' : '#ffff00',
-                    fillColor: intensity > 0.7 ? '#ff0000' : intensity > 0.4 ? '#ff8800' : '#ffff00',
-                    fillOpacity: opacity,
-                    radius: radius,
-                    weight: 1
-                }).addTo(map);
+                if (prediction.label) {
+                    map.removeLayer(prediction.label);
+                }
             });
+            predictionPaths = [];
+        }
+
+        // 更新機率預測路徑（類似颱風路徑圖）
+        function updatePredictionPath() {
+            if (!currentPatientLocation) return;
+
+            // 清除舊的預測路徑
+            clearPredictionPaths();
+
+            // 生成多條可能的路徑，類似颱風路徑預測
+            const predictions = generatePredictionPaths(currentPatientLocation, movementHistory);
+
+            predictions.forEach((prediction, index) => {
+                const pathPoints = prediction.path;
+                const probability = prediction.probability;
+
+                // 根據機率設定顏色和透明度
+                let color, opacity, weight;
+                if (probability > 0.7) {
+                    color = '#00ff00'; // 高機率：綠色
+                    opacity = 0.8;
+                    weight = 6;
+                } else if (probability > 0.4) {
+                    color = '#ffff00'; // 中機率：黃色
+                    opacity = 0.6;
+                    weight = 4;
+                } else {
+                    color = '#ff6600'; // 低機率：橙色
+                    opacity = 0.4;
+                    weight = 2;
+                }
+
+                // 創建路徑線
+                const pathLayer = L.polyline(pathPoints, {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: probability < 0.5 ? '5, 5' : null
+                }).addTo(map);
+
+                // 在路徑終點添加機率標籤
+                if (pathPoints.length > 0) {
+                    const endPoint = pathPoints[pathPoints.length - 1];
+                    const probabilityPercent = Math.round(probability * 100);
+                    const labelMarker = L.marker(endPoint, {
+                        icon: L.divIcon({
+                            className: 'probability-label',
+                            html: probabilityPercent + '%',
+                            iconSize: [40, 20],
+                            iconAnchor: [20, 10]
+                        })
+                    }).addTo(map);
+
+                    predictionPaths.push({
+                        layer: pathLayer,
+                        label: labelMarker,
+                        probability: probability
+                    });
+                } else {
+                    predictionPaths.push({
+                        layer: pathLayer,
+                        probability: probability
+                    });
+                }
+            });
+        }
+
+        // 生成預測路徑（模擬颱風路徑預測演算法）
+        function generatePredictionPaths(currentLocation, history) {
+            const predictions = [];
+            const baseDistance = 0.002; // 基礎移動距離
+
+            // 分析移動趨勢
+            let direction = 0;
+            let speed = baseDistance;
+
+            if (history.length >= 2) {
+                const lastMove = history[history.length - 1];
+                const prevMove = history[history.length - 2];
+                direction = Math.atan2(
+                    lastMove.lat - prevMove.lat,
+                    lastMove.lng - prevMove.lng
+                );
+                const distance = Math.sqrt(
+                    Math.pow(lastMove.lat - prevMove.lat, 2) +
+                    Math.pow(lastMove.lng - prevMove.lng, 2)
+                );
+                speed = Math.max(baseDistance * 0.5, Math.min(baseDistance * 2, distance));
+            }
+
+            // 生成多條預測路徑
+            const pathCount = 5;
+            for (let i = 0; i < pathCount; i++) {
+                const pathPoints = [currentLocation.lat, currentLocation.lng];
+                const steps = 6; // 預測6步
+                let currentLat = currentLocation.lat;
+                let currentLng = currentLocation.lng;
+                let currentDirection = direction + (Math.random() - 0.5) * Math.PI / 2;
+                let currentSpeed = speed * (0.5 + Math.random());
+
+                const pathCoords = [[currentLat, currentLng]];
+
+                for (let step = 0; step < steps; step++) {
+                    // 添加隨機性和趨勢變化
+                    currentDirection += (Math.random() - 0.5) * 0.3;
+                    currentSpeed *= (0.8 + Math.random() * 0.4);
+
+                    currentLat += Math.sin(currentDirection) * currentSpeed;
+                    currentLng += Math.cos(currentDirection) * currentSpeed;
+
+                    pathCoords.push([currentLat, currentLng]);
+                }
+
+                // 計算路徑機率（基於歷史行為和移動模式）
+                let probability;
+                if (i === 0) {
+                    probability = 0.8; // 主要路徑
+                } else if (i === 1) {
+                    probability = 0.6; // 次要路徑
+                } else {
+                    probability = 0.3 - (i - 2) * 0.1; // 其他可能路徑
+                }
+
+                predictions.push({
+                    path: pathCoords,
+                    probability: Math.max(0.1, probability)
+                });
+            }
+
+            return predictions.sort((a, b) => b.probability - a.probability);
         }
 
         // 路徑預測算法

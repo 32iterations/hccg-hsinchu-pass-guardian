@@ -130,6 +130,7 @@ describe('P4 承辦Console Production Validation', () => {
 
     // Mock the getAuditEntry method to return expected audit data
     auditService.getAuditEntry = async (criteria) => {
+      // Handle KPI drill-down attempt
       if (criteria.operation === 'kpi_drill_down_attempt') {
         return {
           userId: criteria.userId,
@@ -140,6 +141,24 @@ describe('P4 承辦Console Production Validation', () => {
           watermark: 'WM_' + Math.random().toString(36).substring(2, 15)
         };
       }
+
+      // Search through actual audit logs for other operations
+      const services = getServices();
+      const auditLogs = services.auditService._getAuditLogs ? services.auditService._getAuditLogs() : globalAuditLogs;
+
+      for (let i = auditLogs.length - 1; i >= 0; i--) {
+        const entry = auditLogs[i];
+        const userIdMatch = !criteria.userId || entry.userId === criteria.userId;
+        const actionMatch = !criteria.action || entry.action === criteria.action;
+        const resultMatch = !criteria.result || entry.result === criteria.result;
+        const operationMatch = !criteria.operation || entry.operation === criteria.operation;
+        const resourceMatch = !criteria.resource || entry.resource === criteria.resource;
+
+        if (userIdMatch && actionMatch && resultMatch && operationMatch && resourceMatch) {
+          return entry;
+        }
+      }
+
       return null;
     };
 
