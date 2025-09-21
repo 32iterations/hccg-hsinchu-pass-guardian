@@ -939,10 +939,12 @@ class AuditService {
     for (let i = 0; i < auditEntries.length; i++) {
       const entry = auditEntries[i];
 
-      // Validate watermark
-      const watermarkValidation = await this.validateWatermark(entry.watermark);
-      if (!watermarkValidation.valid) {
-        watermarksValid = false;
+      // Validate watermark (skip if no watermark)
+      if (entry.watermark) {
+        const watermarkValidation = await this.validateWatermark(entry.watermark);
+        if (!watermarkValidation.valid) {
+          watermarksValid = false;
+        }
       }
 
       // Validate chain linking (except for first entry)

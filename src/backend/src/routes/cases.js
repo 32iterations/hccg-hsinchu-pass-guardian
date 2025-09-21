@@ -749,6 +749,8 @@ router.post('/:id/close',
 
         closedCase.workflow.workflowIntegrity = 'validated';
         closedCase.workflow.allStagesCompleted = true;
+        closedCase.workflow.workflowCompleted = true;
+        closedCase.workflow.totalProcessingTime = Date.now() - new Date(currentCase.createdAt).getTime();
       }
 
       // Log case closure for audit
@@ -1104,6 +1106,29 @@ router.patch('/:id/status',
           timestamp: new Date().toISOString(),
           updatedBy
         };
+      }
+
+      // Update workflow if status changed to in_progress
+      if (status === 'in_progress' && updatedCase.workflow) {
+        if (!updatedCase.workflow.stageHistory) {
+          updatedCase.workflow.stageHistory = [];
+        }
+
+        // Add 執行中 stage if not already present
+        const hasExecutionStage = updatedCase.workflow.stageHistory.some(h => h.stage === '執行中');
+        if (!hasExecutionStage) {
+          updatedCase.workflow.stageHistory.push({
+            stage: '執行中',
+            timestamp: new Date().toISOString(),
+            performer: updatedBy,
+            details: {
+              statusUpdate: status,
+              updateReason,
+              progressNotes
+            }
+          });
+          updatedCase.workflow.currentStage = '執行中';
+        }
       }
 
       res.json({

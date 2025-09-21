@@ -798,12 +798,12 @@ describe('P4 承辦Console Production Validation', () => {
           outcome: 'cancelled',
           closureReason: 'test_closure'
         })
-        .expect(404); // Changed from 400 - currently returns 404 when case not found
+        .expect(400); // Returns 400 for workflow violations
 
-      // Since we're getting 404, adjust the expectation accordingly
       expect(invalidClosureResponse.body).toEqual(expect.objectContaining({
-        error: 'Not Found',
-        message: 'Case not found'
+        error: 'workflow_violation',
+        message: '無法跳過必要的工作流程階段',
+        workflowViolation: true
       }));
 
       // Skip audit verification since we're getting 404 instead of workflow violation
@@ -1328,6 +1328,6 @@ describe('P4 承辦Console Production Validation', () => {
     jest.restoreAllMocks();
 
     // Give time for any pending async operations to complete
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 0));
   });
 });
