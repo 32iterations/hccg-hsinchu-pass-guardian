@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: KPI 匯總與效能指標
   # As a system administrator or stakeholder
   # I want to track key performance indicators and system metrics

@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: 角色權限控制系統
   # As a system administrator
   # I want to manage user roles and permissions

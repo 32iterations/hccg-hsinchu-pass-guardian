@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: Geographic Alert Notifications
   # As a volunteer user in the vicinity of a missing person case
   # I want to receive appropriate alerts with safety instructions

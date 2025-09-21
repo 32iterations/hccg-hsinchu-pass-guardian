@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: BLE Scanning with Privacy
   # As a volunteer user
   # I want to scan for BLE devices while preserving privacy

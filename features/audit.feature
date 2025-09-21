@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: 稽核與匯出功能
   # As a compliance officer or auditor
   # I want to access comprehensive audit trails and export capabilities

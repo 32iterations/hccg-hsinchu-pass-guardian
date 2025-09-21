@@ -1,4 +1,3 @@
-# language: zh-TW
 Feature: 回執保存與資料生命週期管理
   # As a system administrator managing data retention
   # I want to enforce proper data lifecycle and retention policies
