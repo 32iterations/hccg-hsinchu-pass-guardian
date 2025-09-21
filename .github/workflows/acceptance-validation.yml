@@ -339,15 +339,15 @@ jobs:
           if [ ! -f "$test_file" ]; then
             echo "⚠️ Test file $test_file not found, creating placeholder..."
             mkdir -p "$(dirname "$test_file")"
-            cat > "$test_file" << EOF
-          describe('${{ matrix.feature.name }} (${{ matrix.priority }})', () => {
-            test('should validate ${{ matrix.feature.name }} functionality', () => {
-              // Placeholder test for ${{ matrix.feature.name }}
-              expect(true).toBe(true);
-              console.log('✅ ${{ matrix.feature.name }} validation passed');
+            cat > "$test_file" << 'EOF'
+            describe('${{ matrix.feature.name }} (${{ matrix.priority }})', () => {
+              test('should validate ${{ matrix.feature.name }} functionality', () => {
+                // Placeholder test for ${{ matrix.feature.name }}
+                expect(true).toBe(true);
+                console.log('✅ ${{ matrix.feature.name }} validation passed');
+              });
             });
-          });
-          EOF
+            EOF
           fi
 
           # Run the specific feature test

@@ -73,12 +73,12 @@ jobs:
             cd src/backend && npm install --production --no-audit
             # Create a simple launcher
             cat > ci-launcher.js << 'EOF'
-const app = require('./src/app');
-app.get('/', (req, res) => {
-  res.send('<!DOCTYPE html><html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server</h1><p>Backend API for Lighthouse audit</p></body></html>');
-});
-app.listen(3000, () => console.log('CI server running on port 3000'));
-EOF
+            const app = require('./src/app');
+            app.get('/', (req, res) => {
+              res.send('<!DOCTYPE html><html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server</h1><p>Backend API for Lighthouse audit</p></body></html>');
+            });
+            app.listen(3000, () => console.log('CI server running on port 3000'));
+            EOF
             node ci-launcher.js &
             SERVER_PID=$!
           elif [ -f "backend/server.js" ]; then
