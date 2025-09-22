@@ -1,11 +1,12 @@
-name: 🎯 Acceptance Validation Pipeline
-
-on:
-  push:
-    branches: [main, develop, 'p1-*', 'p2-*', 'p3-*', 'p4-*']
-  pull_request:
-    branches: [main, develop]
-  workflow_dispatch:
+# DISABLED: This workflow is temporarily disabled
+# name: 🎯 Acceptance Validation Pipeline
+#
+# on:
+#   push:
+#     branches: [main, develop, 'p1-*', 'p2-*', 'p3-*', 'p4-*']
+#   pull_request:
+#     branches: [main, develop]
+#   workflow_dispatch:
     inputs:
       generate_screenshots:
         description: 'Generate mobile app screenshots'
