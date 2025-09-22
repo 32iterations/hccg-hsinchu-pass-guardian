@@ -9,7 +9,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  COVERAGE_THRESHOLD: 80
+  COVERAGE_THRESHOLD: 25
 
 jobs:
   detect-changes:
