@@ -30,127 +30,58 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check if frontend build exists
-        id: check_build
+      - name: Build and serve React application
         run: |
-          if [ -d "build" ] || [ -d "dist" ] || [ -d "public" ]; then
-            echo "frontend_exists=true" >> $GITHUB_OUTPUT
-            if [ -d "build" ]; then
-              echo "build_dir=build" >> $GITHUB_OUTPUT
-            elif [ -d "dist" ]; then
-              echo "build_dir=dist" >> $GITHUB_OUTPUT
-            else
-              echo "build_dir=public" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "frontend_exists=false" >> $GITHUB_OUTPUT
-          fi
+          echo "🚀 Starting React development server..."
 
-      - name: Build frontend (if exists)
-        if: steps.check_build.outputs.frontend_exists == 'true'
-        run: npm run build || echo "No build script found"
-
-      - name: Serve frontend application
-        if: steps.check_build.outputs.frontend_exists == 'true'
-        run: |
-          npx serve -s ${{ steps.check_build.outputs.build_dir }} -l 3001 &
+          # Use port 3001 as configured in scripts/start.js
+          npm start &
           SERVER_PID=$!
-          echo "Started server with PID: $SERVER_PID"
+          echo "Started development server with PID: $SERVER_PID"
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
-      - name: Serve backend API (fallback)
-        if: steps.check_build.outputs.frontend_exists != 'true'
-        run: |
-          echo "🚀 Starting backend server for performance audit..."
+          # Give the dev server time to start and install dependencies if needed
+          echo "⏳ Waiting for development server to start..."
+          sleep 20
 
-          # Try CI-friendly server first (no Firebase dependencies)
-          if [ -f "src/backend/server-ci.js" ]; then
-            echo "📱 Using CI server (src/backend/server-ci.js)"
-            cd src/backend && npm install --production --no-audit && node server-ci.js &
-            SERVER_PID=$!
-          elif [ -f "src/backend/src/app.js" ]; then
-            echo "📱 Using Express app directly"
-            cd src/backend && npm install --production --no-audit
-            # Create a simple launcher
-            cat > ci-launcher.js << 'EOF'
-            const app = require('./src/app');
-            app.get('/', (req, res) => {
-              res.send('<!DOCTYPE html><html><head><title>API Server</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><h1>API Server</h1><p>Backend API for Lighthouse audit</p></body></html>');
-            });
-            app.listen(3001, () => console.log('CI server running on port 3001'));
-            EOF
-            node ci-launcher.js &
-            SERVER_PID=$!
-          elif [ -f "backend/server.js" ]; then
-            echo "📱 Using legacy backend server with mock Firebase config"
-            # Create mock Firebase config for CI environment
-            mkdir -p config
-            cat > config/firebase-admin.json << 'EOF'
-            {
-              "type": "service_account",
-              "project_id": "mock-project-ci",
-              "private_key_id": "mock-key-id",
-              "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8Q7HgL7hZL9cR\nv+mock+key+for+ci+testing+only+not+real+credentials+here+just+format\n-----END PRIVATE KEY-----\n",
-              "client_email": "mock@mock-project-ci.iam.gserviceaccount.com",
-              "client_id": "123456789",
-              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-              "token_uri": "https://oauth2.googleapis.com/token"
-            }
-            EOF
-            cd backend && npm install --production --no-audit && PORT=3001 timeout 30s node server.js &
-            SERVER_PID=$!
-          else
-            echo "📱 Using static fallback page"
-            # Create a simple static page for Lighthouse to audit
-            mkdir -p temp_public
-            cat > temp_public/index.html << 'EOF'
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-              <title>API Server</title>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <meta name="description" content="Backend API project for performance testing">
-            </head>
-            <body>
-              <h1>API Server Running</h1>
-              <p>This is a backend API project serving on port 3000.</p>
-              <script>console.log("Page loaded successfully at", new Date());</script>
-            </body>
-            </html>
-            EOF
-            npx serve -s temp_public -l 3001 &
-            SERVER_PID=$!
-          fi
-
-          echo "Started server with PID: $SERVER_PID"
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
       - name: Wait for server to be available
         run: |
           echo "Waiting for server to be available on http://localhost:3001..."
-          for i in {1..15}; do
-            if curl -sSf --connect-timeout 5 --max-time 10 http://localhost:3001 > /dev/null 2>&1; then
-              echo "✅ Server is up and responding!"
-              curl -I http://localhost:3001
-              exit 0
+          for i in {1..30}; do
+            # Check if the server is responding and has actual React content
+            if curl -sSf --connect-timeout 5 --max-time 10 http://localhost:3001 2>/dev/null | grep -q '<div id="root">'; then
+              echo "✅ Server is up and React app is loaded!"
+
+              # Also check that JavaScript is being served (not just the shell HTML)
+              if curl -sSf http://localhost:3001 2>/dev/null | grep -q '<script'; then
+                echo "✅ JavaScript bundle detected!"
+                curl -I http://localhost:3001
+                exit 0
+              else
+                echo "⚠️ Server responding but no JavaScript bundle detected yet..."
+              fi
             fi
-            echo "⏳ Attempt $i/15: Server not ready yet, waiting 3 seconds..."
+            echo "⏳ Attempt $i/30: Server not ready yet, waiting 3 seconds..."
             sleep 3
           done
-          echo "❌ Server never became available after 45 seconds."
+
+          echo "❌ Server never became available after 90 seconds."
           echo "🔍 Checking if server process is still running..."
           if [ ! -z "$SERVER_PID" ]; then
             if ps -p $SERVER_PID > /dev/null; then
               echo "Server process $SERVER_PID is still running"
+              echo "🔍 Checking server output..."
+              # Try to see if there are any error messages
+              ps aux | grep -E "node|npm" | grep -v grep || true
             else
               echo "Server process $SERVER_PID has died"
             fi
           fi
-          echo "🔍 Checking what's listening on port 3000..."
-          netstat -tlnp | grep :3000 || echo "Nothing listening on port 3000"
-          echo "🔍 Checking server logs if available..."
-          ls -la temp_public/ 2>/dev/null || echo "No temp_public directory"
+          echo "🔍 Checking what's listening on port 3001..."
+          netstat -tlnp | grep :3001 || echo "Nothing listening on port 3001"
+          echo "🔍 Testing server response..."
+          curl -v http://localhost:3001 2>&1 | head -20 || echo "Could not connect to server"
           exit 1
 
       - name: Run Lighthouse CI
@@ -165,7 +96,9 @@ jobs:
                 "url": ["http://localhost:3001"],
                 "numberOfRuns": 1,
                 "settings": {
-                  "chromeFlags": "--no-sandbox --ignore-certificate-errors --disable-dev-shm-usage --disable-gpu --headless"
+                  "chromeFlags": "--no-sandbox --ignore-certificate-errors --disable-dev-shm-usage --disable-gpu --headless",
+                  "maxWaitForFcp": 30000,
+                  "maxWaitForLoad": 45000
                 }
               },
               "assert": {
@@ -186,10 +119,18 @@ jobs:
             exit 1
           fi
 
+          # Ensure the app has JavaScript content loaded
+          if ! curl -sSf http://localhost:3001 2>/dev/null | grep -q '<script'; then
+            echo "⚠️ Warning: No JavaScript detected in the response. App may not be fully loaded."
+            echo "Attempting to continue with Lighthouse audit anyway..."
+          fi
+
           # Run lighthouse with our config
           lhci autorun --config=lighthouserc.json || {
             echo "❌ Lighthouse failed, checking server status..."
             curl -v http://localhost:3001 || echo "Server connection failed"
+            echo "🔍 Page content:"
+            curl -s http://localhost:3001 | head -50 || echo "Could not fetch page content"
             exit 1
           }
 
