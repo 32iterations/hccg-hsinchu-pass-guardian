@@ -20,6 +20,7 @@ permissions:
   statuses: write
   checks: write
   actions: read
+  workflows: read
 
 env:
   COVERAGE_THRESHOLD: 80
