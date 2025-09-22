@@ -59,6 +59,6 @@
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
     "supertest": "^7.1.4",
-    "ts-jest": "^29.0.0"
+    "ts-jest": "^29.4.4"
   }
 }
