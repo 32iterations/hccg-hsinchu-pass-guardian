@@ -536,20 +536,20 @@ jobs:
             echo "No mobile app found, creating a simple test server..."
             mkdir -p test-frontend
             cat > test-frontend/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Frontend</title>
-  <meta name="description" content="Test page for Lighthouse performance testing">
-</head>
-<body>
-  <h1>Performance Test Page</h1>
-  <p>This is a test page for Lighthouse performance auditing.</p>
-</body>
-</html>
-EOF
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Test Frontend</title>
+              <meta name="description" content="Test page for Lighthouse performance testing">
+            </head>
+            <body>
+              <h1>Performance Test Page</h1>
+              <p>This is a test page for Lighthouse performance auditing.</p>
+            </body>
+            </html>
+            EOF
             npx serve -s test-frontend -l 3001 > frontend.log 2>&1 &
             SERVER_PID=$!
           fi

@@ -104,21 +104,21 @@ jobs:
             # Create a simple static page for Lighthouse to audit
             mkdir -p temp_public
             cat > temp_public/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>API Server</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Backend API project for performance testing">
-</head>
-<body>
-  <h1>API Server Running</h1>
-  <p>This is a backend API project serving on port 3000.</p>
-  <script>console.log("Page loaded successfully at", new Date());</script>
-</body>
-</html>
-EOF
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <title>API Server</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <meta name="description" content="Backend API project for performance testing">
+            </head>
+            <body>
+              <h1>API Server Running</h1>
+              <p>This is a backend API project serving on port 3000.</p>
+              <script>console.log("Page loaded successfully at", new Date());</script>
+            </body>
+            </html>
+            EOF
             npx serve -s temp_public -l 3000 &
             SERVER_PID=$!
           fi
