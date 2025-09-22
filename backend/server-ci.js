@@ -60,17 +60,18 @@ app.get('/api/kpi', async (req, res) => {
   });
 });
 
-// Test database connection
+// Test database connection (non-blocking)
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Error connecting to the database:', err.stack);
-    console.error('Connection config:', {
+    console.warn('Warning: Could not connect to database:', err.message);
+    console.warn('Running in mock mode without database');
+    console.warn('Connection config:', {
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
       database: process.env.DB_DATABASE || 'guardian_test',
       port: process.env.DB_PORT || 5432,
       hasPassword: !!process.env.DB_PASSWORD,
-      connectionString: process.env.DATABASE_URL
+      connectionString: process.env.DATABASE_URL ? 'set' : 'not set'
     });
   } else {
     console.log('Successfully connected to PostgreSQL database');
@@ -93,4 +94,16 @@ process.on('SIGTERM', () => {
     console.log('Database pool has ended');
   });
   process.exit(0);
+});
+
+// Handle uncaught errors to prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  console.error('Stack:', err.stack);
+  // Keep the server running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Keep the server running
 });
