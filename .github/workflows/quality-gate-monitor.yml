@@ -543,7 +543,24 @@ jobs:
         run: |
           cat > monitoring/performance-monitor.js << 'EOF'
           const fs = require('fs');
-          const chalk = require('chalk');
+
+          // Simple color console output without chalk dependency
+          const colors = {
+            red: (text) => `\x1b[31m${text}\x1b[0m`,
+            green: (text) => `\x1b[32m${text}\x1b[0m`,
+            yellow: (text) => `\x1b[33m${text}\x1b[0m`,
+            blue: (text) => `\x1b[34m${text}\x1b[0m`,
+            gray: (text) => `\x1b[90m${text}\x1b[0m`
+          };
+
+          // Mock chalk interface for compatibility
+          const chalk = {
+            red: colors.red,
+            green: colors.green,
+            yellow: colors.yellow,
+            blue: colors.blue,
+            gray: colors.gray
+          };
 
           function simulatePerformanceMetrics() {
             const metrics = {
