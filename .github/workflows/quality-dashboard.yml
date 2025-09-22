@@ -23,6 +23,7 @@ permissions:
   issues: write
   pull-requests: read
   actions: read
+  statuses: write
 
 env:
   DASHBOARD_RETENTION_DAYS: 30

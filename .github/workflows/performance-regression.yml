@@ -67,7 +67,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          cd backend && npm ci
 
       - name: Install performance testing tools
         run: |
@@ -76,7 +78,7 @@ jobs:
 
       - name: Start application
         run: |
-          npm start &
+          cd backend && npm start &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
 

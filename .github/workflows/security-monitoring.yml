@@ -25,6 +25,8 @@ permissions:
   security-events: write
   actions: read
   contents: read
+  issues: write
+  pull-requests: write
 
 env:
   TRIVY_VERSION: '0.46.1'

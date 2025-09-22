@@ -191,8 +191,27 @@ jobs:
 
       - name: Create deployment package
         run: |
+          # Create backend artifact
+          mkdir -p artifacts/backend
+          if [ -d "backend" ]; then
+            cp -r backend/*.js artifacts/backend/ 2>/dev/null || true
+            cp -r backend/routes artifacts/backend/ 2>/dev/null || true
+            cp -r backend/services artifacts/backend/ 2>/dev/null || true
+            cp -r backend/config artifacts/backend/ 2>/dev/null || true
+            cp backend/package*.json artifacts/backend/ 2>/dev/null || true
+          fi
+
+          # Create frontend artifact
+          mkdir -p artifacts/frontend
+          if [ -d "src" ]; then
+            cp -r src/ artifacts/frontend/ 2>/dev/null || true
+          fi
+          if [ -d "build" ]; then
+            cp -r build/ artifacts/frontend/ 2>/dev/null || true
+          fi
+
           tar -czf deployment-${{ github.sha }}.tar.gz \
-            src/ \
+            artifacts/ \
             package*.json \
             docs/REPORT.md \
             .env.example || true
@@ -200,12 +219,20 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: backend-build-${{ github.sha }}
           path: |
-            deployment-*.tar.gz
-            dist/
-            build/
+            artifacts/backend/
           retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-${{ github.sha }}
+          path: |
+            artifacts/frontend/
+          retention-days: 90
+          if-no-files-found: warn
 
   security-scan:
     name: Security Analysis
