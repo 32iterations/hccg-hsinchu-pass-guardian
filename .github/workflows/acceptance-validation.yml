@@ -330,7 +330,7 @@ jobs:
             node_modules
           key: ${{ needs.setup.outputs.cache-key }}
 
-      - name: 🎯 Run ${{ matrix.priority }} Feature: ${{ matrix.feature.name }}
+      - name: "🎯 Run ${{ matrix.priority }} Feature - ${{ matrix.feature.name }}"
         run: |
           echo "🎯 Testing ${{ matrix.priority }} feature: ${{ matrix.feature.name }}"
 
