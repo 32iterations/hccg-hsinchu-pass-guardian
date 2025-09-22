@@ -72,10 +72,42 @@ jobs:
           npm ci
           cd backend && npm ci
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..30}; do
+            if PGPASSWORD=testpassword pg_isready -h localhost -U postgres -p 5432; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Attempt $i/30: PostgreSQL not ready yet..."
+            sleep 2
+          done
+
       - name: Setup database schema
         run: |
           # Create database schema if needed
           PGPASSWORD=testpassword psql -h localhost -U postgres -d guardian_test -c "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(255));"
+
+          # Create additional tables that might be needed
+          PGPASSWORD=testpassword psql -h localhost -U postgres -d guardian_test -c "
+            CREATE TABLE IF NOT EXISTS guardians (
+              id SERIAL PRIMARY KEY,
+              email VARCHAR(255) UNIQUE NOT NULL,
+              password VARCHAR(255) NOT NULL,
+              name VARCHAR(255),
+              phone VARCHAR(20),
+              role VARCHAR(50) DEFAULT 'guardian',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS cases (
+              id SERIAL PRIMARY KEY,
+              title VARCHAR(255),
+              status VARCHAR(50),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          "
         env:
           PGPASSWORD: testpassword
 
@@ -87,6 +119,14 @@ jobs:
       - name: Start application
         run: |
           cd backend
+
+          # Verify database connection first
+          echo "Testing database connection..."
+          PGPASSWORD=testpassword psql -h localhost -U postgres -d guardian_test -c "SELECT 1;" || {
+            echo "Failed to connect to database!"
+            exit 1
+          }
+
           # Export database configuration for the application
           export DB_USER=postgres
           export DB_HOST=localhost
@@ -95,22 +135,46 @@ jobs:
           export DB_PORT=5432
           export DATABASE_URL="postgresql://postgres:testpassword@localhost:5432/guardian_test"
 
-          # Start the application with CI-specific server
-          npm run start:ci &
+          # Check if server-ci.js exists, otherwise use server.js
+          if [ -f "server-ci.js" ]; then
+            echo "Starting server-ci.js..."
+            node server-ci.js > server.log 2>&1 &
+          else
+            echo "Starting server.js..."
+            node server.js > server.log 2>&1 &
+          fi
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
 
           # Wait for application to start with better error handling
-          echo "Waiting for application to start..."
+          echo "Waiting for application to start (PID: $APP_PID)..."
           for i in {1..30}; do
+            # Check if process is still running
+            if ! kill -0 $APP_PID 2>/dev/null; then
+              echo "Application process died! Showing last 50 lines of server.log:"
+              tail -n 50 server.log
+              exit 1
+            fi
+
             if curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:3000/api/health 2>/dev/null; then
-              echo "Application is ready!"
+              echo "✅ Application is ready!"
               break
             fi
-            echo "Attempt $i/30: Application not ready yet, waiting..."
+
+            echo "Attempt $i/30: Application not ready yet..."
+
+            # Show logs every 10 attempts for debugging
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Server logs (last 10 lines):"
+              tail -n 10 server.log || echo "No logs available yet"
+            fi
+
             sleep 2
+
             if [ $i -eq 30 ]; then
-              echo "Application failed to start after 60 seconds"
+              echo "❌ Application failed to start after 60 seconds"
+              echo "Final server logs:"
+              cat server.log || echo "No logs available"
               exit 1
             fi
           done
@@ -372,25 +436,44 @@ jobs:
 
       - name: Start development server
         run: |
-          # Start frontend development server
-          npm start &
+          # Use a different port for frontend to avoid conflicts with backend
+          export PORT=3001
+
+          # Start frontend development server on port 3001
+          echo "Starting frontend server on port $PORT..."
+          npm start > frontend.log 2>&1 &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
           # Wait for server to start with better error handling
           echo "Waiting for frontend server to start..."
           for i in {1..30}; do
-            if curl -f http://localhost:3000 2>/dev/null; then
-              echo "Frontend server is ready!"
+            # Check if process is still running
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              echo "Frontend process died! Showing last 50 lines of frontend.log:"
+              tail -n 50 frontend.log
+              exit 1
+            fi
+
+            if curl -f http://localhost:3001 2>/dev/null; then
+              echo "✅ Frontend server is ready on port 3001!"
               break
             fi
-            echo "Attempt $i/30: Server not ready yet, waiting..."
+
+            echo "Attempt $i/30: Server not ready yet..."
+
+            # Show logs every 10 attempts
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Frontend logs (last 10 lines):"
+              tail -n 10 frontend.log || echo "No logs available yet"
+            fi
+
             sleep 2
+
             if [ $i -eq 30 ]; then
-              echo "Frontend server failed to start after 60 seconds"
-              # Try to start with a fallback port if needed
-              echo "Checking if something else is using port 3000..."
-              lsof -i :3000 || true
+              echo "❌ Frontend server failed to start after 60 seconds"
+              echo "Final frontend logs:"
+              cat frontend.log || echo "No logs available"
               exit 1
             fi
           done
@@ -406,7 +489,7 @@ jobs:
           module.exports = {
             ci: {
               collect: {
-                url: ['http://localhost:3000'],
+                url: ['http://localhost:3001'],
                 numberOfRuns: 3
               },
               assert: {

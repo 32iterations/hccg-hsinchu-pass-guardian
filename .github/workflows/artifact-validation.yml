@@ -57,10 +57,13 @@ jobs:
 
       - name: Download artifacts
         id: download
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
-          pattern: "*${{ matrix.artifact-type }}*"
+          workflow: complete-ci.yml
+          name_is_regexp: true
+          name: ".*${{ matrix.artifact-type }}.*"
           path: ./artifacts-validation
+          if_no_artifact_found: ignore
         continue-on-error: true
 
       - name: Validate artifact existence

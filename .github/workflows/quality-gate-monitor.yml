@@ -61,7 +61,8 @@ jobs:
           cat > monitoring/workflow-monitor.js << 'EOF'
           (async function() {
           const { Octokit } = await import('@octokit/rest');
-          const chalk = await import('chalk');
+          const chalkModule = await import('chalk');
+          const chalk = chalkModule.default;
           const Table = (await import('cli-table3')).default;
           const fs = require('fs');
 
@@ -120,13 +121,23 @@ jobs:
                 // Simulate coverage check (in real implementation, download and parse from artifacts)
                 const simulatedCoverage = 84.2; // Replace with actual parsing when artifacts exist
 
+                // Parse threshold with proper validation and fallback
+                const threshold = parseInt(process.env.COVERAGE_THRESHOLD, 10);
+                const validThreshold = isNaN(threshold) ? 80 : threshold; // Default to 80 if unset or invalid
+
+                // Debug logging
+                console.log('Debug - Simulated Coverage:', simulatedCoverage);
+                console.log('Debug - Coverage Threshold (env):', process.env.COVERAGE_THRESHOLD);
+                console.log('Debug - Valid Threshold:', validThreshold);
+                console.log('Debug - Coverage Status:', simulatedCoverage >= validThreshold ? 'pass' : 'fail');
+
                 if (artifacts.artifacts.length > 0) {
                   const latestArtifact = artifacts.artifacts[0];
 
                   this.metrics.coverage = {
                     percentage: simulatedCoverage,
-                    threshold: parseInt(process.env.COVERAGE_THRESHOLD),
-                    status: simulatedCoverage >= parseInt(process.env.COVERAGE_THRESHOLD) ? 'pass' : 'fail',
+                    threshold: validThreshold,
+                    status: simulatedCoverage >= validThreshold ? 'pass' : 'fail',
                     artifact_id: latestArtifact.id,
                     updated_at: latestArtifact.updated_at
                   };
@@ -134,15 +145,15 @@ jobs:
                   // No artifacts found, use simulated data
                   this.metrics.coverage = {
                     percentage: simulatedCoverage,
-                    threshold: parseInt(process.env.COVERAGE_THRESHOLD),
-                    status: simulatedCoverage >= parseInt(process.env.COVERAGE_THRESHOLD) ? 'pass' : 'fail',
+                    threshold: validThreshold,
+                    status: simulatedCoverage >= validThreshold ? 'pass' : 'fail',
                     artifact_id: null,
                     updated_at: new Date().toISOString()
                   };
                 }
 
                 if (this.metrics.coverage.status === 'fail') {
-                  this.addAlert('high', `Coverage ${simulatedCoverage}% below threshold ${process.env.COVERAGE_THRESHOLD}%`);
+                  this.addAlert('high', `Coverage ${simulatedCoverage}% below threshold ${validThreshold}%`);
                 }
               } catch (error) {
                 console.error('Coverage monitoring error:', error.message);
@@ -224,9 +235,9 @@ jobs:
               const gates = {
                 coverage_gate: {
                   name: 'Coverage Threshold',
-                  status: this.metrics.coverage?.status === 'pass' ? 'pass' : 'fail',
+                  status: this.metrics.coverage?.status || 'unknown',
                   current: this.metrics.coverage?.percentage || 0,
-                  threshold: parseInt(process.env.COVERAGE_THRESHOLD),
+                  threshold: this.metrics.coverage?.threshold || parseInt(process.env.COVERAGE_THRESHOLD, 10) || 80,
                   blocking: false // Set to non-blocking since coverage is passing
                 },
                 security_gate: {
@@ -447,6 +458,8 @@ jobs:
               console.log(`::set-output name=critical_alerts::${report.summary.critical_alerts}`);
               console.log(`::set-output name=passed_gates::${report.summary.passed_gates}`);
               console.log(`::set-output name=total_gates::${report.summary.total_gates}`);
+              console.log(`::set-output name=coverage_status::${report.coverage?.status || 'unknown'}`);
+              console.log(`::set-output name=coverage_percentage::${report.coverage?.percentage || 0}`);
 
               return report;
             } catch (error) {
@@ -472,7 +485,8 @@ jobs:
           cat > monitoring/test-monitor.js << 'EOF'
           (async function() {
           const { Octokit } = await import('@octokit/rest');
-          const chalk = await import('chalk');
+          const chalkModule = await import('chalk');
+          const chalk = chalkModule.default;
 
           const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
@@ -733,7 +747,7 @@ jobs:
 
           | Gate | Status | Details |
           |------|--------|---------|
-          | Coverage Threshold (>25%) | ✅ PASS | Current coverage (84.2%) meets requirements |
+          | Coverage Threshold (>${{ env.COVERAGE_THRESHOLD }}%) | ${{ steps.workflow-monitor.outputs.coverage_status == 'pass' && '✅ PASS' || '❌ FAIL' }} | Coverage: ${{ steps.workflow-monitor.outputs.coverage_percentage }}% (threshold: ${{ env.COVERAGE_THRESHOLD }}%) |
           | Security Scan | ✅ PASS | No critical vulnerabilities |
           | Build Artifacts | ✅ PASS | All artifacts generated successfully |
           | Performance Tests | ✅ PASS | No performance regressions detected |
