@@ -118,8 +118,7 @@ jobs:
             echo "sarif_exists=false" >> $GITHUB_OUTPUT
             echo "⚠️ SARIF file not generated, creating fallback"
             # Create a minimal valid SARIF file
-            cat > trivy-results.sarif << 'EOF'
-            {
+            echo '{
               "version": "2.1.0",
               "runs": [
                 {
@@ -132,8 +131,7 @@ jobs:
                   "results": []
                 }
               ]
-            }
-            EOF
+            }' > trivy-results.sarif
           fi
 
       - name: Upload Trivy results to GitHub Security
