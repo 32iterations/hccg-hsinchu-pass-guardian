@@ -72,7 +72,8 @@ jobs:
         run: |
           # Download workflow logs for analysis
           cat > fetch-logs.js << 'EOF'
-          const { Octokit } = require('@octokit/rest');
+          (async function() {
+          const { Octokit } = await import('@octokit/rest');
 
           const octokit = new Octokit({
             auth: process.env.GITHUB_TOKEN,
@@ -113,6 +114,7 @@ jobs:
           }
 
           fetchWorkflowLogs();
+          })();
           EOF
 
           # Run with Node.js if available, otherwise skip log analysis

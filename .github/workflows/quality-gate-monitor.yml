@@ -58,9 +58,10 @@ jobs:
         id: workflow-monitor
         run: |
           cat > monitoring/workflow-monitor.js << 'EOF'
-          const { Octokit } = require('@octokit/rest');
-          const chalk = require('chalk');
-          const Table = require('cli-table3');
+          (async function() {
+          const { Octokit } = await import('@octokit/rest');
+          const chalk = await import('chalk');
+          const Table = (await import('cli-table3')).default;
           const fs = require('fs');
 
           const octokit = new Octokit({
@@ -445,6 +446,7 @@ jobs:
           }
 
           runMonitoring();
+          })();
           EOF
 
           # Run the monitoring script
@@ -458,8 +460,9 @@ jobs:
         id: test-monitor
         run: |
           cat > monitoring/test-monitor.js << 'EOF'
-          const { Octokit } = require('@octokit/rest');
-          const chalk = require('chalk');
+          (async function() {
+          const { Octokit } = await import('@octokit/rest');
+          const chalk = await import('chalk');
 
           const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
@@ -504,6 +507,7 @@ jobs:
             console.log('\nTest Execution Summary:');
             console.log(JSON.stringify(metrics, null, 2));
           });
+          })();
           EOF
 
           node monitoring/test-monitor.js

@@ -24,6 +24,7 @@ permissions:
   pull-requests: read
   actions: read
   statuses: write
+  workflows: read
 
 env:
   DASHBOARD_RETENTION_DAYS: 30
@@ -58,13 +59,12 @@ jobs:
           echo "📊 Collecting workflow execution metrics..."
 
           cat > dashboard/data/workflow-metrics.js << 'EOF'
-          const { Octokit } = require('@octokit/rest');
-
-          const octokit = new Octokit({
-            auth: process.env.GITHUB_TOKEN,
-          });
-
           async function collectWorkflowMetrics() {
+            const { Octokit } = await import('@octokit/rest');
+
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN,
+            });
             const workflows = ['Complete CI/CD Pipeline', 'TDD CI/CD Pipeline', 'Security Scans', 'Performance Tests'];
             const metrics = {
               timestamp: new Date().toISOString(),
