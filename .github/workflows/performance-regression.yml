@@ -136,6 +136,21 @@ jobs:
           export DB_PORT=5432
           export DATABASE_URL="postgresql://postgres:testpassword@localhost:5432/guardian_test"
 
+          # Additional environment variables that might be used by the app
+          export POSTGRES_USER=postgres
+          export POSTGRES_PASSWORD=testpassword
+          export POSTGRES_DB=guardian_test
+          export PGUSER=postgres
+          export PGPASSWORD=testpassword
+          export PGDATABASE=guardian_test
+          export PGHOST=localhost
+          export PGPORT=5432
+
+          # Set the backend port explicitly
+          export PORT=3000
+          export NODE_PORT=3000
+          export APP_PORT=3000
+
           # Check if server-ci.js exists, otherwise use server.js
           if [ -f "server-ci.js" ]; then
             echo "Starting server-ci.js..."
@@ -182,6 +197,15 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/guardian_test
+          DB_USER: postgres
+          DB_PASSWORD: testpassword
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: guardian_test
+          PGUSER: postgres
+          PGPASSWORD: testpassword
+          PGDATABASE: guardian_test
+          PORT: 3000
 
       - name: API Performance Testing
         id: api-perf
