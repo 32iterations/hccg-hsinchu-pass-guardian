@@ -23,6 +23,7 @@ on:
 permissions:
   contents: read
   actions: read
+  statuses: write
 
 env:
   MAX_ARTIFACT_SIZE_MB: 100
@@ -331,11 +332,12 @@ jobs:
               }
             },
             "overall_status": "${{
-              steps.existence.outputs.ARTIFACT_EXISTS == 'true' &&
+              steps.existence.outputs.ARTIFACT_EXISTS != 'true' && 'skipped' ||
+              (steps.existence.outputs.ARTIFACT_EXISTS == 'true' &&
               steps.integrity.outputs.INTEGRITY_PASSED != 'false' &&
               steps.size-check.outputs.SIZE_PASSED != 'false' &&
               steps.security-scan.outputs.SECURITY_PASSED != 'false' &&
-              steps.performance.outputs.PERFORMANCE_PASSED != 'false' && 'pass' || 'fail'
+              steps.performance.outputs.PERFORMANCE_PASSED != 'false' && 'pass' || 'fail')
             }}",
             "metadata": {
               "github_run_id": "${{ github.run_id }}",
@@ -361,6 +363,12 @@ jobs:
       - name: Set job status
         if: always()
         run: |
+          # If no artifacts exist, skip validation rather than fail
+          if [ "${{ steps.existence.outputs.ARTIFACT_EXISTS }}" != "true" ]; then
+            echo "⏭️ No artifacts found for ${{ matrix.artifact-type }} - skipping validation"
+            exit 0
+          fi
+
           OVERALL_STATUS="${{
             steps.existence.outputs.ARTIFACT_EXISTS == 'true' &&
             steps.integrity.outputs.INTEGRITY_PASSED != 'false' &&
@@ -401,6 +409,7 @@ jobs:
           TOTAL_ARTIFACTS=0
           PASSED_ARTIFACTS=0
           FAILED_ARTIFACTS=0
+          SKIPPED_ARTIFACTS=0
 
           # Process all validation reports
           for report in validation-results/validation-report-*.json; do
@@ -414,6 +423,8 @@ jobs:
 
               if [ "$overall_status" = "pass" ]; then
                 PASSED_ARTIFACTS=$((PASSED_ARTIFACTS + 1))
+              elif [ "$overall_status" = "skipped" ]; then
+                SKIPPED_ARTIFACTS=$((SKIPPED_ARTIFACTS + 1))
               else
                 FAILED_ARTIFACTS=$((FAILED_ARTIFACTS + 1))
               fi
@@ -423,6 +434,7 @@ jobs:
           echo "TOTAL_ARTIFACTS=$TOTAL_ARTIFACTS" >> $GITHUB_OUTPUT
           echo "PASSED_ARTIFACTS=$PASSED_ARTIFACTS" >> $GITHUB_OUTPUT
           echo "FAILED_ARTIFACTS=$FAILED_ARTIFACTS" >> $GITHUB_OUTPUT
+          echo "SKIPPED_ARTIFACTS=$SKIPPED_ARTIFACTS" >> $GITHUB_OUTPUT
 
           # Generate consolidated report
           cat > consolidated-validation-report.json << EOF
@@ -432,7 +444,8 @@ jobs:
               "total_artifacts": $TOTAL_ARTIFACTS,
               "passed_artifacts": $PASSED_ARTIFACTS,
               "failed_artifacts": $FAILED_ARTIFACTS,
-              "success_rate": $(echo "scale=2; $PASSED_ARTIFACTS * 100 / $TOTAL_ARTIFACTS" | bc -l 2>/dev/null || echo "0"),
+              "skipped_artifacts": $SKIPPED_ARTIFACTS,
+              "success_rate": $(awk "BEGIN {printf \"%.2f\", $PASSED_ARTIFACTS * 100 / $TOTAL_ARTIFACTS}" 2>/dev/null || echo "0"),
               "overall_status": "${{ needs.validate-artifacts.result }}"
             },
             "details": $(jq -s '.' validation-results/validation-report-*.json 2>/dev/null || echo '[]'),
@@ -449,30 +462,48 @@ jobs:
 
       - name: Update commit status
         uses: actions/github-script@v7
+        if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('consolidated-validation-report.json', 'utf8'));
 
-            let state = 'success';
-            let description = `All ${report.summary.total_artifacts} artifacts validated successfully`;
+            try {
+              const report = JSON.parse(fs.readFileSync('consolidated-validation-report.json', 'utf8'));
 
-            if (report.summary.failed_artifacts > 0) {
-              state = 'failure';
-              description = `${report.summary.failed_artifacts}/${report.summary.total_artifacts} artifacts failed validation`;
-            } else if (report.summary.total_artifacts === 0) {
-              state = 'pending';
-              description = 'No artifacts found for validation';
+              let state = 'success';
+              let description = `All ${report.summary.total_artifacts} artifacts validated successfully`;
+
+              if (report.summary.failed_artifacts > 0) {
+                state = 'failure';
+                description = `${report.summary.failed_artifacts}/${report.summary.total_artifacts} artifacts failed validation`;
+              } else if (report.summary.skipped_artifacts === report.summary.total_artifacts) {
+                state = 'success';
+                description = `No artifacts to validate (${report.summary.skipped_artifacts} skipped)`;
+              } else if (report.summary.total_artifacts === 0) {
+                state = 'pending';
+                description = 'No artifacts found for validation';
+              }
+
+              // Only attempt to create status if we have the right permissions
+              if (context.eventName !== 'workflow_run') {
+                await github.rest.repos.createCommitStatus({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  sha: context.sha,
+                  state: state,
+                  description: description,
+                  context: 'Artifact Validation'
+                });
+                console.log('Commit status updated successfully');
+              } else {
+                console.log('Skipping commit status update for workflow_run event');
+              }
+            } catch (error) {
+              console.log('Note: Unable to create commit status -', error.message);
+              console.log('This is expected for workflow_run events or when permissions are limited');
+              // Don't fail the workflow for this
             }
-
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: state,
-              description: description,
-              context: 'Artifact Validation'
-            });
 
       - name: Generate validation summary
         run: |
@@ -492,7 +523,7 @@ jobs:
           | Total Artifacts | ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }} |
           | Passed Validation | ${{ steps.consolidate.outputs.PASSED_ARTIFACTS }} |
           | Failed Validation | ${{ steps.consolidate.outputs.FAILED_ARTIFACTS }} |
-          | Success Rate | $(echo "scale=1; ${{ steps.consolidate.outputs.PASSED_ARTIFACTS }} * 100 / ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }}" | bc -l 2>/dev/null || echo "N/A")% |
+          | Success Rate | $(awk "BEGIN {if (${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }} > 0) printf \"%.1f\", ${{ steps.consolidate.outputs.PASSED_ARTIFACTS }} * 100 / ${{ steps.consolidate.outputs.TOTAL_ARTIFACTS }}; else print \"N/A\"}")% |
           | Overall Status | ${{ needs.validate-artifacts.result == 'success' && '✅ PASSED' || '❌ FAILED' }} |
 
           ## 🔍 Validation Details

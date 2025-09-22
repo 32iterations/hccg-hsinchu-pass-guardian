@@ -24,7 +24,6 @@ permissions:
   pull-requests: read
   actions: read
   statuses: write
-  workflows: read
 
 env:
   DASHBOARD_RETENTION_DAYS: 30
@@ -872,11 +871,12 @@ jobs:
           QUALITY_SCORE=${{ needs.collect-metrics.outputs.quality_score }}
           BADGE_COLOR="green"
 
-          if (( $(echo "$QUALITY_SCORE < 60" | bc -l) )); then
+          # Use awk for floating point comparison
+          if [ $(echo "$QUALITY_SCORE < 60" | awk '{print ($1 < 60) ? 1 : 0}') -eq 1 ]; then
             BADGE_COLOR="red"
-          elif (( $(echo "$QUALITY_SCORE < 75" | bc -l) )); then
+          elif [ $(echo "$QUALITY_SCORE < 75" | awk '{print ($1 < 75) ? 1 : 0}') -eq 1 ]; then
             BADGE_COLOR="yellow"
-          elif (( $(echo "$QUALITY_SCORE < 90" | bc -l) )); then
+          elif [ $(echo "$QUALITY_SCORE < 90" | awk '{print ($1 < 90) ? 1 : 0}') -eq 1 ]; then
             BADGE_COLOR="lightgreen"
           fi
 
@@ -917,29 +917,43 @@ jobs:
 
       - name: Update commit status with quality score
         uses: actions/github-script@v7
+        if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        continue-on-error: true
         with:
           script: |
-            const qualityScore = parseFloat('${{ needs.collect-metrics.outputs.quality_score }}');
-            const overallStatus = '${{ needs.collect-metrics.outputs.overall_status }}';
+            try {
+              const qualityScore = parseFloat('${{ needs.collect-metrics.outputs.quality_score }}');
+              const overallStatus = '${{ needs.collect-metrics.outputs.overall_status }}';
 
-            let state = 'success';
-            let description = `Quality Score: ${qualityScore}% (${overallStatus})`;
+              let state = 'success';
+              let description = `Quality Score: ${qualityScore}% (${overallStatus})`;
 
-            if (qualityScore < 60) {
-              state = 'failure';
-            } else if (qualityScore < 75) {
-              state = 'pending';
+              if (qualityScore < 60) {
+                state = 'failure';
+              } else if (qualityScore < 75) {
+                state = 'pending';
+              }
+
+              // Only attempt to create status if we have the right permissions
+              if (context.eventName !== 'workflow_run') {
+                await github.rest.repos.createCommitStatus({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  sha: context.sha,
+                  state: state,
+                  description: description,
+                  context: 'Quality Dashboard',
+                  target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+                });
+                console.log('Quality dashboard status updated successfully');
+              } else {
+                console.log('Skipping commit status update for workflow_run event');
+              }
+            } catch (error) {
+              console.log('Note: Unable to create commit status -', error.message);
+              console.log('This is expected for workflow_run events or when permissions are limited');
+              // Don't fail the workflow for this
             }
-
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: state,
-              description: description,
-              context: 'Quality Dashboard',
-              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            });
 
       - name: Generate dashboard summary
         run: |

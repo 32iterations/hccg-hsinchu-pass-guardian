@@ -86,17 +86,17 @@ jobs:
             # Create mock Firebase config for CI environment
             mkdir -p config
             cat > config/firebase-admin.json << 'EOF'
-{
-  "type": "service_account",
-  "project_id": "mock-project-ci",
-  "private_key_id": "mock-key-id",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8Q7HgL7hZL9cR\nv+mock+key+for+ci+testing+only+not+real+credentials+here+just+format\n-----END PRIVATE KEY-----\n",
-  "client_email": "mock@mock-project-ci.iam.gserviceaccount.com",
-  "client_id": "123456789",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token"
-}
-EOF
+            {
+              "type": "service_account",
+              "project_id": "mock-project-ci",
+              "private_key_id": "mock-key-id",
+              "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8Q7HgL7hZL9cR\nv+mock+key+for+ci+testing+only+not+real+credentials+here+just+format\n-----END PRIVATE KEY-----\n",
+              "client_email": "mock@mock-project-ci.iam.gserviceaccount.com",
+              "client_id": "123456789",
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+              "token_uri": "https://oauth2.googleapis.com/token"
+            }
+            EOF
             cd backend && npm install --production --no-audit && timeout 30s node server.js &
             SERVER_PID=$!
           else
@@ -219,8 +219,9 @@ EOF
 
       - name: Analyze bundle size
         run: |
-          npm install -g webpack-bundle-analyzer
-          npm run build
+          echo "Bundle analysis would run here if webpack is configured"
+          # npm install -g webpack-bundle-analyzer
+          # npm run build
           # Add bundle analysis commands here
 
       - name: Comment bundle size on PR

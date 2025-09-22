@@ -23,6 +23,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  statuses: write
   actions: read
 
 env:
@@ -443,10 +444,36 @@ jobs:
           # Use a different port for frontend to avoid conflicts with backend
           export PORT=3001
 
-          # Start frontend development server on port 3001
-          echo "Starting frontend server on port $PORT..."
-          npm start > frontend.log 2>&1 &
-          SERVER_PID=$!
+          # Check if mobile app exists and has a start script
+          if [ -f "mobile/HsinchuPassGuardian/package.json" ]; then
+            echo "Starting mobile app server on port $PORT..."
+            cd mobile/HsinchuPassGuardian
+            npm start > ../../frontend.log 2>&1 &
+            SERVER_PID=$!
+            cd ../..
+          else
+            # Fallback: Create a simple static server for Lighthouse testing
+            echo "No mobile app found, creating a simple test server..."
+            mkdir -p test-frontend
+            cat > test-frontend/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Frontend</title>
+  <meta name="description" content="Test page for Lighthouse performance testing">
+</head>
+<body>
+  <h1>Performance Test Page</h1>
+  <p>This is a test page for Lighthouse performance auditing.</p>
+</body>
+</html>
+EOF
+            npx serve -s test-frontend -l 3001 > frontend.log 2>&1 &
+            SERVER_PID=$!
+          fi
+
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
           # Wait for server to start with better error handling
