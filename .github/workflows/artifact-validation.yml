@@ -37,7 +37,7 @@ jobs:
 
     strategy:
       matrix:
-        artifact-type: [backend, frontend, mobile, coverage, security]
+        artifact-type: [backend, frontend, mobile, coverage, security, e2e, report]
 
     steps:
       - name: Checkout code
@@ -55,15 +55,45 @@ jobs:
           # Install integrity checking tools
           sudo apt-get install -y openssl
 
-      - name: Download artifacts
+      - name: Download artifacts from triggering workflow
         id: download
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          workflow: complete-ci.yml
-          name_is_regexp: true
-          name: ".*${{ matrix.artifact-type }}.*"
-          path: ./artifacts-validation
-          if_no_artifact_found: ignore
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Downloading artifacts for type: ${{ matrix.artifact-type }}"
+          echo "From workflow run: ${{ github.event.workflow_run.id }}"
+
+          mkdir -p ./artifacts-validation
+
+          # Set the appropriate pattern based on artifact type
+          case "${{ matrix.artifact-type }}" in
+            "e2e")
+              PATTERN="e2e-results-*"
+              ;;
+            "report")
+              PATTERN="pipeline-report-*"
+              ;;
+            "security")
+              PATTERN="security-scan-*"
+              ;;
+            *)
+              PATTERN="*${{ matrix.artifact-type }}*"
+              ;;
+          esac
+
+          echo "Using download pattern: $PATTERN"
+
+          # Download artifacts using GitHub CLI
+          gh run download ${{ github.event.workflow_run.id }} \
+            --pattern "$PATTERN" \
+            --dir ./artifacts-validation \
+            --repo ${{ github.repository }} || {
+            echo "No artifacts found for pattern $PATTERN in workflow run ${{ github.event.workflow_run.id }}"
+            exit 0
+          }
+
+          echo "Downloaded artifacts:"
+          find ./artifacts-validation -type f -exec ls -lh {} \;
         continue-on-error: true
 
       - name: Validate artifact existence
@@ -233,7 +263,7 @@ jobs:
 
       - name: Performance validation
         id: performance
-        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true'
+        if: steps.existence.outputs.ARTIFACT_EXISTS == 'true' && (matrix.artifact-type == 'backend' || matrix.artifact-type == 'frontend' || matrix.artifact-type == 'mobile')
         run: |
           ARTIFACT_PATH="./artifacts-validation"
           PERFORMANCE_PASSED=true

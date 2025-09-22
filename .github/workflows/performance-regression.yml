@@ -64,7 +64,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -260,7 +260,9 @@ jobs:
           " > performance-results/memory-usage.json
 
           echo "Performance testing completed ✅"
-          echo "RESULTS=$(cat performance-results/current-metrics.json)" >> $GITHUB_OUTPUT
+          # Compact JSON to single line to avoid multi-line issues in GITHUB_OUTPUT
+          RESULTS_JSON=$(cat performance-results/current-metrics.json | jq -c .)
+          echo "RESULTS=$RESULTS_JSON" >> $GITHUB_OUTPUT
 
       - name: Compare with baseline
         id: comparison
@@ -387,8 +389,10 @@ jobs:
           COMPARISON_RESULT=$(cat performance-results/comparison-result.json)
           REGRESSION_DETECTED=$(echo "$COMPARISON_RESULT" | jq '.regressions_detected')
 
+          # Compact JSON to single line to avoid multi-line issues in GITHUB_OUTPUT
+          COMPARISON_RESULT_COMPACT=$(echo "$COMPARISON_RESULT" | jq -c .)
           echo "REGRESSION_DETECTED=$REGRESSION_DETECTED" >> $GITHUB_OUTPUT
-          echo "COMPARISON_RESULT=$COMPARISON_RESULT" >> $GITHUB_OUTPUT
+          echo "COMPARISON_RESULT=$COMPARISON_RESULT_COMPACT" >> $GITHUB_OUTPUT
 
       - name: Stop application
         if: always()
@@ -420,7 +424,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -592,7 +596,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
