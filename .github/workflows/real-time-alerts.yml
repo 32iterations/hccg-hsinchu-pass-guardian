@@ -13,7 +13,6 @@ permissions:
   issues: write
   pull-requests: write
   actions: read
-  workflows: read
 
 env:
   ALERT_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
