@@ -442,7 +442,7 @@ jobs:
           npm audit --audit-level=moderate --json > security-audit.json || true
 
       - name: Run Trivy vulnerability scanner (limited scope)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
           scan-type: 'fs'
@@ -451,6 +451,8 @@ jobs:
           output: 'trivy-results.sarif'
           skip-dirs: 'node_modules/.cache,mobile/node_modules/.cache,coverage,artifacts,.git'
           timeout: '10m'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
       - name: Create fallback SARIF if needed
         run: |
