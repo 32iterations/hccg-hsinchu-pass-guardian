@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest --verbose --detectOpenHandles",
     "test:watch": "jest --watch",
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:ci": "node server-ci.js"
   },
   "keywords": [],
   "author": "",

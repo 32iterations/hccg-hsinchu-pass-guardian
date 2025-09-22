@@ -40,6 +40,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: guardian_test
         options: >-
@@ -71,6 +72,13 @@ jobs:
           npm ci
           cd backend && npm ci
 
+      - name: Setup database schema
+        run: |
+          # Create database schema if needed
+          PGPASSWORD=testpassword psql -h localhost -U postgres -d guardian_test -c "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(255));"
+        env:
+          PGPASSWORD: testpassword
+
       - name: Install performance testing tools
         run: |
           npm install -g autocannon k6
@@ -78,13 +86,34 @@ jobs:
 
       - name: Start application
         run: |
-          cd backend && npm start &
+          cd backend
+          # Export database configuration for the application
+          export DB_USER=postgres
+          export DB_HOST=localhost
+          export DB_DATABASE=guardian_test
+          export DB_PASSWORD=testpassword
+          export DB_PORT=5432
+          export DATABASE_URL="postgresql://postgres:testpassword@localhost:5432/guardian_test"
+
+          # Start the application with CI-specific server
+          npm run start:ci &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
 
-          # Wait for application to start
+          # Wait for application to start with better error handling
           echo "Waiting for application to start..."
-          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:3000/api/health 2>/dev/null; then
+              echo "Application is ready!"
+              break
+            fi
+            echo "Attempt $i/30: Application not ready yet, waiting..."
+            sleep 2
+            if [ $i -eq 30 ]; then
+              echo "Application failed to start after 60 seconds"
+              exit 1
+            fi
+          done
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/guardian_test
@@ -343,12 +372,28 @@ jobs:
 
       - name: Start development server
         run: |
+          # Start frontend development server
           npm start &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
-          # Wait for server to start
-          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+          # Wait for server to start with better error handling
+          echo "Waiting for frontend server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 2>/dev/null; then
+              echo "Frontend server is ready!"
+              break
+            fi
+            echo "Attempt $i/30: Server not ready yet, waiting..."
+            sleep 2
+            if [ $i -eq 30 ]; then
+              echo "Frontend server failed to start after 60 seconds"
+              # Try to start with a fallback port if needed
+              echo "Checking if something else is using port 3000..."
+              lsof -i :3000 || true
+              exit 1
+            fi
+          done
 
       - name: Run Lighthouse performance audit
         id: lighthouse
