@@ -11,15 +11,20 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Database connection for CI environment
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_DATABASE || 'guardian_test',
-  password: process.env.DB_PASSWORD || 'testpassword',
-  port: process.env.DB_PORT || 5432,
-  // Use connection string if provided
-  connectionString: process.env.DATABASE_URL,
-});
+// If DATABASE_URL is set, parse it; otherwise use individual env vars
+const dbConfig = process.env.DATABASE_URL ?
+  {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL.includes('ssl=true') ? { rejectUnauthorized: false } : false
+  } : {
+    user: process.env.DB_USER || process.env.PGUSER || 'postgres',
+    host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+    database: process.env.DB_DATABASE || process.env.PGDATABASE || 'guardian_test',
+    password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'testpassword',
+    port: process.env.DB_PORT || process.env.PGPORT || 5432
+  };
+
+const pool = new Pool(dbConfig);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

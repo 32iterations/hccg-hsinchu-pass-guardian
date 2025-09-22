@@ -37,6 +37,7 @@ jobs:
             ci
             chore
             revert
+            deps
 
       - name: Check branch naming
         run: |
