@@ -72,7 +72,7 @@ jobs:
           fi
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./src/backend/coverage/lcov.info
           flags: backend
